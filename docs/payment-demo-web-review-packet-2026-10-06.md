@@ -1,5 +1,13 @@
 # Web review packet: payment demo (2026-10-06)
 
+> **Historical packet (status as of `cf72980`, 2026-10-06).** Superseded:
+> web review of `d395c8a` took place (relayed by Blake, 2026-10-08) and its
+> findings were fixed in `264b0c5`. The branch is now PR #138. Blake's
+> physical iPad check passed (2026-10-06 and 2026-10-12). Current status and
+> outstanding reviews are in `docs/payment-demo-2026-10-05.md` ("Review
+> status" and "Pre-launch list"). The text below is kept unchanged as the
+> record of what was handed to web review.
+
 **Status: web review has NOT occurred.** CLAUDE.md's terminal-plus-web
 pattern asks for web-Claude review of schema additions and white-label
 boundary changes. The bounded agent reviews done in session do not replace

@@ -766,16 +766,7 @@ def review_financing_fresh(fin, start: datetime) -> bool:
     return timedelta(0) <= start - at <= timedelta(days=mad)
 
 
-# ---- the payment DEMO (owner demo-first direction 2026-10-05) ----------------
-# A complete, ILLUSTRATIVE purchase-and-payment demonstration: historical
-# lacks.com prices from the committed 2026-10-03 capture where they exist,
-# explicitly illustrative fills (demo/payment-demo/illustrative-prices.json)
-# everywhere else, and example financing plans (demo/payment-demo/demo.json)
-# computed through the app's governed methods. Everything is assembled in
-# memory; nothing here may enter incoming/, data/ or the workbook
-# (tests/payment_demo_check.py locks that). Every internal approval stamp says
-# ILLUSTRATIVE DEMO; the customer sees the illustrative mark and the
-# provenance lines, never an approval claim.
+# ---- the payment DEMO: inputs (design notes below) --------------------------
 DEMO_DIR = os.path.join(REPO, "demo", "payment-demo")
 DEMO_CONFIG = os.path.join(DEMO_DIR, "demo.json")
 DEMO_PRICES = os.path.join(DEMO_DIR, "illustrative-prices.json")

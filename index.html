@@ -14497,7 +14497,7 @@
         var mb = psMattressMonthlyText('compare', mB, true);
         var rp = psRefPlan();
         if ((ma || mb) && rp) {
-          rows.push({ key: 'monthly', label: t('ps.cmp_monthly', { plan: L(rp.headline) || '' }),
+          rows.push({ key: 'monthly', label: t('ps.cmp_monthly', { plan: escapeHtml(L(rp.headline) || '') }),
                       a: ma || '—', b: mb || '—' });
         }
         // The whole purchase with each mattress: the Sleep System as built,
@@ -15287,11 +15287,11 @@
     // two choices the customer makes on this surface (_psPlan, _psDownRaw),
     // both wiped by resetSessionState via psResetState().
     //
-    // Renders only for a build that declares an illustrative demonstration
-    // (STORE_CONFIG.illustrativeDemo.enabled === true - injected in memory by
-    // the preview harness's `demo` state, absent from shipped data and locked
-    // absent by tests/payment_demo_check.py) and only while the price gate is
-    // open. Shipped behaviour is unchanged: nothing renders.
+    // Renders only when demoAdmission() admits the build: the preview
+    // harness's `demo` state injects a frozen page context whose nonce
+    // matches STORE_CONFIG.illustrativeDemo (both absent from shipped data and
+    // locked absent by tests/payment_demo_check.py), and only while the price
+    // gate is open. Shipped behaviour is unchanged: nothing renders.
     //
     // What-if figures (another size, another saved mattress, another base,
     // an item removed) are COMPLETE quotes built by the same model with the
@@ -15890,7 +15890,7 @@
               + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="-1" aria-label="'
                 + escapeHtml(t('ps.qty_less')) + '"' + (l.qty <= 1 ? ' disabled' : ''), '−',
                 'window.psQty(\'' + psId(l.id) + '\',-1)')
-              + '<span class="ps-qty__n" aria-live="polite">' + l.qty + '</span>'
+              + '<span class="ps-qty__n">' + l.qty + '</span>'
               + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="1" aria-label="'
                 + escapeHtml(t('ps.qty_more')) + '"' + (l.qty >= l.max ? ' disabled' : ''), '+',
                 'window.psQty(\'' + psId(l.id) + '\',1)')
@@ -16581,6 +16581,9 @@
       var cur = (typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1;
       setSleepSystemItemQuantity(id, cur + delta);
       psRepaint();
+      var after = (window._accCart || {})[id];
+      var rec = psAccessory(id);
+      if (after) psAnnounce(t('ps.qty_now', { name: rec ? (L(rec.name) || '') : '', n: after.quantity }));
       var same = document.querySelector('#purchaseStudio [data-ps-qty="' + id + '"][data-ps-delta="' + delta + '"]');
       var other = document.querySelector('#purchaseStudio [data-ps-qty="' + id + '"][data-ps-delta="' + (-delta) + '"]');
       var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);
@@ -29640,7 +29643,7 @@
        placeholder and is overwritten before the dialog is ever shown. -->
   <!-- The purchase studio's change sheet (payment demo). A body child, so
        the background it makes inert while open is never its own ancestor. -->
-  <div class="ps-sheet-backdrop" id="psSheetBackdrop" hidden onclick="window.psCloseSheet()"></div>
+  <div class="ps-sheet-backdrop" id="psSheetBackdrop" hidden onclick="window.psCloseSheet()" ontouchend="event.preventDefault();window.psCloseSheet();"></div>
   <div class="ps-sheet-dialog" id="psSheet" role="dialog" aria-modal="true" aria-labelledby="psSheetTitle" hidden></div>
   <div class="safety-backdrop" id="sessionSafetyBackdrop" hidden></div>
   <div class="safety-dialog" id="sessionSafetyDialog" hidden inert aria-hidden="true"

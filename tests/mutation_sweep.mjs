@@ -3656,6 +3656,14 @@ const MUTATIONS = [
     "      var other = document.querySelector('#purchaseStudio [data-ps-qty=\"' + id + '\"][data-ps-delta=\"' + (-delta) + '\"]');\n      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);",
     "      var other = document.querySelector('#purchaseStudio [data-ps-qty=\"' + id + '\"][data-ps-delta=\"' + (-delta) + '\"]');\n      var target = same;",
     PAY_DEMO],
+  ["payment demo: the compare monthly label interpolates the config plan name unescaped",
+    "label: t('ps.cmp_monthly', { plan: escapeHtml(L(rp.headline) || '') }),",
+    "label: t('ps.cmp_monthly', { plan: L(rp.headline) || '' }),",
+    PAY_DEMO],
+  ["payment demo: a studio quantity change is not announced",
+    "      if (after) psAnnounce(t('ps.qty_now', { name: rec ? (L(rec.name) || '') : '', n: after.quantity }));",
+    "      void after; void rec;",
+    PAY_DEMO],
 ];
 
 // ---------------------------------------------------------------------------

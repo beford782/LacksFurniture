@@ -193,8 +193,8 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 64 checks
-# plus the mutation sweep = 65. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 66 checks
+# plus the mutation sweep = 67. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.

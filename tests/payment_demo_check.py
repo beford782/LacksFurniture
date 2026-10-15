@@ -268,7 +268,7 @@ ANSWERS = {"sleep_position": "side", "sleep_issues": ["back_pain"], "health_cond
 TXT = "(sel) => { const e = document.querySelector(sel); return e ? e.textContent.replace(/\\s+/g, ' ').trim() : null; }"
 ROWS = """() => Array.from(document.querySelectorAll('#purchaseStudio .ps-row[data-ps-line]')).map(l => ({
   id: l.dataset.psLine, amount: l.querySelector('.ps-row__amount').textContent.trim() }))"""
-CARD = """(id) => { const c = document.querySelector('#purchaseStudio [data-ps-plan="' + id + '"]');
+CARD = r"""(id) => { const c = document.querySelector('#purchaseStudio [data-ps-plan="' + id + '"]');
   return c ? c.textContent.replace(/\s+/g, ' ').trim() : null; }"""
 FIG = """(k) => { const f = document.querySelector('#psCenterBox [data-ps-fig="' + k + '"] .ps-fig__value');
   return f ? f.textContent.trim() : null; }"""
@@ -639,6 +639,21 @@ with sync_playwright() as p:
         pg.wait_for_timeout(100)
         check(f"{tag} quantity -: focus stays on - and the count is back to two",
               pg.evaluate("window._accCart['pillow-gel-memory'].quantity") == 2 and pg.evaluate(FOC) == "-1")
+        live = pg.evaluate("document.getElementById('psLive').textContent") or ""
+        check(f"{tag} a quantity change is announced with the new count",
+              re.search(r"\b2\.$", live.strip()) is not None and ("quantity" in live or "cantidad" in live), live)
+        check(f"{tag} the rebuilt count is not itself a live region",
+              pg.evaluate("document.querySelector('#purchaseStudio .ps-qty__n[aria-live]')") is None)
+        # ---- config text in the compare label is escaped (labels render as HTML) ----
+        esc = pg.evaluate(r"""() => { const rp = psRefPlan(); const old = rp.headline;
+          rp.headline = { en: '<b>x</b> & y', es: '<b>x</b> & y' };
+          try { const ids = Object.keys(window._drawerData || {});
+                const row = compareRowsFor(window._drawerData[ids[0]].m, window._drawerData[ids[1]].m)
+                  .find(r => r.key === 'monthly');
+                return row ? row.label : null; }
+          finally { rp.headline = old; } }""")
+        check(f"{tag} the compare monthly label escapes the plan name",
+              esc is not None and "&lt;b&gt;x&lt;/b&gt; &amp; y" in esc and "<b>" not in esc, str(esc))
         # ---- a split King base: kept when the replacement offers it, named when it cannot ----
         pg.click("[data-ps-size='king']")
         pg.click("[data-ps-split='on']")
