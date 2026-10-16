@@ -59,7 +59,9 @@ Guarantees:
   * responses carry Cache-Control: no-store;
   * every rendered price is a FIXTURE placeholder and says so in the
     assumptions and disclosures beside it. NOTHING here is a Lacks price,
-    approval, clearance or verification.
+    approval, clearance or verification. (Exception: `--state demo` serves
+    no per-price disclosure and no notice - Blake, 2026-10-12; its
+    illustrative prices carry the illustrative mark and a price-source line.)
 
 Run:  python tools/serve_pricing_preview.py --state available --port 8000
 Stop: Ctrl+C.
@@ -83,9 +85,11 @@ disabled (and dark). It is a separate mode, opt-in per run:
     served as `window.__DF_ALLOWED_HOSTS = ["<that address>"]` — the committed
     allowlist is never written, and the served page itself is served with a
     fixed NON-SHIPPING banner naming the drill state (the only edit to the
-    page, appended before </body> in memory);
+    page, appended before </body> in memory; `--state demo` carries the
+    Operator tab instead);
   * fixture data only: every price is the FIXTURE placeholder and says so in
-    the assumptions and disclosures beside it; the banner repeats it;
+    the assumptions and disclosures beside it; the banner repeats it
+    (`--state demo`: the illustrative mark and price-source line instead);
   * nothing can send: the served store-config keeps the committed blank
     gasUrl (the mode refuses to start otherwise), so the email screen stays
     in preview and no lead or email leaves the device; exactPromotionsEnabled
@@ -126,6 +130,7 @@ import ipaddress
 import json
 import os
 import re
+import secrets
 import sys
 import urllib.parse
 from datetime import datetime, timedelta, timezone
@@ -192,7 +197,7 @@ def device_path_allowed(path: str) -> bool:
     return any(path.startswith(p) and len(path) > len(p) for p in DEVICE_PREFIXES)
 INTERCEPT_ACCESSORIES = "/data/accessories.json"
 STATES = ("dark", "available", "stale", "unapproved", "unavailable",
-          "disabled", "website", "payments", "review")
+          "disabled", "website", "payments", "review", "demo")
 # Payment Choice slice 2 (owner authorization 2026-10-03). Both states switch
 # the governed payment calculation ON in memory - exactPromotionsEnabled true
 # and paymentCalculationEnabled true on the one plan whose method is
@@ -205,6 +210,9 @@ STATES = ("dark", "available", "stale", "unapproved", "unavailable",
 #             OWN verification stamps. Nothing is shifted, so stale evidence
 #             shows nothing / "To confirm", exactly as production would.
 PAYMENT_STATES = ("payments", "review")
+# The payment demo (owner demo-first direction 2026-10-05): its own state,
+# pinned by tests/payment_demo_check.py rather than the drill walk.
+DEMO_STATES = ("demo",)
 REVIEW_FORMULA_APPROVAL = ("REVIEW BUILD - owner-authorized implementation 2026-10-03; "
                            "business, legal and native review pending")
 TIER_ORDER = ("gold", "silver", "bronze")
@@ -276,7 +284,7 @@ def allowed_hosts_js(addr: str) -> bytes:
 BANNER_ID = "dfRehearsalBanner"
 
 
-def device_bundle(addr: str, state: str) -> dict:
+def device_bundle(addr: str, state: str, operator: dict = None) -> dict:
     """The in-memory documents a device rehearsal serves, or ValueError: the
     constructor-level gate (a test cannot build a device server for an
     address the verdict refuses), mirroring the delivery harness."""
@@ -286,15 +294,121 @@ def device_bundle(addr: str, state: str) -> dict:
     if state not in STATES:
         raise ValueError(f"unknown state {state!r}")
     a = addr.strip()
-    return {"address": a, "allowed_hosts": allowed_hosts_js(a), "page": rehearsal_page(state, a)}
+    return {"address": a, "allowed_hosts": allowed_hosts_js(a), "page": rehearsal_page(state, a, operator)}
 
 
-def rehearsal_page(state: str, addr: str) -> bytes:
+OPERATOR_ID = "dfDemoOperator"
+# The demo scenarios the operator panel can load. Each is a set of quiz
+# answers plus the purchase the salesperson would build: the best match as
+# finalist, the second match saved, and a Sleep System. They call only the
+# app's own public functions; nothing here is part of index.html.
+DEMO_SCENARIOS = [
+    {"id": "couple-queen", "label": "Couple \u00b7 Queen \u00b7 back pain, sleeps hot",
+     "answers": {"sleep_position": "side", "sleep_issues": ["back_pain"], "health_conditions": ["snoring"],
+                 "temperature": "hot", "firmness": 5, "partner_sleep": "partner",
+                 "partner_disturbance": "sometimes", "body_type": "average", "mattress_size": "queen"},
+     "items": [["base-bt3000", 1], ["pillow-gel-memory", 2], ["protector-vertex", 1]]},
+    {"id": "solo-king", "label": "Solo \u00b7 King \u00b7 firm support",
+     "answers": {"sleep_position": "back", "sleep_issues": ["back_pain"], "health_conditions": [],
+                 "temperature": "neutral", "firmness": 8, "partner_sleep": "solo",
+                 "body_type": "average", "mattress_size": "king"},
+     "items": [["foundation-princess", 1], ["pillow-gel-memory", 1], ["protector-iprotect", 1]]},
+]
+
+
+def _esc(x):
+    return str(x).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def operator_panel(state: str, addr: str, operator: dict) -> bytes:
+    """The demo state's OPERATOR area: a small 'Operator' tab (top-left)
+    that opens the technical detail and the scenario loader. No drill banner
+    and no demo notice: everyone in the room knows it is a demo (Blake,
+    2026-10-12); the illustrative mark and provenance line remain."""
+    op = operator or {}
+    rows = [
+        "Non-shipping payment demo &middot; state <b>" + _esc(state) + "</b> &middot; " + _esc(addr),
+        _esc(op.get("historical", 0)) + " historical lacks.com prices (observed 2026-10-03) &middot; "
+        + _esc(op.get("illustrative", 0)) + " illustrative prices (&#9671;)",
+        _esc(op.get("plans", 0)) + " example plans (provider &ldquo;Demo&rdquo;, governed methods); "
+        "lease-to-own and in-house read &ldquo;To confirm&rdquo;",
+        "Nothing is sent or saved: gasUrl blank, no lead, no email. Production files untouched.",
+    ]
+    scen = json.dumps(DEMO_SCENARIOS)
+    buttons = "".join(
+        '<button type="button" data-scn="' + _esc(x["id"]) + '" style="display:block;width:100%;min-height:44px;'
+        'margin:6px 0;padding:8px 12px;border:1px solid #c9bfae;border-radius:10px;background:#fff;color:#2b2520;'
+        'font:600 14px/1.3 system-ui,sans-serif;text-align:left;cursor:pointer;touch-action:manipulation;">'
+        + _esc(x["label"]) + '</button>' for x in DEMO_SCENARIOS)
+    script = (
+        '<script>(function(){var S=' + scen + ';'
+        'function w(ms){return new Promise(function(r){setTimeout(r,ms);});}'
+        'async function load(id){var x=S.filter(function(s){return s.id===id;})[0];if(!x)return;'
+        'var d=document.getElementById("' + OPERATOR_ID + '");if(d)d.open=false;'
+        'if(typeof resetSessionState==="function")resetSessionState();await w(150);'
+        'for(var k in x.answers)answers[k]=x.answers[k];'
+        'showProfileScreen();window.showResults();await w(350);'
+        'var ids=Object.keys(window._drawerData||{});if(!ids.length)return;'
+        'window.chooseFinalist(ids[0]);if(ids[1])window._toggleSavePick(ids[1]);'
+        'for(var i=0;i<x.items.length;i++){setSleepSystemItem(x.items[i][0],true);'
+        'if(x.items[i][1]>1)setSleepSystemItemQuantity(x.items[i][0],x.items[i][1]);}'
+        'window.showSavedPicks();}'
+        'var busy=false;function go(e){var b=e.target.closest&&e.target.closest("[data-scn]");'
+        'if(!b)return;if(e.type==="touchend")e.preventDefault();if(busy)return;busy=true;'
+        'load(b.getAttribute("data-scn")).then(function(){busy=false;},function(){busy=false;});}'
+        'document.addEventListener("click",go);document.addEventListener("touchend",go,{passive:false});'
+        '})();</script>\n'
+    )
+    # Placement: the TOP-LEFT corner of the band every screen already reserves
+    # for the app's own fixed language/Restart bar (--session-utility-clearance),
+    # centred on the bar's row. Measured clear of app controls at rest on every
+    # screen, both orientations and both languages; a bottom-left tab covered
+    # the last controls of the page. It stacks just above the bar (150) and
+    # below every app dialog (change sheet 2000, safety dialog 10002), so a
+    # dialog covers it as it covers the bar. The open panel scrolls inside
+    # itself rather than running off a portrait screen.
+    html = (
+        '<details id="' + OPERATOR_ID + '" data-demo-operator style="position:fixed;left:8px;'
+        'top:calc(14px + env(safe-area-inset-top, 0px));'
+        'z-index:151;max-width:min(92vw,380px);font:13px/1.4 system-ui,sans-serif;color:#2b2520;">'
+        '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;min-height:44px;'
+        'min-width:44px;padding:0 14px;border-radius:22px;background:rgba(43,37,32,.82);color:#fff;'
+        'font-weight:600;letter-spacing:.02em;touch-action:manipulation;">Operator</summary>'
+        '<div style="margin-top:8px;padding:12px 14px;border-radius:14px;background:#fbf8f2;'
+        'border:1px solid #d8cfbf;box-shadow:0 10px 30px rgba(0,0,0,.18);'
+        'max-height:calc(100dvh - 90px);overflow:auto;-webkit-overflow-scrolling:touch;">'
+        + "".join('<p style="margin:0 0 6px">' + r + '</p>' for r in rows)
+        + '<p style="margin:10px 0 2px;font-weight:700">Load a demo scenario</p>' + buttons
+        + '<p style="margin:8px 0 0;color:#6b6157">Loading a scenario starts a new customer first.</p>'
+        '</div></details>\n' + script
+    )
+    return html.encode("utf-8")
+
+
+def rehearsal_page(state: str, addr: str, operator: dict = None) -> bytes:
     """index.html from disk with the NON-SHIPPING banner appended before the
     page's own </body> (the last one — the domain lock's inline error page
-    carries another). Device mode only; loopback mode serves the file."""
+    carries another). Device mode only; loopback mode serves the file.
+    The demo state carries the operator area instead of the banner (the app
+    marks illustrative prices and names its price and payment sources)."""
     with open(os.path.join(REPO, "index.html"), "rb") as f:
         raw = f.read()
+    if state == "demo":
+        # The harness demo context: one of the TWO conditions demo admission
+        # needs (the other is the validated illustrativeDemo config carrying
+        # the same per-run nonce). Only this harness writes it; the ordinary
+        # served build never contains it.
+        nonce = (operator or {}).get("contextNonce")
+        if not (isinstance(nonce, str) and re.fullmatch(r"[0-9a-f]{32}", nonce)):
+            raise ValueError("the demo page needs the run's context nonce")
+        ctx = ('<script>Object.defineProperty(window,"__DF_DEMO_CONTEXT",{value:Object.freeze('
+               '{harness:"serve_pricing_preview",state:"demo",nonce:"' + nonce + '"}),'
+               'writable:false,configurable:false,enumerable:false});</script>\n').encode("utf-8")
+        h0, hsep, h1 = raw.partition(b"</head>")
+        raw = (h0 + ctx + hsep + h1) if hsep else ctx + raw
+        head, sep, tail = raw.rpartition(b"</body>")
+        panel = operator_panel(state, addr, operator)
+        return (head + panel + sep + tail) if sep else raw + panel
     banner = (
         '<div id="' + BANNER_ID + '" role="note" style="position:fixed;left:0;right:0;bottom:0;'
         'z-index:2147483647;background:#7a1f1f;color:#fff;font:700 13px/1.35 sans-serif;'
@@ -365,7 +479,7 @@ SNAPSHOT = os.path.join(REPO, "demo", "price-snapshot", "snapshot.json")
 MAPPING = os.path.join(REPO, "demo", "price-snapshot", "mapping.json")
 
 
-def build_website(start):
+def build_website(start, snapshot=None, mapping=None):
     """The `website` drill: ACTUAL extracted prices for the subset of the app's
     assortment that has sufficient current identity AND price evidence.
 
@@ -384,12 +498,14 @@ def build_website(start):
 
     Returns (products, mattress_skus, accessory_skus, coverage).
     """
-    if not (os.path.exists(SNAPSHOT) and os.path.exists(MAPPING)):
+    snapshot = snapshot or SNAPSHOT
+    mapping_path = mapping or MAPPING
+    if not (os.path.exists(snapshot) and os.path.exists(mapping_path)):
         raise SystemExit(
             "the website drill needs demo/price-snapshot/{snapshot,mapping}.json\n"
             "  run: python tools/fetch_lacks_prices.py && python tools/map_app_to_website.py")
-    snap = _load(SNAPSHOT)
-    mapping = _load(MAPPING)
+    snap = _load(snapshot)
+    mapping = _load(mapping_path)
     by_sku = {}
     for v in snap.get("variants") or []:
         if isinstance(v.get("sku"), str):
@@ -555,8 +671,11 @@ def review_sales_policies():
             "sourceUrl": "https://www.lacks.com/return-and-store-policies",
             "observedAt": "2026-10-03T20:46:31.131Z",
             "requiresProtector": True, "requiresPillow": True,
-            "title": {"en": "90-Day Comfort Promise (as published)",
-                      "es": "Promesa de Comodidad de 90 D\u00edas (seg\u00fan lo publicado)"},
+            # Labelled with the recorded capture date (observedAt) only: the
+            # page's own publication date is not recorded and nothing here is
+            # verified (status above).
+            "title": {"en": "90-Day Comfort Promise (from lacks.com, as captured Oct 3, 2026)",
+                      "es": "Promesa de Comodidad de 90 D\u00edas (de lacks.com, seg\u00fan la captura del 3 de oct. de 2026)"},
             "summary": {"en": "Lacks publishes a one-time comfort exchange for a new mattress, with conditions.",
                         "es": "Lacks publica un cambio \u00fanico por comodidad para un colch\u00f3n nuevo, con condiciones."},
             "conditions": [
@@ -578,10 +697,12 @@ def review_sales_policies():
             "pickupNoCharge": True,
             "pickupLabel": {"en": "Warehouse pickup", "es": "Recogida en almac\u00e9n"},
             "deliveryLabel": {"en": "Delivery and setup", "es": "Entrega e instalaci\u00f3n"},
-            "pickupNote": {"en": "Published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
-                           "es": "Publicada como gratuita en el almac\u00e9n central. Lleva el contrato de venta y una identificaci\u00f3n con foto que coincida."},
-            "deliveryNote": {"en": "Full-service delivery with in-home setup is published; its charge is confirmed in store.",
-                             "es": "Se publica la entrega completa con instalaci\u00f3n en casa; su cargo se confirma en la tienda."},
+            # Same rule: the capture date (observedAt) leads, the captured
+            # wording follows unchanged.
+            "pickupNote": {"en": "As captured from lacks.com on Oct 3, 2026: published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
+                           "es": "Seg\u00fan la captura de lacks.com del 3 de oct. de 2026: publicada como gratuita en el almac\u00e9n central. Lleva el contrato de venta y una identificaci\u00f3n con foto que coincida."},
+            "deliveryNote": {"en": "As captured from lacks.com on Oct 3, 2026: full-service delivery with in-home setup is published; its charge is confirmed in store.",
+                             "es": "Seg\u00fan la captura de lacks.com del 3 de oct. de 2026: se publica la entrega completa con instalaci\u00f3n en casa; su cargo se confirma en la tienda."},
         },
     }
 
@@ -645,6 +766,357 @@ def review_financing_fresh(fin, start: datetime) -> bool:
     return timedelta(0) <= start - at <= timedelta(days=mad)
 
 
+# ---- the payment DEMO: inputs (design notes below) --------------------------
+DEMO_DIR = os.path.join(REPO, "demo", "payment-demo")
+DEMO_CONFIG = os.path.join(DEMO_DIR, "demo.json")
+DEMO_PRICES = os.path.join(DEMO_DIR, "illustrative-prices.json")
+DEMO_CAPTURE = os.path.join(REPO, "demo", "price-review", "2026-10-03")
+DEMO_CONTRACT = "payment-demo/1"
+# Demo price provenance. Deliberately NOT production evidence statuses: the
+# production validator and the production gate refuse both.
+DEMO_PRICE_STATUSES = ("historical-snapshot", "illustrative")
+DEMO_CALC_MODES = ("published-fixed-factor", "published-equal-division")
+DEMO_ROUNDING = "up-to-whole-dollar"
+
+
+# ---- the payment DEMO (owner demo-first direction 2026-10-05) ----------------
+# A complete purchase-and-payment demonstration assembled IN MEMORY and kept
+# HONEST (owner closeout 2026-10-06):
+#   * historical prices keep their ORIGINAL observation instants and say so
+#     (evidence.status "historical-snapshot", verified false);
+#   * illustrative fills say so (evidence.status "illustrative", with method);
+#   * the real approval records are the SHIPPED ones (unapproved / pending);
+#     nothing here writes an approval, a clearance or a verification;
+#   * example financing plans are unverified and carry calculation OFF; their
+#     example method lives in a separate demoCalculation block;
+#   * the demo's assembly instant is its own field and never stands in for
+#     evidence time.
+# The app admits this data only through its demo admission adapter, which
+# needs BOTH this config (validated by validate_payment_demo) AND the
+# harness-written page context carrying the same per-run nonce.
+def _amortization_factor(apr, term):
+    r = apr / 100 / 12
+    return round(r / (1 - (1 + r) ** -term), 6)
+
+
+def demo_financing():
+    """The canonical financing block with its promotional offers REPLACED by
+    the demo's example plans. Exact-term authorization stays as shipped
+    (false); the real non-promotional programs are untouched."""
+    demo = _load(DEMO_CONFIG)
+    src = _load(os.path.join(REPO, "incoming", "lacks_financing.json"))
+    fin = copy.deepcopy(src["financing"])
+    plans = []
+    for p in demo["plans"]:
+        calc = {"mode": p["calculationMode"], "rounding": DEMO_ROUNDING}
+        if p.get("exampleFactor") is not None:
+            calc["factor"] = p["exampleFactor"]
+        apr_txt = ("%g" % p["apr"])
+        plans.append({
+            "id": p["id"], "kind": "open-end-promotional-credit", "provider": "Demo",
+            "demo": True, "verified": False, "verificationStatus": "illustrative",
+            "apr": p["apr"], "termMonths": p["termMonths"], "minimumPurchase": None,
+            "paymentCalculationEnabled": False, "demoCalculation": calc,
+            "headline": {"en": f"{apr_txt}% APR for {p['termMonths']} months",
+                         "es": f"{apr_txt}% APR por {p['termMonths']} meses"},
+            "detail": copy.deepcopy(p["detail"]), "disclosure": copy.deepcopy(demo["disclosure"]),
+        })
+    rest = [pl for pl in fin.get("plans", []) if pl.get("kind") != "open-end-promotional-credit"]
+    fin["plans"] = plans + rest
+    return fin
+
+
+def build_demo_products(start: datetime):
+    """Pricing entries for the demo: the 2026-10-03 capture (historical, on
+    its own observation instants) plus the illustrative fills. Returns
+    (entries, m_skus, a_skus, provenance). A product-size neither source
+    prices stays unpriced - never a guessed number."""
+    fills = _load(DEMO_PRICES)
+    wp, m_skus, a_skus, _cov = build_website(
+        start, os.path.join(DEMO_CAPTURE, "snapshot.json"), os.path.join(DEMO_CAPTURE, "mapping.json"))
+    m_skus = {k: dict(v) for k, v in m_skus.items()}
+    a_skus = copy.deepcopy(a_skus)
+    entries = []
+    prov = {"historical": [], "illustrative": []}
+
+    def entry(app_id, kind, size, sku, amount, evidence):
+        return {"productId": app_id, "productKind": kind, "sku": sku, "size": size,
+                "price": {"amountMinor": amount, "currency": "USD", "kind": "regular"},
+                "evidence": evidence, "clearance": {"status": "not-cleared"}}
+
+    for rec in wp:
+        v = rec["variant"]
+        entries.append(entry(rec["appId"], rec["kind"], rec["size"], v["sku"], v["sellingAmountMinor"],
+                             {"status": "historical-snapshot", "verified": False,
+                              "observedAt": v["observedAt"], "sourceUrl": v["evidence"]["url"]}))
+        prov["historical"].append({"appId": rec["appId"], "size": rec.get("variantSize") or rec["size"],
+                                   "sku": v["sku"], "amountMinor": v["sellingAmountMinor"],
+                                   "observedAt": v["observedAt"], "sourceUrl": v["evidence"]["url"]})
+    for app_id, sizes in (fills.get("mattresses") or {}).items():
+        for size, f in sizes.items():
+            if size not in MATTRESS_SIZES or size in m_skus.get(app_id, {}):
+                continue
+            sku = "DEMO-" + app_id.upper() + "-" + size.upper()
+            entries.append(entry(app_id, "mattress", size, sku, f["amountMinor"],
+                                 {"status": "illustrative", "verified": False, "method": f["method"]}))
+            m_skus.setdefault(app_id, {})[size] = sku
+            prov["illustrative"].append({"appId": app_id, "size": size, "sku": sku,
+                                         "amountMinor": f["amountMinor"], "method": f["method"]})
+    for app_id, sizes in (fills.get("accessories") or {}).items():
+        have = a_skus.get(app_id) or {}
+        for size, f in sizes.items():
+            sku = "DEMO-" + app_id.upper() + ("" if size == "*" else "-" + size.upper())
+            if size == "*":
+                if have:
+                    continue
+                a_skus[app_id] = {"sku": sku}
+            else:
+                if "sku" in have or size in (have.get("bySize") or {}):
+                    continue
+                a_skus.setdefault(app_id, {"bySize": {}}).setdefault("bySize", {})[size] = sku
+            entries.append(entry(app_id, "accessory", None, sku, f["amountMinor"],
+                                 {"status": "illustrative", "verified": False, "method": f["method"]}))
+            prov["illustrative"].append({"appId": app_id, "size": size, "sku": sku,
+                                         "amountMinor": f["amountMinor"], "method": f["method"]})
+    return entries, m_skus, a_skus, prov
+
+
+def demo_presentation(demo):
+    """Customer-facing pricing copy for the demo: the provenance says what the
+    figures are (historical snapshot + illustrative), never 'verified'."""
+    return {
+        "totals": {
+            "merchandise-label": {"en": "Merchandise subtotal", "es": "Subtotal de mercancía"},
+            "excludes": {"en": "Merchandise only. Tax, delivery and setup are not included.",
+                         "es": "Solo mercancía. No incluye impuestos, entrega ni instalación."},
+            "incomplete": {"en": "A subtotal is not available until every selected item has a price.",
+                           "es": "El subtotal no está disponible hasta que cada artículo "
+                                 "seleccionado tenga un precio."},
+            "provenance": copy.deepcopy(demo["priceSource"]),
+            "line-label": {"en": "Selected items", "es": "Artículos seleccionados"},
+            "compare-price-label": {"en": "Price", "es": "Precio"},
+            "compare-difference-label": {"en": "Price difference", "es": "Diferencia de precio"},
+        },
+        "assumptions": [
+            {"id": "size", "en": "Priced for the size selected in this consultation.",
+             "es": "Precio para el tamaño seleccionado en esta consulta."},
+        ],
+        # No per-price demo note: everyone in the room knows this is a demo
+        # (Blake, 2026-10-12). The illustrative mark and the provenance line
+        # still identify the illustrative prices.
+        "disclosures": [],
+        "states": {
+            "price-unavailable": {"en": "Price unavailable", "es": "Precio no disponible"},
+            "quote-only": {"en": "Quote in store", "es": "Cotización en tienda"},
+            "threshold-unknown": {"en": "A minimum purchase may apply",
+                                  "es": "Puede aplicar una compra mínima"},
+            "threshold-not-met": {"en": "This selection is below the minimum for this option.",
+                                  "es": "Esta selección está por debajo del mínimo "
+                                        "para esta opción."},
+        },
+    }
+
+
+def _bilingual(v):
+    return isinstance(v, dict) and all(isinstance(v.get(k), str) and v.get(k).strip() for k in ("en", "es"))
+
+
+def validate_payment_demo(config, catalog, accessories):
+    """The DEMO contract (structure and arithmetic, not approval): returns a
+    list of errors, empty when the demo may be served. Demo mode waives the
+    real-offer approval requirements only; amounts, identity, sizes, methods
+    and calculation inputs must still be exactly right."""
+    errs = []
+    shipped = _load(os.path.join(REPO, "data", "store-config.json"))
+    d = config.get("illustrativeDemo")
+    if not isinstance(d, dict):
+        return ["illustrativeDemo missing"]
+    if d.get("contract") != DEMO_CONTRACT or d.get("enabled") is not True:
+        errs.append("illustrativeDemo contract/enabled wrong")
+    if not (isinstance(d.get("contextNonce"), str) and re.fullmatch(r"[0-9a-f]{32}", d["contextNonce"])):
+        errs.append("illustrativeDemo.contextNonce must be 32 hex characters")
+    try:
+        assembled = _parse(d.get("assembledAt"))
+        if assembled.tzinfo is None:
+            errs.append("assembledAt has no offset")
+    except (TypeError, ValueError):
+        assembled = None
+        errs.append("assembledAt unparseable")
+    for k in ("notice", "priceSource", "paymentSource"):
+        if not _bilingual(d.get(k)):
+            errs.append(f"illustrativeDemo.{k} must carry en and es")
+    if config.get("gasUrl"):
+        errs.append("gasUrl must stay blank")
+    if "reviewTools" in config:
+        errs.append("reviewTools must not appear in the demo")
+    pr = config.get("pricing") or {}
+    sp_ = shipped["pricing"]
+    for key in ("authority", "freshness", "sourcePolicy", "purchaseAssessment"):
+        if pr.get(key) != sp_.get(key):
+            errs.append(f"pricing.{key} must be the shipped record (no approval is written)")
+    pres = pr.get("presentation") or {}
+    if pres.get("status") != sp_["presentation"]["status"] or pres.get("approvals") != sp_["presentation"]["approvals"]:
+        errs.append("pricing.presentation status/approvals must be the shipped records")
+    if pr.get("formulas") != []:
+        errs.append("pricing.formulas must be empty (no formula approval is written)")
+    hosts = set(_load(os.path.join(REPO, "tools", "source_hosts.json"))["priceSourceHosts"])
+    mats = {m["id"]: m for t in TIER_ORDER for m in catalog.get(t, [])}
+    accs = {a["id"]: a for a in accessories}
+    seen = set()
+    products = pr.get("products") or []
+    if not products:
+        errs.append("pricing.products is empty")
+    for i, e in enumerate(products):
+        tag = f"pricing.products[{i}]"
+        pid, kind, sku, size = e.get("productId"), e.get("productKind"), e.get("sku"), e.get("size")
+        if not (isinstance(sku, str) and sku.strip() == sku and sku):
+            errs.append(f"{tag}: sku invalid"); continue
+        if sku in seen:
+            errs.append(f"{tag}: duplicate sku {sku}")
+        seen.add(sku)
+        if kind == "mattress":
+            if pid not in mats or size not in MATTRESS_SIZES or (mats[pid].get("skus") or {}).get(size) != sku:
+                errs.append(f"{tag}: mattress identity/size does not match the catalog")
+        elif kind == "accessory":
+            a = accs.get(pid)
+            ok = a is not None and size is None and (a.get("sku") == sku or sku in (a.get("accessorySkus") or {}).values())
+            if not ok:
+                errs.append(f"{tag}: accessory identity does not match the catalog")
+        else:
+            errs.append(f"{tag}: productKind invalid")
+        price = e.get("price") or {}
+        amt = price.get("amountMinor")
+        if not (isinstance(amt, int) and not isinstance(amt, bool) and 0 < amt <= 1_000_000_000):
+            errs.append(f"{tag}: amountMinor not admissible")
+        if price.get("currency") != "USD" or price.get("kind") != "regular":
+            errs.append(f"{tag}: currency/kind invalid")
+        ev = e.get("evidence") or {}
+        if ev.get("status") not in DEMO_PRICE_STATUSES or ev.get("verified") is not False:
+            errs.append(f"{tag}: evidence must be an unverified demo status")
+        if ev.get("status") == "historical-snapshot":
+            try:
+                ob = _parse(ev.get("observedAt"))
+                if ob.tzinfo is None or (assembled and ob > assembled):
+                    errs.append(f"{tag}: observedAt invalid or after assembly")
+            except (TypeError, ValueError):
+                errs.append(f"{tag}: observedAt unparseable")
+            host = (urllib.parse.urlparse(ev.get("sourceUrl") or "").hostname or "").lower()
+            if not (str(ev.get("sourceUrl", "")).startswith("https://") and host in hosts):
+                errs.append(f"{tag}: historical source not an allowlisted https page")
+            if "verifiedAt" in ev:
+                errs.append(f"{tag}: a historical entry carries no verification time")
+        if ev.get("status") == "illustrative":
+            if not (isinstance(ev.get("method"), str) and ev["method"].strip()):
+                errs.append(f"{tag}: illustrative entry must name its method")
+            if "observedAt" in ev or "sourceUrl" in ev or "verifiedAt" in ev:
+                errs.append(f"{tag}: illustrative entry claims an observation/source")
+        if (e.get("clearance") or {}).get("status") != "not-cleared":
+            errs.append(f"{tag}: clearance must be not-cleared")
+    fin = config.get("financing") or {}
+    src = _load(os.path.join(REPO, "incoming", "lacks_financing.json"))["financing"]
+    if fin.get("exactPromotionsEnabled") is not False:
+        errs.append("financing.exactPromotionsEnabled must stay false")
+    if fin.get("verifiedAt") != src.get("verifiedAt"):
+        errs.append("financing.verifiedAt must be the source's own stamp")
+    real = [p for p in fin.get("plans", []) if p.get("demo") is not True]
+    if real != [p for p in src["plans"] if p.get("kind") != "open-end-promotional-credit"]:
+        errs.append("real (non-demo) plans must be the canonical records unchanged")
+    demos = [p for p in fin.get("plans", []) if p.get("demo") is True]
+    if not demos:
+        errs.append("no example plans")
+    for p in demos:
+        tag = f"financing.plans[{p.get('id')}]"
+        c = p.get("demoCalculation") or {}
+        apr, term = p.get("apr"), p.get("termMonths")
+        if p.get("verified") is not False or p.get("verificationStatus") != "illustrative" \
+                or p.get("paymentCalculationEnabled") is not False or p.get("provider") != "Demo":
+            errs.append(f"{tag}: example plans are unverified, calculation off, provider Demo")
+        if "publishedPaymentFactor" in p or "verifiedAt" in p or "sourceUrl" in p:
+            errs.append(f"{tag}: an example plan claims publication/verification")
+        if not (isinstance(apr, (int, float)) and not isinstance(apr, bool) and 0 <= apr <= 100):
+            errs.append(f"{tag}: apr invalid")
+        if not (isinstance(term, int) and not isinstance(term, bool) and 1 <= term <= 120):
+            errs.append(f"{tag}: termMonths invalid")
+        if c.get("mode") not in DEMO_CALC_MODES or c.get("rounding") != DEMO_ROUNDING:
+            errs.append(f"{tag}: calculation method/rounding unsupported")
+        elif c["mode"] == "published-equal-division":
+            if apr != 0 or "factor" in c:
+                errs.append(f"{tag}: equal division is 0% APR with no factor")
+        else:
+            f = c.get("factor")
+            if not (isinstance(f, float) and 0 < f < 1 and round(f, 6) == f):
+                errs.append(f"{tag}: factor invalid")
+            elif isinstance(apr, (int, float)) and isinstance(term, int) and f != _amortization_factor(apr, term):
+                errs.append(f"{tag}: factor is not the amortization factor for its APR and term")
+        for k in ("headline", "detail", "disclosure"):
+            if not _bilingual(p.get(k)):
+                errs.append(f"{tag}.{k} must carry en and es")
+        if _bilingual(p.get("detail")) and not ("Illustrative" in p["detail"]["en"]
+                                                and "ilustrativo" in p["detail"]["es"].lower()):
+            errs.append(f"{tag}: detail must say it is illustrative")
+    return errs
+
+
+def build_demo(start: datetime):
+    """(config, catalog, verdicts, accessories) for --state demo."""
+    demo = _load(DEMO_CONFIG)
+    shipped = _load(os.path.join(REPO, "data", "store-config.json"))
+    catalog = copy.deepcopy(_load(os.path.join(REPO, "data", "mattresses.json")))
+    accessories = _load(os.path.join(REPO, "data", "accessories.json"))
+    entries, m_skus, a_skus, prov = build_demo_products(start)
+    for tier in TIER_ORDER:
+        for m in catalog.get(tier, []):
+            if m_skus.get(m["id"]):
+                m["skus"] = dict(m_skus[m["id"]])
+    for a in accessories:
+        got = a_skus.get(a["id"])
+        if got and "sku" in got:
+            a["sku"] = got["sku"]
+        elif got:
+            a["accessorySkus"] = dict(got["bySize"])
+    pr = copy.deepcopy(shipped["pricing"])
+    # DISPLAY switches only, in memory, as every harness state does. Approval,
+    # freshness, source policy and clearance stay the shipped records.
+    pr["enabled"] = True
+    pr["displayEnabled"] = True
+    pr["surfaces"] = {k: True for k in pr["surfaces"]}
+    pr["products"] = entries
+    pr["presentation"].update(demo_presentation(demo))
+    config = copy.deepcopy(shipped)
+    config["pricing"] = pr
+    config["financing"] = demo_financing()
+    # Published retailer policies (pickup, comfort promise), as captured.
+    config["salesPolicies"] = review_sales_policies()
+    config["illustrativeDemo"] = {
+        "contract": DEMO_CONTRACT, "enabled": True,
+        "contextNonce": secrets.token_hex(16),
+        "assembledAt": start.isoformat(timespec="seconds"),
+        "notice": copy.deepcopy(demo["notice"]),
+        "priceSource": copy.deepcopy(demo["priceSource"]),
+        "paymentSource": copy.deepcopy(demo["paymentSource"]),
+    }
+    demo_errors = validate_payment_demo(config, catalog, accessories)
+    hosts = _load(os.path.join(REPO, "tools", "source_hosts.json"))
+    p_rep = validation.validate_pricing(config, now=start, allowed_source_hosts=hosts["priceSourceHosts"],
+                                        financing_source_hosts=hosts["financingSourceHosts"],
+                                        mattress_ids={m["id"] for t in TIER_ORDER for m in catalog[t]},
+                                        accessory_ids={a["id"] for a in accessories})
+    f_rep = validation.validate_financing(config, allowed_source_hosts=hosts["financingSourceHosts"])
+    s_rep = validation.validate_store_config(config)
+    verdicts = {
+        "demo_ok": not demo_errors, "demo_errors": demo_errors,
+        # The production validators must REFUSE the demo data, each on its own
+        # ground: no approval, no current verification, demo-only fields.
+        "production_refuses": (not p_rep.ok) and (not f_rep.ok) and (not s_rep.ok),
+        "production_errors": {"pricing": list(p_rep.errors)[:20], "financing": list(f_rep.errors)[:20],
+                              "storeConfig": list(s_rep.errors)[:20]},
+        "financing_ok": f_rep.ok, "financing_errors": [], "dark_ok": False, "dark_errors": [],
+        "served_refused": (not p_rep.ok) and (not f_rep.ok),
+        "websiteCoverage": prov,
+    }
+    return config, catalog, verdicts, accessories
+
+
 def build_injected(state: str, start: datetime):
     """Return (config, catalog, verdicts) for a drill state at server start.
 
@@ -658,6 +1130,9 @@ def build_injected(state: str, start: datetime):
         raise ValueError(f"unknown state {state!r}; one of {STATES}")
     if start.tzinfo is None:
         raise ValueError("start instant must be timezone-aware")
+    if state == "demo":
+        # The payment demo is NOT a drill: its own builder, its own contract.
+        return build_demo(start)
     fx = _load(FIXTURE)
     delta = start - _parse(fx["_meta"]["clock"])
     # Keep every stamp one hour behind the server start so clock skew on the
@@ -991,6 +1466,10 @@ def build_injected(state: str, start: datetime):
 
 def dark_form_acceptable(state: str, verdicts: dict) -> bool:
     """What the harness requires of a state's dark form before serving it."""
+    if state == "demo":
+        # The demo contract is valid AND the production validators refuse
+        # the demo data (it carries no approval and no current verification).
+        return bool(verdicts.get("demo_ok")) and bool(verdicts.get("production_refuses"))
     if state == "review":
         # Real evidence on its own stamps: an aged price is refused by name
         # and simply does not render. Any OTHER refusal stops the build.
@@ -1003,7 +1482,7 @@ def dark_form_acceptable(state: str, verdicts: dict) -> bool:
 
 
 def make_handler(config_bytes: bytes, catalog_bytes: bytes, accessories_bytes: bytes = None,
-                 device: dict = None):
+                 device: dict = None, page: bytes = None):
     """`device` (device mode only) = {"allowed_hosts": bytes, "page": bytes}:
     the in-memory allowlist and the banner-bearing page. None (the default,
     loopback mode) intercepts nothing but the three data documents."""
@@ -1019,6 +1498,9 @@ def make_handler(config_bytes: bytes, catalog_bytes: bytes, accessories_bytes: b
                 return catalog_bytes, "application/json; charset=utf-8"
             if path == INTERCEPT_ACCESSORIES and accessories_bytes is not None:
                 return accessories_bytes, "application/json; charset=utf-8"
+            if device is None and page is not None and path in INTERCEPT_PAGE:
+                # loopback demo only: the page with its operator area
+                return page, "text/html; charset=utf-8"
             if device is not None:
                 if path == INTERCEPT_ALLOWED_HOSTS:
                     return device["allowed_hosts"], "text/javascript; charset=utf-8"
@@ -1164,9 +1646,16 @@ def main(argv=None):
             return 2
     start = datetime.now(timezone.utc).astimezone()
     config, catalog, verdicts, accessories = build_injected(args.state, start)
+    operator = None
+    if args.state == "demo":
+        cov = verdicts.get("websiteCoverage") or {}
+        operator = {"historical": len(cov.get("historical", [])), "illustrative": len(cov.get("illustrative", [])),
+                    "plans": sum(1 for p in config["financing"]["plans"] if p.get("demo") is True),
+                    "contextNonce": config["illustrativeDemo"]["contextNonce"],
+                    "assembledAt": config["illustrativeDemo"]["assembledAt"]}
     if not dark_form_acceptable(args.state, verdicts):
         print("REFUSED: the drill state's dark form does not validate as its state requires:")
-        for e in verdicts["financing_errors"] + verdicts["dark_errors"]:
+        for e in verdicts.get("demo_errors", []) + verdicts["financing_errors"] + verdicts["dark_errors"]:
             print("  -", e)
         return 3
     if args.state != "dark" and not verdicts["served_refused"]:
@@ -1179,10 +1668,12 @@ def main(argv=None):
             print("REFUSED: the served store-config carries a non-blank gasUrl; the device "
                   "rehearsal serves only a configuration that cannot send.")
             return 3
-        device = device_bundle(bind, args.state)
+        device = device_bundle(bind, args.state, operator)
     try:
         server = ThreadingHTTPServer((bind, args.port),
-                                     make_handler(encode(config), encode(catalog), encode(accessories), device))
+                                     make_handler(encode(config), encode(catalog), encode(accessories), device,
+                                                  rehearsal_page("demo", bind, operator)
+                                                  if (args.state == "demo" and device is None) else None))
     except OSError as exc:
         print(f"REFUSED: cannot bind {bind}:{args.port} ({exc}). A device rehearsal address must be "
               f"one this machine owns.")
@@ -1203,6 +1694,11 @@ def main(argv=None):
         print(f"  price capture: {os.path.dirname(SNAPSHOT)}")
         if verdicts.get("dark_stale_named"):
             print("  website prices: STALE (older than maxAgeDays) - no price, subtotal or payment renders")
+    elif args.state == "demo":
+        print("PAYMENT DEMO (owner demo-first direction 2026-10-05). Prices: historical lacks.com")
+        print("product pages observed 2026-10-03 plus ILLUSTRATIVE fills (marked with a diamond). Payments:")
+        print("EXAMPLE plans (unverified) on the governed payment arithmetic - not a Lacks or lender offer. Not for")
+        print("showroom use; nothing is sent or saved. Open 'Operator' (top-left) to load a scenario.")
     elif args.state == "payments":
         print("Every price shown is a FIXTURE placeholder; the payment figures are computed")
         print("from FIXTURE prices with the published factor. NOT a Lacks price or approval.")
@@ -1213,13 +1709,16 @@ def main(argv=None):
     print(f"  URL:            {url}")
     if args.device is not None:
         print("  DEVICE REHEARSAL: open that URL in a Safari TAB on an iPad on the same private")
-        print("  network. The page carries a NON-SHIPPING banner; the domain-lock allowlist")
+        print("  network. " + ("The page carries an 'Operator' tab (no demo notice); "
+                            if args.state == "demo" else "The page carries a NON-SHIPPING banner; ")
+              + "the domain-lock allowlist")
         print("  is served in memory for this address only; gasUrl is blank (nothing sends);")
         print("  only the app's own paths are served (no docs/, incoming/, tools/, .git, listings).")
         print("  Anyone on this network can open it while the server runs: use a phone hotspot")
         print("  or an isolated access point, and stop it when done. The idle window cannot be")
         print("  shortened off loopback, so the wipe rehearsal takes the full policy window.")
-    print(f"  Answer the quiz with mattress size = {DRILL_SIZE}; other sizes resolve nothing.")
+    if args.state != "demo":
+        print(f"  Answer the quiz with mattress size = {DRILL_SIZE}; other sizes resolve nothing.")
     print("  exactPromotionsEnabled " + ("is TRUE in memory (payment states)" if args.state in PAYMENT_STATES
           else "stays false") + "; gasUrl stays blank (preview email only).")
     print("  Stop with Ctrl+C.")

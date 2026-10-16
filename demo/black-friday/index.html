@@ -11772,6 +11772,391 @@
       background: transparent;
       border: 1px solid var(--color-text-muted);
     }
+
+    /* ===== PURCHASE STUDIO (payment demo, 2026-10-05) =====
+       The priced Sleep System and its payment choices on the Consultation
+       Summary. Theme tokens only, so it follows the active theme; the
+       store's primary colour marks the selected choice. */
+    .hf2-review-section.ps {
+      width: min(1120px, 100%);
+      padding: 1.4rem 1.4rem 1.2rem;
+      border-radius: 14px;
+      border-color: color-mix(in srgb, var(--store-primary) 45%, var(--color-border));
+      box-shadow: 0 18px 44px -28px rgba(47, 39, 30, 0.45);
+    }
+    .ps-kicker {
+      display: block;
+      font: 600 0.72rem/1.3 var(--font-sans);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .ps-head {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+      padding-bottom: 1rem;
+      margin-bottom: 1.1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ps-title {
+      margin: 0;
+      font: 400 clamp(1.5rem, 2.6vw, 2rem)/1.15 var(--font-serif);
+      color: var(--color-text);
+    }
+    .ps-purchase { margin-top: 0.4rem; }
+    .ps-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-areas: "main pay" "changes pay";
+      gap: 0 1.6rem;
+      align-items: start;
+    }
+    .ps-col--main { grid-area: main; }
+    .ps-col--changes { grid-area: changes; }
+    .ps-col--pay {
+      grid-area: pay;
+      position: sticky;
+      top: calc(var(--session-utility-clearance, 84px) + 8px);
+      padding: 1.1rem;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--color-surface-alt) 55%, transparent);
+      border: 1px solid var(--color-border);
+    }
+    /* A container query, not a viewport breakpoint: the studio stacks when
+       its OWN width is narrow (portrait), whatever the page around it does. */
+    .hf2-review-section.ps { container-type: inline-size; }
+    /* the payment column is its own container: the comparison stacks by the
+       column's width, not the studio's */
+    .ps-col--pay { container-type: inline-size; }
+    @container (max-width: 900px) {
+      .ps-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "pay" "changes"; }
+      .ps-col--pay { position: static; margin-top: 1rem; }
+      .ps-chips--size { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .ps-block { margin-bottom: 1.15rem; }
+    .ps-hero {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.15rem;
+    }
+    .ps-hero__media {
+      aspect-ratio: 4 / 3;
+      border-radius: 10px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--color-surface-alt) 70%, transparent);
+    }
+    .ps-hero__img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .ps-hero__name { margin: 0; font: 400 1.35rem/1.2 var(--font-serif); color: var(--color-text); }
+    .ps-hero__meta { margin: 0.2rem 0 0; color: var(--color-text-muted); font-size: 0.9rem; }
+    .ps-hero__price {
+      margin: 0.45rem 0 0;
+      font: 600 1.6rem/1.1 var(--font-sans);
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text);
+    }
+    .ps-muted { color: var(--color-text-muted); font-weight: 500; font-size: 0.95rem; }
+    .ps-illus { color: var(--ps-ink-accent); font-size: 0.8em; font-weight: 600; margin-left: 0.15em; }
+    .ps-chips, .ps-picks, .ps-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ps-chips--size { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ps-chips--size .ps-chip { min-width: 0; }
+    .hf2-review-section.ps { --ps-ink-accent: color-mix(in srgb, var(--store-primary) 28%, #2b1d00); }
+    .ps-hero__line { margin: 0.35rem 0 0; font-size: 0.95rem; font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; }
+    .ps-opt--none { border-style: dashed; align-items: center; text-align: center; }
+    .ps-opt--none .ps-opt__name { font-size: 1rem; }
+    .ps-chip, .ps-pick, .ps-opt, .ps-card, .ps-qty__btn {
+      touch-action: manipulation;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      transition: border-color var(--dfm-quick) ease, background-color var(--dfm-quick) ease,
+                  box-shadow var(--dfm-quick) ease, transform var(--dfm-quick) ease;
+    }
+    .ps-chip {
+      min-height: 52px;
+      min-width: 88px;
+      padding: 0.4rem 0.8rem;
+      border-radius: 10px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: left;
+    }
+    .ps-chip--sm { min-height: 44px; min-width: 64px; align-items: center; font-weight: 600; font-size: 0.9rem; }
+    .ps-chip__name { font-weight: 600; font-size: 0.85rem; }
+    .ps-chip__price { font-size: 0.875rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+    .ps-pick__delta, .ps-opt__delta { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+    .ps-opt {
+      position: relative;
+      flex: 1 1 150px;
+      max-width: 220px;
+      min-height: 64px;
+      padding: 0.55rem 0.7rem;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 0.15rem;
+    }
+    .ps-opt--none { justify-content: center; }
+    .ps-opt__img { width: 100%; height: 64px; object-fit: contain; margin-bottom: 0.25rem; border-radius: 6px;
+      background: color-mix(in srgb, var(--color-surface-alt) 60%, transparent); }
+    .ps-opt__name { font-weight: 600; font-size: 0.85rem; line-height: 1.25; }
+    .ps-opt__price { font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+    .ps-opt.is-unpriced .ps-opt__price { color: var(--color-text-muted); }
+    .ps-opt__tick { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: var(--ps-ink-accent); }
+    .ps-chip.is-on, .ps-pick.is-on, .ps-opt.is-on, .ps-card.is-on {
+      border-color: var(--accent-ink);
+      box-shadow: 0 0 0 2px var(--accent-ink) inset;
+      background: color-mix(in srgb, var(--store-primary) 8%, var(--color-surface));
+    }
+    .ps-chip:active, .ps-pick:active, .ps-opt:active, .ps-card:active { transform: scale(0.985); }
+    .ps-qty { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .ps-qty__btn { min-width: 44px; min-height: 44px; border-radius: 8px; font-size: 1.1rem; line-height: 1; }
+    .ps-qty__btn[disabled] { opacity: 0.35; cursor: default; }
+    .ps-qty__fixed { padding: 0 0.4rem; }
+    .ps-qty__n { min-width: 2ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .ps-subtotal {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding-top: 0.85rem;
+      font-size: 1rem;
+    }
+    .ps-subtotal strong { font: 700 1.5rem/1.1 var(--font-sans); font-variant-numeric: tabular-nums; }
+    .ps-subtotal.is-incomplete strong { font-size: 1rem; color: var(--color-text-muted); }
+    .ps-fine { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.45; }
+    .ps-warn { margin: 0.4rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-text); }
+    .ps-note { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--color-text); line-height: 1.45; }
+    .ps-down { margin-bottom: 1rem; }
+    .ps-down__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+    .ps-down__cur { font-weight: 600; color: var(--color-text-muted); }
+    .ps-down__input {
+      width: 7.5rem;
+      min-height: 44px;
+      padding: 0 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: 600 1rem var(--font-sans);
+      font-variant-numeric: tabular-nums;
+    }
+    .ps-down__input[disabled], .ps-chip[disabled] { opacity: 0.45; cursor: default; }
+    .ps-down__msg { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); }
+    .ps-down__msg.is-error { color: var(--color-text); font-weight: 700; }
+    .ps-down__msg.is-error::before { content: "\26A0\FE0E  "; }
+    .ps-fig { display: flex; flex-direction: column; }
+    .ps-fig__label { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-fig__value { font: 700 1.15rem/1.25 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
+    .ps-fig__sub { font-size: 0.78rem; color: var(--color-text-muted); }
+    .ps-sheet { display: flex; flex-direction: column; gap: 0.6rem; }
+    .ps-sheet__plans { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+    .ps-sheet__plan { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 1rem; align-items: baseline;
+      padding: 0.6rem 0.75rem; border: 1px solid var(--color-border); border-radius: 10px; }
+    .ps-sheet__label { font-weight: 700; font-size: 0.9rem; }
+    .ps-sheet__amount { font: 700 1.1rem/1.2 var(--font-sans); font-variant-numeric: tabular-nums; text-align: right; }
+    .ps-sheet__sub { grid-column: 1 / -1; font-size: 0.85rem; color: var(--color-text); font-variant-numeric: tabular-nums; }
+    .ps-sheet__go { align-self: flex-start; min-height: 48px; }
+    .ps-monthly-line { margin: 0.2rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-text);
+      font-variant-numeric: tabular-nums; }
+    .ps-source { margin: 0.55rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); }
+    .ps-edit { margin-top: 0.9rem; min-height: 44px; }
+    .ps-flash { animation: psFlash var(--dfm-settle) var(--dfm-e-settle); }
+    @keyframes psFlash { from { background-color: color-mix(in srgb, var(--store-primary) 18%, transparent); } to { background-color: transparent; } }
+    @media (prefers-reduced-motion: reduce) {
+      .ps-chip, .ps-pick, .ps-opt, .ps-card, .ps-qty__btn { transition: none; }
+      .ps-chip:active, .ps-pick:active, .ps-opt:active, .ps-card:active { transform: none; }
+      .ps-flash { animation: none; }
+    }
+    @media (forced-colors: active) {
+      .ps-chip.is-on, .ps-pick.is-on, .ps-opt.is-on, .ps-card.is-on {
+        outline: 3px solid Highlight;
+        outline-offset: -3px;
+      }
+    }
+
+    /* ----- Purchase studio, usability pass (2026-10-06): one purchase, one
+       payment centerpiece, a compact comparison and a focused change sheet. */
+    .ps-hero { grid-template-columns: 140px minmax(0, 1fr) auto; }
+    .ps-change { align-self: start; min-height: 48px; white-space: nowrap; }
+    .ps-hero__badge { margin: 0.3rem 0 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+      color: var(--ps-ink-accent); }
+    .ps-rows { list-style: none; margin: 0; padding: 0; }
+    .ps-row {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto auto;
+      grid-template-areas: "img text qty amount" "img actions actions actions";
+      gap: 0.15rem 0.85rem;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ps-row__img { grid-area: img; width: 52px; height: 44px; object-fit: contain; border-radius: 6px;
+      background: color-mix(in srgb, var(--color-surface-alt) 60%, transparent); }
+    .ps-row__text { grid-area: text; display: flex; flex-direction: column; min-width: 0; }
+    .ps-row__cat { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-row__name { font-weight: 600; font-size: 0.95rem; }
+    .ps-row__meta { font-size: 0.875rem; color: var(--color-text-muted); }
+    .ps-row__why { font-size: 0.85rem; color: var(--color-text); line-height: 1.35; }
+    .ps-row .ps-qty { grid-area: qty; }
+    .ps-row .ps-qty__fixed { grid-area: qty; }
+    .ps-row__amount { grid-area: amount; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .ps-row__actions { grid-area: actions; display: flex; gap: 0.25rem; }
+    .ps-row--split, .ps-row--add { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+    .ps-link {
+      min-height: 44px; min-width: 44px; padding: 0 0.6rem; border: 0; background: transparent;
+      color: var(--color-text); font: 600 0.85rem var(--font-sans); text-decoration: underline;
+      text-underline-offset: 3px; cursor: pointer; touch-action: manipulation;
+    }
+    .ps-add {
+      min-height: 48px; padding: 0 1rem; border: 1px dashed var(--color-border); border-radius: 10px;
+      background: transparent; color: var(--color-text); font: 600 0.9rem var(--font-sans); cursor: pointer;
+      touch-action: manipulation;
+    }
+    /* the selected-payment centerpiece */
+    .ps-center {
+      display: flex; flex-direction: column; gap: 0.2rem;
+      padding: 1rem 1.1rem; margin-bottom: 0.9rem; border-radius: 12px;
+      background: var(--color-surface); border: 2px solid var(--accent-ink);
+    }
+    .ps-center__label { font: 700 0.8rem/1.3 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-center__big { font: 700 clamp(1.9rem, 4vw, 2.4rem)/1.1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
+    .ps-center__big--muted { font-size: 1.4rem; color: var(--color-text-muted); }
+    .ps-center__terms { font-size: 0.95rem; font-weight: 600; color: var(--color-text); }
+    .ps-center__figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-top: 0.7rem;
+      padding-top: 0.7rem; border-top: 1px solid var(--color-border); }
+    .ps-center .ps-fig__value { font-size: 1.15rem; }
+    .ps-center .ps-fig__label { font-size: 0.75rem; }
+    .ps-center .ps-fig__sub { font-size: 0.875rem; line-height: 1.4; }
+    /* total paid is the figure to read beside the monthly payment */
+    .ps-center [data-ps-fig="cost"] .ps-fig__value { font-size: 1.3rem; }
+    /* Clearance for the fixed language/Restart bar: whatever focus or a
+       scroll brings into view in the studio stops BELOW the bar instead of
+       under it. The bar itself, its position and its touch handling are
+       unchanged. */
+    #purchaseStudio, #purchaseStudio button, #purchaseStudio input, #purchaseStudio summary,
+    #purchaseStudio [tabindex], #purchaseStudio .ps-center, #purchaseStudio .ps-confirm {
+      scroll-margin-top: calc(var(--session-utility-clearance, 84px) + 8px);
+      scroll-margin-bottom: 16px;
+    }
+    .ps-details { margin: 0 0 1rem; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+    .ps-details__summary { min-height: 44px; display: flex; align-items: center; padding: 0 0.9rem; cursor: pointer;
+      font: 600 0.9rem var(--font-sans); touch-action: manipulation; }
+    .ps-details__body { padding: 0 0.9rem 0.8rem; }
+    .ps-dl { margin: 0; display: grid; gap: 0.35rem; }
+    .ps-dl > div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9rem; }
+    .ps-dl dt { color: var(--color-text-muted); }
+    .ps-dl dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+    /* the comparison */
+    .ps-cmp { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.4rem; }
+    .ps-cmp__row {
+      width: 100%; min-height: 56px; display: grid;
+      /* choice | monthly | total paid (interest beneath) - explicit areas
+         per cell class, never sibling positions */
+      grid-template-columns: 1.4rem minmax(0, 1fr) minmax(5.5rem, auto) minmax(8.5rem, 1.05fr);
+      grid-template-areas: "tick name main total";
+      align-items: center; gap: 0 0.8rem; padding: 0.6rem 0.8rem; text-align: left;
+      border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
+      color: var(--color-text); font-family: var(--font-sans); cursor: pointer; touch-action: manipulation;
+    }
+    .ps-cmp__row.is-on { border-color: var(--accent-ink); box-shadow: 0 0 0 2px var(--accent-ink) inset;
+      background: color-mix(in srgb, var(--store-primary) 8%, var(--color-surface)); }
+    .ps-cmp__tick { grid-area: tick; font-weight: 700; color: var(--accent-ink); }
+    .ps-cmp__name { grid-area: name; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .ps-cmp__choice { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
+    .ps-cmp__apr { font-size: 0.875rem; font-weight: 600; color: var(--color-text); }
+    .ps-cmp__downnote { margin: 0 0 0.45rem; font-size: 0.875rem; color: var(--color-text); }
+    .ps-cmp__sel { font-size: 0.75rem; font-weight: 700; color: var(--ps-ink-accent); text-transform: uppercase; letter-spacing: 0.05em; }
+    .ps-cmp__main { grid-area: main; font: 700 1.15rem/1.2 var(--font-sans); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .ps-cmp__main--text { font-size: 0.9rem; font-weight: 600; white-space: normal; }
+    .ps-cmp__total { grid-area: total; display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; font-variant-numeric: tabular-nums; }
+    .ps-cmp__total-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-cmp__total-amt { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+    .ps-cmp__interest { font-size: 0.875rem; color: var(--color-text); }
+    .ps-cmp__total--note { font-size: 0.875rem; color: var(--color-text); }
+    @container (max-width: 400px) {
+      .ps-cmp__row { grid-template-columns: 1.4rem minmax(0, 1fr) auto;
+        grid-template-areas: "tick name main" "tick total total"; row-gap: 0.4rem; }
+    }
+    @container (max-width: 560px) {
+      .ps-hero { grid-template-columns: 96px minmax(0, 1fr); }
+      .ps-change { grid-column: 1 / -1; justify-self: start; }
+    }
+    .ps-hero__why { margin: 0.35rem 0 0; font-size: 0.9rem; line-height: 1.4; color: var(--color-text); max-width: 46ch; }
+    .ps-opt__config, .ps-preview__config { font-size: 0.85rem; font-weight: 600; color: var(--color-text); }
+    .ps-preview__config { margin: 0.35rem 0 0; }
+    .ps-sheet__more { width: 100%; }
+    .ps-return { position: sticky; top: calc(var(--session-utility-clearance, 84px) + 8px); z-index: 5;
+      display: flex; justify-content: flex-start; margin: 0 0 1rem; }
+    .ps-return__btn { min-height: 48px; }
+    .ps-confirm { margin: 0 0 0.7rem; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+      line-height: 1.4; color: var(--color-text); font-variant-numeric: tabular-nums;
+      border-left: 3px solid var(--accent-ink); background: color-mix(in srgb, var(--store-primary) 8%, var(--color-surface)); }
+    /* the change sheet */
+    .ps-sheet-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(20, 18, 15, 0.42); }
+    .ps-sheet-dialog {
+      position: fixed; z-index: 2001; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: hidden;
+      display: flex; flex-direction: column;
+      padding: 1.2rem 1.3rem; border-radius: 16px; background: var(--landing-paper, #FBF7EF); color: var(--landing-ink, #2F271E);
+      box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45);
+      --color-text: var(--landing-ink, #2F271E); --color-text-muted: var(--landing-muted, #685C4D);
+      --color-surface: #FFFDF8; --color-border: rgba(104, 84, 60, 0.28);
+      --ps-ink-accent: color-mix(in srgb, var(--store-primary) 28%, #2b1d00);
+    }
+    .ps-sheet__title { margin: 0 0 0.2rem; font: 400 1.5rem/1.2 var(--font-serif); }
+    .ps-sheet__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.6rem 1rem; }
+    .ps-sheet__titles { flex: 1 1 14rem; min-width: 0; }
+    .ps-sheet__lang { flex: none; }
+    .ps-sheet__list { list-style: none; margin: 0.8rem 0; padding: 0.15rem; display: grid; gap: 0.45rem;
+      flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+    .ps-sheet__foot { flex: 0 0 auto; padding-top: 0.6rem; border-top: 1px solid var(--color-border); }
+    .ps-sopt {
+      width: 100%; min-height: 64px; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 0.75rem;
+      align-items: center; padding: 0.55rem 0.7rem; text-align: left; border: 1px solid var(--color-border);
+      border-radius: 12px; background: var(--color-surface); color: var(--color-text); font-family: var(--font-sans);
+      cursor: pointer; touch-action: manipulation;
+    }
+    .ps-sopt.is-on { border-color: var(--accent-ink); box-shadow: 0 0 0 2px var(--accent-ink) inset; }
+    .ps-sopt.is-current { background: color-mix(in srgb, var(--store-primary) 7%, var(--color-surface)); }
+    .ps-sopt .ps-opt__img { width: 64px; height: 50px; margin: 0; }
+    .ps-opt__text { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; }
+    .ps-opt__meta { font-size: 0.75rem; font-weight: 700; color: var(--ps-ink-accent, var(--accent-ink)); }
+    .ps-opt__why { font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.35; }
+    .ps-opt__cur, .ps-opt__tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.1rem 0.4rem; border-radius: 999px; border: 1px solid var(--color-border); margin-left: 0.3rem; }
+    .ps-opt__nums { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; font-variant-numeric: tabular-nums; }
+    .ps-opt__nums .ps-opt__price { font-weight: 700; }
+    .ps-opt__nums .ps-opt__delta { font-size: 0.78rem; color: var(--color-text); }
+    .ps-sheet__preview { min-height: 3rem; }
+    .ps-preview { padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-surface); }
+    .ps-preview__row { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.92rem; padding: 0.15rem 0; flex-wrap: wrap; }
+    .ps-preview__vals { font-variant-numeric: tabular-nums; }
+    .ps-preview__diff { color: var(--color-text-muted); }
+    .ps-preview__why { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--color-text-muted); }
+    .ps-sheet__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.9rem; }
+    .ps-sheet__actions .fin-btn { min-height: 48px; }
+    .ps-sheet__actions .fin-btn[disabled] { opacity: 0.45; cursor: default; }
+    .ps-sheet__browse { margin-left: auto; }
+    @media (prefers-reduced-motion: reduce) {
+      .ps-cmp__row, .ps-sopt { transition: none; }
+    }
+    @media (forced-colors: active) {
+      .ps-cmp__row.is-on, .ps-sopt.is-on, .ps-chip--sm.is-on { outline: 3px solid Highlight; outline-offset: -3px; }
+      .ps-confirm { border: 1px solid CanvasText; }
+      .ps-center { border: 2px solid CanvasText; }
+      .ps-sheet-dialog { border: 2px solid CanvasText; }
+    }
   </style>
   <style id="daybreak-demo-overrides">
     /* Daybreak demo overrides (derived page only; generated by
@@ -12003,6 +12388,9 @@
       <!-- Sleep Signature stamp (D2, Slice 2): the same answer-derived,
            decorative figure the Sleep Brief renders, at stamp scale. -->
       <div class="noct-results-signature" id="resultsSignature"></div>
+      <!-- Payment demo: the way back to the priced sleep system after
+           "Browse all matches" (empty and hidden otherwise). -->
+      <div class="ps-return" id="psReturnBar" hidden></div>
       <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
       <h1 class="noct-results-headline" id="resultsHeadline">Your <span class="accent">strongest matches</span> are ready</h1>
       <p class="noct-results-subhead" id="resultsSubhead">Tap any match to see why it fits, then ask your sleep specialist to compare your options.</p>
@@ -12416,6 +12804,15 @@
       <p class="hf2-lead-line" id="hf2LeadLine"></p>
     </section>
 
+    <!-- Purchase studio (payment demo, owner demo-first direction
+         2026-10-05). Rendered by renderPurchaseStudio() only under demo
+         admission (harness context + validated demo config) with the price
+         gate open; hidden and empty in every shipped state, and emptied by the
+         session wipe. While it shows it is the Summary's ONE presentation of
+         the selected purchase. -->
+    <section class="hf2-review-section ps" id="purchaseStudio" hidden aria-labelledby="psTitle"></section>
+    <div class="sr-only" id="psLive" aria-live="polite"></div>
+
     <section class="hf2-review-section">
       <div class="hf2-review-section__label" id="hf2NeedsLabel">What we set out to solve</div>
       <div class="hf2-brief">
@@ -12485,6 +12882,7 @@
            BEFORE Payment Choice (payment follows the total, never leads it). -->
       <div class="hf2-system-total" id="hf2SystemTotal" hidden></div>
     </section>
+
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
          financing surface, immediately before the final save/send action.
@@ -13012,6 +13410,9 @@
     }
 
     function financingPlanFresh(p) {
+      // An example plan is never a governed plan: it is admitted only by the
+      // demo adapter, and a governed plan never reaches the adapter.
+      if (p && p.demo === true) return typeof demoPlanAdmitted === 'function' && demoPlanAdmitted(p);
       if (!financingTermsFresh() || !p || p.verified !== true) return false;
       var f = getFinancingConfig();
       var ts = Date.parse(p.verifiedAt);
@@ -13501,6 +13902,9 @@
       var p = getPricingConfig();
       if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
+      // Payment demo: decided by the demo context alone, never as a fallback
+      // from a production refusal (see the demo admission adapter).
+      if (typeof demoAdmission === 'function' && demoAdmission()) return demoPricePresentation(surface, m, size, opts, off);
       var o = (opts && typeof opts === 'object') ? opts : {};
       var sku = pricingSkuFor(m, size);
       // No applicable catalog record / SKU for this product-size: nothing to
@@ -13553,7 +13957,13 @@
         return;
       }
       var html = '<div class="drawer-section-label">' + escapeHtml(t('drawer.price_label')) + '</div>'
-        + '<div class="drawer-price__amount">' + escapeHtml(pres.text) + '</div>';
+        + '<div class="drawer-price__amount">' + escapeHtml(pres.text)
+        + ((pres.state === 'available' && typeof psIllustrative === 'function' && psIllustrative(pricingSkuFor(m, size)))
+          ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '">\u25c7</span>' : '')
+        + '</div>';
+      var monthly = (pres.state === 'available' && typeof psMattressMonthlyText === 'function')
+        ? psMattressMonthlyText('drawer', m) : '';
+      if (monthly) html += '<p class="drawer-price__monthly ps-monthly-line">' + escapeHtml(monthly) + '</p>';
       for (var i = 0; i < pres.notes.length; i++) {
         html += '<p class="drawer-price__note">' + escapeHtml(pres.notes[i]) + '</p>';
       }
@@ -13575,12 +13985,18 @@
       return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;
     }
     function priceSlotFor(surface, m, cls) {
-      var pres = pricePresentationFor(surface, m, priceSizeAnswer(), null);
+      var slotSize = priceSizeAnswer();
+      var pres = pricePresentationFor(surface, m, slotSize, null);
       if (pres.state === 'off' || !pres.text) return '';
       var base = (typeof cls === 'string' && /^[a-z0-9_-]+$/i.test(cls)) ? cls : 'price-slot';
       var html = '<div class="' + base + '" data-price-state="' + escapeHtml(pres.state) + '">'
         + '<span class="' + base + '__label">' + escapeHtml(t('drawer.price_label')) + '</span> '
-        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>';
+        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>'
+        + ((pres.state === 'available' && typeof psIllustrative === 'function' && psIllustrative(pricingSkuFor(m, slotSize)))
+          ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '">\u25c7</span>' : '');
+      var monthly = (pres.state === 'available' && typeof psMattressMonthlyText === 'function')
+        ? psMattressMonthlyText(surface, m) : '';
+      if (monthly) html += '<p class="' + base + '__monthly ps-monthly-line">' + escapeHtml(monthly) + '</p>';
       for (var i = 0; i < pres.notes.length; i++) {
         html += '<p class="' + base + '__note">' + escapeHtml(pres.notes[i]) + '</p>';
       }
@@ -13707,28 +14123,50 @@
       if (!Object.prototype.hasOwnProperty.call(rec.accessorySkus, size)) return null;
       return pricingCleanSku(rec.accessorySkus[size]) ? size : null;
     }
+    // SPLIT BASE (payment demo, 2026-10-05). A split King is a different
+    // configuration, not "quantity 2": two Twin XL adjustable bases, each its
+    // own product at its own Twin XL price. It exists only when the cart
+    // entry says so explicitly (`split: true`, quantity 2), the product is an
+    // adjustable base sold in Twin XL, and the customer's size is King. A
+    // split entry that no longer fits (another size, another count) is
+    // UNRESOLVED - never re-read as a single base and never re-priced at
+    // another size.
+    function quoteSplitFor(kind, record, size) {
+      if (kind !== 'accessory' || !record || typeof record.id !== 'string') return null;
+      var cart = (typeof window === 'object' && window && window._accCart) ? window._accCart : null;
+      var entry = (cart && Object.prototype.hasOwnProperty.call(cart, record.id)) ? cart[record.id] : null;
+      if (!entry || entry.split !== true) return null;
+      var rec = pricingCatalogRecord(record);
+      var ok = !!(rec && rec.subType === 'adjustable' && size === 'king' && entry.quantity === 2
+        && rec.accessorySkus && typeof rec.accessorySkus === 'object' && pricingCleanSku(rec.accessorySkus.twin_xl));
+      return { ok: ok, unitSize: 'twin_xl' };
+    }
     function quoteLineFor(surface, kind, record, size, fallbackId) {
-      var pres = pricePresentationFor(surface, record, size, null);
+      var split = quoteSplitFor(kind, record, size);
+      var priceSize = (split && split.ok) ? split.unitSize : size;
+      var pres = pricePresentationFor(surface, record, priceSize, null);
       // The customer's own count for this product. Absent (a mattress, or a
       // cart entry written before quantities existed) means one. A quantity
       // outside the admitted range is NOT clamped - it makes the line
       // unresolved, because a purchase whose count we cannot trust must not
       // produce a confident extended amount.
-      var qty = quoteQuantityFor(kind, record);
+      var qty = split ? (split.ok ? 2 : null) : quoteQuantityFor(kind, record);
       var qtyOk = qty !== null;
       if (!qtyOk) qty = 1;
       var admitted = qtyOk && pres.state === 'available'
         && priceMoneyValid(pres.amountMinor, pres.currency);
       var reason = admitted ? null
-        : (!qtyOk ? 'invalid-quantity'
+        : (split && !split.ok ? 'invalid-split'
+          : !qtyOk ? 'invalid-quantity'
           : record === null ? 'no-catalog-record'
           : (pres.state === 'price-unavailable' ? 'price-unavailable' : 'not-resolved'));
       return {
         kind: kind,
         productId: (record && typeof record.id === 'string') ? record.id
           : ((typeof fallbackId === 'string' && fallbackId) ? fallbackId : null),
-        sku: pricingSkuFor(record, size),
-        size: quoteLineSizeFor(kind, record, size),
+        sku: pricingSkuFor(record, priceSize),
+        size: quoteLineSizeFor(kind, record, priceSize),
+        split: !!(split && split.ok),
         quantity: qty,
         state: pres.state,
         resolved: admitted,
@@ -14070,6 +14508,34 @@
           }
         }
       }
+      if (psDemoConfig()) {
+        var ma = psMattressMonthlyText('compare', mA, true);
+        var mb = psMattressMonthlyText('compare', mB, true);
+        var rp = psRefPlan();
+        if ((ma || mb) && rp) {
+          rows.push({ key: 'monthly', label: t('ps.cmp_monthly', { plan: escapeHtml(L(rp.headline) || '') }),
+                      a: ma || '—', b: mb || '—' });
+        }
+        // The whole purchase with each mattress: the Sleep System as built,
+        // priced around either bed (saved picks only - the purchase model
+        // prices the customer's own candidates).
+        var cartKeys = Object.keys(window._accCart || {});
+        if (cartKeys.length) {
+          var sys = function (m) {
+            var saved = (window._savedPicks || []).some(function (pk) { return pk && m && pk.id === m.id; });
+            if (!saved) return '—';
+            var q = psQuote(size, { finalistId: m.id });
+            if (!psComplete(q)) return '—';
+            var out = formatPriceAmount(q.merchandiseMinor, q.currency);
+            if (rp) {
+              var e = psPay(q, rp, 0, size);
+              if (e.state === 'calculated') out += ' · ' + t('ps.monthly', { amount: formatPriceAmount(e.payMinor, q.currency) });
+            }
+            return out;
+          };
+          rows.push({ key: 'system', label: t('ps.cmp_system'), a: sys(mA), b: sys(mB) });
+        }
+      }
       return rows;
     }
     // Both sides at the same amount: say so in words rather than rendering
@@ -14181,6 +14647,10 @@
       var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
                   term: null, belowMin: false, method: '' };
       var o = (opts && typeof opts === 'object') ? opts : {};
+      if (plan && typeof plan === 'object' && plan.demo === true) {
+        return typeof demoPayEstimate === 'function'
+          ? demoPayEstimate(surface, finalist, size, plan, principalMinor, cur, o) : out;
+      }
       if (!plan || typeof plan !== 'object' || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
       var fresh = financingPlanFresh(plan);
       var complete = true;
@@ -14473,7 +14943,12 @@
 
       var notes = [];
       if (calculated) {
-        notes.push(t('pay.fx.basis', { pct: String(factorMicro / 10000) }));
+        var demoBasis = typeof psDemoConfig === 'function' && !!psDemoConfig();
+        if (est.method === 'published-equal-division') {
+          notes.push(t(demoBasis ? 'pay.fx.basis_equal_example' : 'pay.fx.basis_equal', { n: term }));
+        } else {
+          notes.push(t(demoBasis ? 'pay.fx.basis_example' : 'pay.fx.basis', { pct: String(factorMicro / 10000) }));
+        }
         // The figure appears because the MERCHANDISE subtotal reaches the
         // published minimum; what the lender counts toward it is unpublished,
         // so the note says this is not an eligibility finding.
@@ -14672,7 +15147,1513 @@
       return any ? parts.join('<br>') : null;
     }
 
+    // ─── Demo admission adapter (payment demo; owner closeout 2026-10-06) ───
+    // The ONE place demo data is admitted. Production admission (the
+    // resolver, the freshness and approval gates, financingPlanFresh) is
+    // unchanged and never falls back to this: a consumer reaches the demo
+    // path only when demoAdmission() holds, and a demo plan reaches only the
+    // demo path.
+    //
+    // demoAdmission() requires TWO independent conditions:
+    //   1. a demo CONTEXT the preview harness writes into the page it serves
+    //      for `--state demo` (window.__DF_DEMO_CONTEXT, frozen, non-writable,
+    //      carrying a per-run random nonce). The ordinary served build never
+    //      contains it; no URL parameter, storage value or control in the app
+    //      can create it.
+    //   2. a VALIDATED demo configuration (STORE_CONFIG.illustrativeDemo,
+    //      contract payment-demo/1) carrying the SAME nonce, a blank gasUrl and
+    //      the bilingual notice, price-source and payment-source copy (the
+    //      notice is required but no longer displayed - Blake, 2026-10-12).
+    // The boundary this enforces is between the normal served build and the
+    // harness demonstration. It is not protection against someone editing
+    // client-side code, which no browser-side check can be.
+    //
+    // Demo data is honest: historical prices keep their own observation
+    // instants (status 'historical-snapshot'), fills say 'illustrative', every
+    // entry is verified:false, the pricing approval records are the shipped
+    // (unapproved) ones, and example plans are unverified with calculation
+    // off. The demo waives real-offer APPROVAL only - identity, size, money,
+    // method and calculation inputs are checked here as strictly as anywhere.
+    var DEMO_PRICE_STATUSES = ['historical-snapshot', 'illustrative'];
+    var DEMO_CALC_MODES = ['published-fixed-factor', 'published-equal-division'];
+    function demoBilingual(v) {
+      return !!(v && typeof v === 'object' && typeof v.en === 'string' && v.en.trim()
+        && typeof v.es === 'string' && v.es.trim());
+    }
+    function demoAdmission() {
+      var ctx = (typeof window === 'object' && window) ? window.__DF_DEMO_CONTEXT : null;
+      if (!ctx || typeof ctx !== 'object' || !Object.isFrozen(ctx)) return null;
+      if (ctx.harness !== 'serve_pricing_preview' || ctx.state !== 'demo') return null;
+      if (typeof ctx.nonce !== 'string' || !/^[0-9a-f]{32}$/.test(ctx.nonce)) return null;
+      var cfg = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG : null;
+      var d = cfg ? cfg.illustrativeDemo : null;
+      if (!d || typeof d !== 'object' || d.contract !== 'payment-demo/1' || d.enabled !== true) return null;
+      if (d.contextNonce !== ctx.nonce) return null;
+      if (!isFinite(Date.parse(d.assembledAt))) return null;
+      if (!demoBilingual(d.notice) || !demoBilingual(d.priceSource) || !demoBilingual(d.paymentSource)) return null;
+      if (cfg.gasUrl) return null;
+      return d;
+    }
+    // The demo entry for one product-size, or null. Identity is the catalog's
+    // own SKU for that product and size (pricingSkuFor), matched exactly once.
+    function demoPriceEntry(m, size) {
+      var d = demoAdmission();
+      var p = getPricingConfig();
+      if (!d || !p || !Array.isArray(p.products) || !m || typeof m.id !== 'string') return null;
+      var demoSku = pricingSkuFor(m, size);
+      if (!demoSku) return null;
+      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
+      var hit = null, n = 0;
+      for (var i = 0; i < p.products.length; i++) {
+        var e = p.products[i];
+        if (e && typeof e === 'object' && e.sku === demoSku) { n++; hit = e; }
+      }
+      if (n !== 1) return null;
+      if (hit.productId !== m.id || hit.productKind !== (accessory ? 'accessory' : 'mattress')) return null;
+      if (accessory ? hit.size !== null : hit.size !== size) return null;
+      var pr = hit.price;
+      if (!pr || pr.kind !== 'regular' || !priceMoneyValid(pr.amountMinor, pr.currency)) return null;
+      var ev = hit.evidence;
+      if (!ev || DEMO_PRICE_STATUSES.indexOf(ev.status) === -1 || ev.verified !== false) return null;
+      if ('verifiedAt' in ev) return null;
+      if (ev.status === 'historical-snapshot') {
+        var ob = Date.parse(ev.observedAt);
+        if (!isFinite(ob) || ob > Date.parse(d.assembledAt)) return null;
+        if (typeof ev.sourceUrl !== 'string' || ev.sourceUrl.indexOf('https://') !== 0) return null;
+      } else if (typeof ev.method !== 'string' || !ev.method.trim() || 'observedAt' in ev || 'sourceUrl' in ev) {
+        return null;
+      }
+      return { entry: hit, status: ev.status, amountMinor: pr.amountMinor, currency: pr.currency };
+    }
+    // An example plan the demo may calculate: unverified, calculation off,
+    // provider 'Demo', a supported method with exact inputs.
+    function demoPlanAdmitted(plan) {
+      if (!demoAdmission() || !plan || typeof plan !== 'object' || plan.demo !== true) return false;
+      if (plan.verified !== false || plan.verificationStatus !== 'illustrative'
+          || plan.paymentCalculationEnabled !== false || plan.provider !== 'Demo') return false;
+      if (plan.kind !== 'open-end-promotional-credit' || typeof plan.id !== 'string') return false;
+      if ('verifiedAt' in plan || 'sourceUrl' in plan) return false;
+      var apr = plan.apr, term = plan.termMonths, c = plan.demoCalculation;
+      if (typeof apr !== 'number' || !isFinite(apr) || apr < 0 || apr > 100) return false;
+      if (!Number.isSafeInteger(term) || term < 1 || term > 120) return false;
+      if (!c || typeof c !== 'object' || DEMO_CALC_MODES.indexOf(c.mode) === -1
+          || PAY_ROUNDING.indexOf(c.rounding) === -1) return false;
+      if (c.mode === 'published-equal-division') return apr === 0 && !('factor' in c);
+      return payFactorMicro(c.factor) !== null;
+    }
+    function demoPlanById(id) {
+      var f = getFinancingConfig();
+      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
+      for (var i = 0; i < plans.length; i++) {
+        if (plans[i] && plans[i].id === id && plans[i].demo === true) return plans[i];
+      }
+      return null;
+    }
+    // pricePresentationFor's demo branch: the same result shape, from the
+    // demo entry. A product-size without an admitted entry is 'off' (no
+    // number), exactly as production treats an unresolved price.
+    function demoPricePresentation(surface, m, size, opts, off) {
+      var hit = demoPriceEntry(m, size);
+      if (!hit) return off;
+      var text = formatPriceAmount(hit.amountMinor, hit.currency);
+      if (!text) return off;
+      var o = (opts && typeof opts === 'object') ? opts : {};
+      var plan = (typeof o.planId === 'string') ? demoPlanById(o.planId) : null;
+      return { state: 'available', amountMinor: hit.amountMinor, currency: hit.currency, kind: 'regular',
+               text: text, provenance: hit.status,
+               notes: pricingCopyList('assumptions').concat(pricingCopyList('disclosures')),
+               calculation: (plan && demoPlanAdmitted(plan)) ? 'available' : 'unavailable',
+               threshold: 'unknown' };
+    }
+    // payEstimate's demo branch. The arithmetic is the governed helpers'
+    // (payFixedFactorMinor / payEqualDivisionMinor, integer minor units,
+    // rounded UP to the dollar); only admission differs.
+    function demoPayEstimate(surface, finalist, size, plan, principalMinor, cur, opts) {
+      var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
+                  term: null, belowMin: false, method: '' };
+      if (!demoPlanAdmitted(plan) || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
+      var pres = pricePresentationFor(surface, finalist, size, { planId: plan.id });
+      if (pres.state !== 'available' || pres.calculation !== 'available') return out;
+      var c = plan.demoCalculation;
+      var payMinor = null, factorMicro = null;
+      if (c.mode === 'published-fixed-factor') {
+        factorMicro = payFactorMicro(c.factor);
+        payMinor = factorMicro !== null ? payFixedFactorMinor(principalMinor, factorMicro) : null;
+      } else {
+        payMinor = payEqualDivisionMinor(principalMinor, plan.termMonths);
+      }
+      if (payMinor === null || !priceMoneyValid(payMinor, cur)) return out;
+      var scheduledMax = payMinor * plan.termMonths;
+      if (!priceMoneyValid(scheduledMax, cur)) return out;
+      out.payMinor = payMinor;
+      out.scheduledMax = scheduledMax;
+      out.interestMax = c.mode === 'published-equal-division' ? 0 : scheduledMax - principalMinor;
+      out.factorMicro = factorMicro;
+      out.term = plan.termMonths;
+      out.method = c.mode;
+      return out;
+    }
+
+    // ─── Purchase studio model (payment demo; owner demo-first direction 2026-10-05) ───
+    // ONE live view of the purchase the consultation already holds - the
+    // explicit finalist, the size answer and the Sleep System cart - priced
+    // through the same quote model every other surface uses, with the payment
+    // under each plan computed ONLY by payEstimate (the governed methods,
+    // their gates, rounding and freshness). Nothing is stored here except the
+    // two choices the customer makes on this surface (_psPlan, _psDownRaw),
+    // both wiped by resetSessionState via psResetState().
+    //
+    // Renders only when demoAdmission() admits the build: the preview
+    // harness's `demo` state injects a frozen page context whose nonce
+    // matches STORE_CONFIG.illustrativeDemo (both absent from shipped data and
+    // locked absent by tests/payment_demo_check.py), and only while the price
+    // gate is open. Shipped behaviour is unchanged: nothing renders.
+    //
+    // What-if figures (another size, another saved mattress, another base,
+    // an item removed) are COMPLETE quotes built by the same model with the
+    // purchase changed in a sandbox: the cart and finalist globals are
+    // swapped for the duration of one synchronous call and restored in a
+    // finally block. A monthly difference is therefore always the difference
+    // between two whole-purchase payments under the same plan, term and down
+    // payment - never an item's own payment, which thresholds and rounding
+    // would make misleading.
+    var _psPlan = 'full';
+    var _psDownRaw = '';
+    function psResetState() {
+      _psPlan = 'full'; _psDownRaw = ''; _psChangeNote = null; _psDetailsOpen = false; _psReturn = false;
+      var bar = document.getElementById('psReturnBar');
+      if (bar) { bar.hidden = true; bar.innerHTML = ''; }
+    }
+    function psDemoConfig() {
+      return demoAdmission();
+    }
+    var PS_SIZES = ['twin', 'twin_xl', 'full', 'queen', 'king', 'cal_king'];
+    var PS_STEPS = ['base', 'pillow', 'protection'];
+    // setSleepSystemItemQuantity's per-step bounds, mirrored for display.
+    var PS_STEP_MAX = { pillow: 4, base: 1, protection: 1 };
+    // A base can be a split King (two Twin XL units) only when it is an
+    // adjustable base with its own clean Twin XL SKU in the catalog; nothing
+    // else is assumed about physical compatibility.
+    function psSplitCapable(rec) {
+      return !!(rec && rec.subType === 'adjustable' && rec.accessorySkus && pricingCleanSku(rec.accessorySkus.twin_xl));
+    }
+    function psWithState(over, fn) {
+      var saveCart = window._accCart;
+      var saveFav = window._favoriteMattressId;
+      var savePicks = window._savedPicks;
+      try {
+        if (over && over.cart) window._accCart = over.cart;
+        if (over && typeof over.finalistId === 'string') window._favoriteMattressId = over.finalistId;
+        if (over && Array.isArray(over.savedPicks)) window._savedPicks = over.savedPicks;
+        return fn();
+      } finally {
+        window._accCart = saveCart;
+        window._favoriteMattressId = saveFav;
+        window._savedPicks = savePicks;
+      }
+    }
+    function psCartClone() {
+      var src = window._accCart || {};
+      var out = {};
+      for (var k in src) {
+        if (Object.prototype.hasOwnProperty.call(src, k) && src[k]) {
+          out[k] = { id: k, quantity: src[k].quantity };
+          if (src[k].split === true) out[k].split = true;
+        }
+      }
+      return out;
+    }
+    function psAccessory(id) {
+      if (typeof ACCESSORIES === 'undefined' || !Array.isArray(ACCESSORIES)) return null;
+      for (var i = 0; i < ACCESSORIES.length; i++) if (ACCESSORIES[i] && ACCESSORIES[i].id === id) return ACCESSORIES[i];
+      return null;
+    }
+    function psStepOf(rec) {
+      return (rec && typeof sleepSystemStepIdForItem === 'function') ? sleepSystemStepIdForItem(rec) : null;
+    }
+    function psQuote(size, over) {
+      return psWithState(over || {}, function () {
+        var st = resolveFinalistState();
+        var q = buildConsultationQuote('handoff', size);
+        q.finalist = (st && st.kind === 'chosen') ? st.item : null;
+        return q;
+      });
+    }
+    function psComplete(q) {
+      return !!(q && q.status === 'complete' && q.hasMattress && priceMoneyValid(q.merchandiseMinor, q.currency));
+    }
+    // The payment under one plan for one complete quote and one down payment.
+    function psPay(q, plan, downMinor, size) {
+      var none = { state: 'none', payMinor: null };
+      if (!plan || !psComplete(q) || !q.finalist) return none;
+      var down = Number.isSafeInteger(downMinor) && downMinor > 0 ? downMinor : 0;
+      var principal = q.merchandiseMinor - down;
+      if (principal <= 0) return { state: 'nothing-financed', payMinor: null };
+      var e = payEstimate('handoff', q.finalist, size, plan, principal, q.currency,
+        { downEntered: down > 0, qualifyingMinor: q.merchandiseMinor });
+      if (e.payMinor === null) return { state: e.belowMin ? 'below-min' : 'not-calculable', payMinor: null };
+      // THE read model every payment surface formats from (Summary
+      // centerpiece, comparison, Bring It Home, take-home), so one term means
+      // one figure everywhere:
+      //   merchMinor     the selected products only (tax/delivery excluded)
+      //   downMinor      paid upfront
+      //   financedMinor  the principal the method was applied to
+      //   scheduledMinor the sum of the scheduled payments (down EXCLUDED)
+      //   totalPaidMinor down payment plus scheduled payments
+      //   interestMinor  the borrowing cost (0 under equal division: its
+      //                  rounding overage is never interest)
+      // Each payment is rounded UP, so a schedule is an upper bound unless it
+      // divides exactly; the *Upper flags carry that into the wording.
+      var scheduledUpper = e.scheduledMax !== principal || e.method !== 'published-equal-division';
+      return { state: 'calculated', payMinor: e.payMinor, scheduledMax: e.scheduledMax,
+               interestMax: e.interestMax, term: e.term, method: e.method, principal: principal, down: down,
+               merchMinor: q.merchandiseMinor, downMinor: down, financedMinor: principal,
+               scheduledMinor: e.scheduledMax, scheduledUpper: scheduledUpper,
+               totalPaidMinor: down + e.scheduledMax, totalPaidUpper: scheduledUpper,
+               interestMinor: e.interestMax, interestUpper: e.interestMax > 0 };
+    }
+    // "$X" or "up to $X" for one read-model figure. `lead` picks the
+    // sentence-initial form ("Up to") for a standalone value.
+    function psBound(minor, upper, lead) {
+      var amt = formatPriceAmount(minor, 'USD');
+      return upper ? t(lead ? 'pay.fx.up_to' : 'ps.up_to', { amount: amt }) : amt;
+    }
+    function psPlans() {
+      var f = getFinancingConfig();
+      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
+      var calc = [], quote = [];
+      for (var i = 0; i < plans.length; i++) {
+        var pl = plans[i];
+        if (!pl || typeof pl !== 'object' || typeof pl.id !== 'string') continue;
+        var method = pl.calculationMode;
+        if (pl.demo === true ? demoPlanAdmitted(pl)
+            : (pl.paymentCalculationEnabled === true && financingPlanFresh(pl)
+               && (method === 'published-fixed-factor' || method === 'published-equal-division'))) {
+          calc.push(pl);
+        } else if ((pl.kind === 'lease-to-own' || pl.kind === 'closed-end-installment')
+            && pl.presentationScenario !== 'mexico-delivery') {
+          quote.push(pl);
+        }
+      }
+      return { calc: calc, quote: quote };
+    }
+    function psDown(merchMinor) {
+      var raw = String(_psDownRaw == null ? '' : _psDownRaw);
+      if (raw.replace(/\s/g, '') === '') return { state: 'none', minor: 0, raw: '' };
+      if (/^\s*-/.test(raw)) return { state: 'negative', minor: null, raw: raw };
+      var p = payParseAmountMinor(raw, Number.MAX_SAFE_INTEGER);
+      if (p.state !== 'ok') return { state: 'invalid', minor: null, raw: raw };
+      if (p.minor === 0) return { state: 'none', minor: 0, raw: raw };
+      if (!Number.isSafeInteger(merchMinor)) return { state: 'pending', minor: p.minor, raw: raw };
+      if (p.minor >= merchMinor) return { state: 'too-large', minor: null, raw: raw };
+      return { state: 'ok', minor: p.minor, raw: raw };
+    }
+    // Whether a priced SKU is an illustrative demo entry (status, not a list).
+    function psIllustrative(sku) {
+      if (!demoAdmission() || typeof sku !== 'string') return false;
+      var p = getPricingConfig();
+      var list = (p && Array.isArray(p.products)) ? p.products : [];
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (e && e.sku === sku) return !!(e.evidence && e.evidence.status === 'illustrative');
+      }
+      return false;
+    }
+    // The plan a single mattress's monthly illustration uses on the results,
+    // drawer and compare surfaces: the plan the customer is viewing in the
+    // studio when it calculates, otherwise the longest 0% example (the most
+    // conservative: no interest is hidden behind the lower figure).
+    function psRefPlan() {
+      var calc = psPlans().calc;
+      for (var i = 0; i < calc.length; i++) if (calc[i].id === _psPlan) return calc[i];
+      var best = null;
+      calc.forEach(function (pl) {
+        if (pl.apr === 0 && (!best || pl.termMonths > best.termMonths)) best = pl;
+      });
+      return best || calc[0] || null;
+    }
+    // "or about $X/mo · 0% APR for 24 months (example)" for one mattress at
+    // the customer's size, or '' (no demo, no price, no calculable plan).
+    function psMattressMonthlyText(surface, m, short) {
+      if (!psDemoConfig() || !m) return '';
+      var size = priceSizeAnswer();
+      var pres = pricePresentationFor(surface, m, size, null);
+      if (pres.state !== 'available' || !priceMoneyValid(pres.amountMinor, pres.currency)) return '';
+      var plan = psRefPlan();
+      if (!plan) return '';
+      var e = payEstimate(surface, m, size, plan, pres.amountMinor, pres.currency,
+        { qualifyingMinor: pres.amountMinor });
+      if (e.payMinor === null) return '';
+      if (short) return t('ps.monthly', { amount: formatPriceAmount(e.payMinor, pres.currency) });
+      return t('ps.mattress_monthly', { amount: formatPriceAmount(e.payMinor, pres.currency), plan: L(plan.headline) || '' });
+    }
+    // The shared context every studio view is computed from: the purchase as
+    // it stands, the plan and down payment in view, and the helpers that turn
+    // a PROPOSED purchase into an honest current-versus-proposed preview (two
+    // complete quotes, same plan, same term, same down payment).
+    function psContext() {
+      var demo = psDemoConfig();
+      if (!demo) return null;
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled('handoff')) return null;
+      if (typeof resolveFinalistState !== 'function') return null;
+      var size = priceSizeAnswer();
+      var cur = 'USD';
+      var fmt = function (m) { return formatPriceAmount(m, cur); };
+      var q = psQuote(size, {});
+      var complete = psComplete(q);
+      var merch = complete ? q.merchandiseMinor : null;
+      var down = psDown(merch);
+      var plans = psPlans();
+      var calcById = {}, quoteById = {};
+      plans.calc.forEach(function (pl) { calcById[pl.id] = pl; });
+      plans.quote.forEach(function (pl) { quoteById[pl.id] = pl; });
+      if (_psPlan !== 'full' && !calcById[_psPlan] && !quoteById[_psPlan]) _psPlan = 'full';
+      var sel = calcById[_psPlan] || null;
+      // A down payment belongs to a calculated plan: with Pay in full or a
+      // quote-only plan in view, a leftover entry (its field is disabled)
+      // never shapes any figure, and is applied again when a plan is chosen.
+      var downMinor = (sel && down.state === 'ok') ? down.minor : 0;
+      var downUsable = !sel || down.state === 'ok' || down.state === 'none';
+      var downBad = !downUsable && down.state !== 'pending';
+      var payNow = (sel && downUsable && q.finalist) ? psPay(q, sel, downMinor, size)
+        : { state: (sel && downBad && complete) ? 'down-invalid' : 'none', payMinor: null };
+      var signed = function (m) {
+        if (m === null || m === undefined) return '';
+        if (m === 0) return t('ps.same');
+        return (m > 0 ? '+' : '−') + fmt(Math.abs(m));
+      };
+      var termN = sel ? sel.termMonths : null;
+      var monthlySigned = function (m) {
+        if (m === null || m === undefined) return '';
+        if (m === 0) return t('ps.same_month');
+        return t('ps.per_month_term', { amount: (m > 0 ? '+' : '−') + fmt(Math.abs(m)), n: termN });
+      };
+      var ctx = { demo: demo, size: size, fmt: fmt, q: q, complete: complete, merch: merch, down: down,
+                  plans: plans, calcById: calcById, quoteById: quoteById, sel: sel, downMinor: downMinor,
+                  downUsable: downUsable, downBad: downBad, payNow: payNow, signed: signed,
+                  monthlySigned: monthlySigned, termN: termN };
+      // Current versus proposed, for one changed purchase. `monthlyNote`
+      // names why no monthly difference is shown when there is none.
+      ctx.proposal = function (q2) {
+        var out = { complete: psComplete(q2), subtotal: '', subtotalDiff: '', currentSubtotal: complete ? fmt(merch) : '',
+                    monthly: '', currentMonthly: '', monthlyDiff: '', monthlyNote: '', missing: [] };
+        if (!out.complete) {
+          out.missing = q2.lines.filter(function (l) { return !l.resolved; }).map(quoteLineName);
+          return out;
+        }
+        out.subtotal = fmt(q2.merchandiseMinor);
+        if (complete) out.subtotalDiff = signed(q2.merchandiseMinor - merch);
+        if (!sel) { out.monthlyNote = _psPlan === 'full' ? 'full' : 'quote'; return out; }
+        if (payNow.state !== 'calculated') { out.monthlyNote = payNow.state; return out; }
+        var p2 = psPay(q2, sel, downMinor, size);
+        if (p2.state !== 'calculated') { out.monthlyNote = p2.state; return out; }
+        out.currentMonthly = fmt(payNow.payMinor);
+        out.monthly = fmt(p2.payMinor);
+        out.monthlyDiff = monthlySigned(p2.payMinor - payNow.payMinor);
+        return out;
+      };
+      return ctx;
+    }
+    // The one line shown with a mattress here: its OWN catalog highlight
+    // (existing product copy, language-aware through mField). Personalised
+    // per-answer mattress reasons stay behind item 1.3's rendered-output
+    // gate (owner-held, not lifted), so none is derived here; '' if none.
+    function psProductLine(id) {
+      var hit = window._drawerData && window._drawerData[id];
+      var rec = hit && hit.m;
+      if (!rec) {
+        var sv = (Array.isArray(window._savedPicks) ? window._savedPicks : []).filter(function (p) { return p && p.id === id; })[0];
+        rec = sv || null;
+      }
+      return (rec && typeof mField === 'function') ? (mField(rec, 'highlight') || '') : '';
+    }
+    function psPickProjection(id) {
+      var hit = window._drawerData && window._drawerData[id];
+      var m = hit && hit.m;
+      if (!m) return null;
+      return { id: m.id, name: m.name, brand: m.brand + (m.subBrand ? ' · ' + m.subBrand : ''),
+               imageUrl: m.imageUrl || '', tier: hit.tier };
+    }
+    // One mattress as a candidate: priced at the customer's size inside a
+    // sandbox (an unsaved candidate is added to a COPY of the saved list).
+    function psMattressCandidate(ctx, id, current, saved) {
+      var savedList = Array.isArray(window._savedPicks) ? window._savedPicks : [];
+      var pick = saved ? savedList.filter(function (pk) { return pk && pk.id === id; })[0] : psPickProjection(id);
+      if (!pick) return null;
+      var q2 = current ? ctx.q : psQuote(ctx.size, saved ? { finalistId: id }
+        : { finalistId: id, savedPicks: savedList.concat([pick]) });
+      var ml = q2.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+      var hit = window._drawerData && window._drawerData[id];
+      var rec = (hit && hit.m) || pick;
+      var tier = (hit && hit.tier) || pick.tier || '';
+      var fit = (rec && typeof mField === 'function') ? (mField(rec, 'highlight') || '') : '';
+      return {
+        id: id, current: !!current, saved: !!saved,
+        name: L(rec.name) || rec.name || id, brand: pick.brand || rec.brand || '',
+        image: pick.imageUrl || rec.imageUrl || rec.image || '',
+        modelLine: (typeof sleepPlanModelLine === 'function') ? sleepPlanModelLine({ id: id, tier: tier }) : '',
+        fit: fit,
+        priced: !!(ml && ml.resolved), price: (ml && ml.resolved) ? ctx.fmt(ml.unitAmountMinor) : '',
+        illustrative: !!(ml && ml.resolved && psIllustrative(ml.sku)),
+        proposal: current ? null : ctx.proposal(q2)
+      };
+    }
+    // The Change mattress sheet: the current mattress, then the saved
+    // picks, then the leading recommendations of each tier in their
+    // sleep-fit order (never re-ranked); every id once.
+    function psMattressSheet() {
+      var ctx = psContext();
+      if (!ctx || !ctx.q.finalist) return { show: false };
+      var seen = {}, out = [];
+      var add = function (id, current, saved) {
+        if (typeof id !== 'string' || !id || seen[id]) return;
+        var c = psMattressCandidate(ctx, id, current, saved);
+        if (c) { seen[id] = true; out.push(c); }
+      };
+      add(ctx.q.finalist.id, true, true);
+      (Array.isArray(window._savedPicks) ? window._savedPicks : []).forEach(function (pk) {
+        if (pk && typeof pk.id === 'string') add(pk.id, false, true);
+      });
+      // Focused first: each tier's leading match. "More matches" adds the
+      // rest of the consultation's recommendations, still in tier and
+      // sleep-fit order (never re-ranked, never filtered by price).
+      var rs = (typeof _resultsState === 'object' && _resultsState && _resultsState.tierData) ? _resultsState.tierData : {};
+      var tiers = ['gold', 'silver', 'bronze'];
+      tiers.forEach(function (tier) {
+        (rs[tier] || []).slice(0, 1).forEach(function (m) { if (m && m.id) add(m.id, false, false); });
+      });
+      var more = 0;
+      tiers.forEach(function (tier) {
+        (rs[tier] || []).forEach(function (m) {
+          if (!m || !m.id || seen[m.id]) return;
+          if (_psSheet && _psSheet.more) add(m.id, false, false);
+          else more++;
+        });
+      });
+      return { show: true, kind: 'mattress', size: ctx.size ? sizeLabelFor(ctx.size) : '',
+               options: out, more: more, planLabel: ctx.sel ? (L(ctx.sel.headline) || '') : '' };
+    }
+    // The Add / Change sheet for one Sleep System step. `targetId` is the
+    // item being changed (a pillow is changed one product at a time); with
+    // no target the sheet ADDS (pillows) or picks the step's one item.
+    function psAccessorySheet(step, targetId) {
+      var ctx = psContext();
+      if (!ctx || !ctx.q.finalist || PS_STEPS.indexOf(step) === -1) return { show: false };
+      var cart = window._accCart || {};
+      var opts = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES) ? ACCESSORIES : [])
+        .filter(function (a) { return a && psStepOf(a) === step; });
+      var inStep = opts.filter(function (a) { return Object.prototype.hasOwnProperty.call(cart, a.id); });
+      var target = (typeof targetId === 'string' && Object.prototype.hasOwnProperty.call(cart, targetId)) ? targetId : '';
+      var reasons = {};
+      try {
+        (typeof scoreAccessoriesFromAnswers === 'function' ? scoreAccessoriesFromAnswers() : []).forEach(function (s) {
+          // Only an answer-specific reason: an unmatched item's generic
+          // "standard" line is not a personal reason, so it shows none.
+          if (s && s.id && s.matched === true && Array.isArray(s.reasons) && s.reasons.length) reasons[s.id] = s.reasons[0];
+        });
+      } catch (e) { reasons = {}; }
+      var build = function (c2) {
+        if (step === 'pillow') {
+          if (target) delete c2[target];
+          else if (inStep.length >= 2) delete c2[inStep[0].id];
+        } else {
+          inStep.forEach(function (x) { delete c2[x.id]; });
+        }
+        return c2;
+      };
+      // A REPLACEMENT keeps the configuration of the item it replaces: its
+      // quantity (two pillows stay two) and an explicit split King (two Twin
+      // XL bases) when the replacement offers one. Anything that cannot be
+      // kept is named before Apply (`configNote`); the preview and Apply use
+      // this one `config`, so they can never disagree.
+      var prior = target ? cart[target] : (step !== 'pillow' && inStep.length ? cart[inStep[0].id] : null);
+      var stepMax = PS_STEP_MAX[step] || 1;
+      var configFor = function (a) {
+        if (!prior) return { config: { quantity: 1 }, note: '' };
+        if (prior.split === true) {
+          if (ctx.size === 'king' && psSplitCapable(a)) return { config: { quantity: 2, split: true }, note: t('ps.keeps_split') };
+          return { config: { quantity: 1 }, note: t('ps.split_lost') };
+        }
+        var qn = (typeof prior.quantity === 'number' && prior.quantity >= 1) ? prior.quantity : 1;
+        if (qn > stepMax) return { config: { quantity: stepMax }, note: t('ps.qty_adjusted', { n: stepMax }) };
+        return { config: { quantity: qn }, note: qn > 1 ? t('ps.keeps_qty', { n: qn }) : '' };
+      };
+      var options = [];
+      opts.forEach(function (a) {
+        var inCart = Object.prototype.hasOwnProperty.call(cart, a.id);
+        var current = step === 'pillow' ? (a.id === target) : inCart;
+        if (step === 'pillow' && inCart && !current) return;   // already in the system: not a replacement
+        var q2, cf = current ? { config: null, note: '' } : configFor(a);
+        if (current) {
+          q2 = ctx.q;
+        } else {
+          var c2 = build(psCartClone());
+          c2[a.id] = { id: a.id, quantity: cf.config.quantity };
+          if (cf.config.split) c2[a.id].split = true;
+          q2 = psQuote(ctx.size, { cart: c2 });
+        }
+        var line = q2.lines.filter(function (l) { return l.productId === a.id; })[0] || null;
+        options.push({
+          id: a.id, current: current, name: L(a.name) || '', image: a.image || '',
+          reason: reasons[a.id] || '',
+          priced: !!(line && line.resolved), price: (line && line.resolved) ? ctx.fmt(line.unitAmountMinor) : '',
+          illustrative: !!(line && line.resolved && psIllustrative(line.sku)),
+          sizeNote: (line && !line.resolved) ? t('ps.not_in_size', { size: ctx.size ? sizeLabelFor(ctx.size) : '' }) : '',
+          config: cf.config, configNote: cf.note,
+          proposal: current ? null : ctx.proposal(q2)
+        });
+      });
+      var none = null;
+      if (step !== 'pillow') {
+        var c0 = psCartClone();
+        inStep.forEach(function (x) { delete c0[x.id]; });
+        none = { current: inStep.length === 0, proposal: inStep.length ? ctx.proposal(psQuote(ctx.size, { cart: c0 })) : null };
+      }
+      return { show: true, kind: 'accessory', step: step, target: target, mode: (target || inStep.length) ? 'change' : 'add',
+               options: options, none: none, planLabel: ctx.sel ? (L(ctx.sel.headline) || '') : '' };
+    }
+    function purchaseStudioFor() {
+      var none = { show: false };
+      var ctx = psContext();
+      if (!ctx) return none;
+      var demo = ctx.demo, size = ctx.size, fmt = ctx.fmt, q = ctx.q, complete = ctx.complete, merch = ctx.merch;
+      var down = ctx.down, plans = ctx.plans, sel = ctx.sel, downMinor = ctx.downMinor;
+      var downUsable = ctx.downUsable, downBad = ctx.downBad, payNow = ctx.payNow;
+      if (!q.finalist) return { show: true, empty: true };
+
+      // ---- the selected mattress and its size -----------------------------------
+      var mLine = q.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+      var fin = q.finalist;
+      var mattress = {
+        id: fin.id, name: L(fin.name) || fin.name || '', brand: fin.brand || '',
+        image: fin.imageUrl || fin.image || '',
+        // Recommendation provenance (tier and position) from the results
+        // themselves - "Best match" appears only when it is true.
+        modelLine: (typeof sleepPlanModelLine === 'function') ? sleepPlanModelLine(fin) : '',
+        why: psProductLine(fin.id),
+        priced: !!(mLine && mLine.resolved),
+        price: (mLine && mLine.resolved) ? fmt(mLine.unitAmountMinor) : '',
+        illustrative: !!(mLine && mLine.resolved && psIllustrative(mLine.sku))
+      };
+      var sizes = PS_SIZES.map(function (sz) {
+        var qs = psQuote(sz, {});
+        var ml = qs.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+        return {
+          id: sz, label: sizeLabelFor(sz) || sz, active: sz === size,
+          price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : ''
+        };
+      });
+
+      // ---- the selected Sleep System, one row per item, grouped by step ---------
+      var cart = window._accCart || {};
+      var lines = q.lines.filter(function (l) { return l.kind === 'accessory'; }).map(function (ln) {
+        var rec = psAccessory(ln.productId);
+        var step = rec ? psStepOf(rec) : null;
+        var keys = (cart[ln.productId] && Array.isArray(cart[ln.productId].reasonKeys)) ? cart[ln.productId].reasonKeys : [];
+        var key = keys.filter(function (k) { return k && k !== 'default' && k !== 'standard'; })[0] || '';
+        return {
+          id: ln.productId, step: step || '', name: quoteLineName(ln), image: (rec && rec.image) || '',
+          why: key && typeof accessoryReasonText === 'function' ? accessoryReasonText(key) : '',
+          size: ln.size ? (ln.split ? t('ps.split_line', { size: sizeLabelFor(ln.size) }) : sizeLabelFor(ln.size)) : '',
+          qty: ln.quantity, split: !!ln.split,
+          max: PS_STEP_MAX[step] || 1,
+          priced: ln.resolved,
+          unit: ln.resolved ? fmt(ln.unitAmountMinor) : '',
+          ext: ln.resolved ? fmt(ln.extendedAmountMinor) : '',
+          illustrative: ln.resolved && psIllustrative(ln.sku)
+        };
+      });
+      var missing = q.lines.filter(function (l) { return !l.resolved; }).map(quoteLineName);
+      var steps = PS_STEPS.map(function (step) {
+        var rows = lines.filter(function (l) { return l.step === step; });
+        var split = null;
+        var sb = (step === 'base' && size === 'king' && rows.length === 1) ? psAccessory(rows[0].id) : null;
+        if (psSplitCapable(sb)) {
+          var on = cart[sb.id] && cart[sb.id].split === true;
+          var cs = psCartClone();
+          cs[sb.id] = on ? { id: sb.id, quantity: 1 } : { id: sb.id, quantity: 2, split: true };
+          split = { id: sb.id, on: on, proposal: ctx.proposal(psQuote(size, { cart: cs })) };
+        }
+        return { step: step, rows: rows, canAdd: step === 'pillow' ? rows.length < 2 : rows.length === 0, split: split };
+      });
+
+      // ---- the payment choices --------------------------------------------------
+      var cards = [{ id: 'full', kind: 'full', label: t('ps.pay_full'), selected: _psPlan === 'full',
+                     amount: complete ? fmt(merch) : '', sub: complete ? t('ps.pay_full_sub') : '' }];
+      plans.calc.forEach(function (pl) {
+        var e = (complete && downUsable) ? psPay(q, pl, downMinor, size)
+          : { state: (complete && downBad) ? 'down-invalid' : 'none', payMinor: null };
+        var ok = e.state === 'calculated';
+        cards.push({
+          id: pl.id, kind: 'calc', label: L(pl.headline) || '', selected: _psPlan === pl.id,
+          apr: payAprText(pl.apr), term: pl.termMonths,
+          monthly: ok ? fmt(e.payMinor) : '',
+          // Total PAID (down payment included), so every card compares
+          // like-for-like with paying in full - from the shared read model.
+          total: ok ? psBound(e.totalPaidMinor, e.totalPaidUpper) : '',
+          totalPaidMinor: ok ? e.totalPaidMinor : null,
+          downNote: (ok && e.downMinor > 0) ? t('ps.incl_down', { amount: fmt(e.downMinor) }) : '',
+          interest: ok ? (e.interestMinor > 0 ? psBound(e.interestMinor, e.interestUpper) : t('ps.no_interest_lc')) : '',
+          state: e.state
+        });
+      });
+      plans.quote.forEach(function (pl) {
+        cards.push({ id: pl.id, kind: 'quote', label: L(pl.headline) || '', selected: _psPlan === pl.id });
+      });
+      var result = { kind: 'full' };
+      if (_psPlan === 'full') {
+        result = { kind: 'full', amount: complete ? fmt(merch) : '' };
+      } else if (sel) {
+        result = { kind: 'calc', label: L(sel.headline) || '', state: payNow.state,
+                   apr: payAprText(sel.apr), term: sel.termMonths };
+        if (payNow.state === 'calculated') {
+          result.monthly = fmt(payNow.payMinor);
+          result.scheduled = psBound(payNow.scheduledMinor, payNow.scheduledUpper, true);
+          result.interest = payNow.interestMinor > 0 ? psBound(payNow.interestMinor, payNow.interestUpper, true) : t('ps.no_interest');
+          result.interestLc = payNow.interestMinor > 0 ? psBound(payNow.interestMinor, payNow.interestUpper) : t('ps.no_interest_lc');
+          result.financed = fmt(payNow.financedMinor);
+          result.hasDown = payNow.downMinor > 0;
+          result.down = result.hasDown ? fmt(payNow.downMinor) : t('ps.down_none');
+          result.cost = psBound(payNow.totalPaidMinor, payNow.totalPaidUpper, true);
+          result.costLc = psBound(payNow.totalPaidMinor, payNow.totalPaidUpper);
+          result.totalPaidMinor = payNow.totalPaidMinor;
+          result.exact = !payNow.scheduledUpper;
+        }
+      } else if (ctx.quoteById[_psPlan]) {
+        result = { kind: 'quote', label: L(ctx.quoteById[_psPlan].headline) || '' };
+      }
+      return {
+        show: true, empty: false,
+        priceSource: L(demo.priceSource) || '', paymentSource: L(demo.paymentSource) || '',
+        size: size || '', sizeLabel: size ? sizeLabelFor(size) : '', sizes: sizes,
+        mattress: mattress, lines: lines, steps: steps,
+        complete: complete, subtotal: complete ? fmt(merch) : '', missing: missing,
+        plan: _psPlan, cards: cards, result: result,
+        down: { state: down.state, raw: down.raw, applies: !!sel, amount: down.state === 'ok' ? fmt(down.minor) : '',
+                preset: down.state === 'none' ? '0'
+                  : (down.state === 'ok' && [25000, 50000, 100000].indexOf(down.minor) !== -1 ? String(down.minor / 100) : '') },
+        excludes: pricingTotalCopy('excludes') || ''
+      };
+    }
+
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
+
+    // ─── Purchase studio (payment demo) — rendering and controls ───
+    // The Consultation Summary's ONE purchase presentation (demo admission
+    // only): the selected mattress with Change mattress, a compact row per
+    // Sleep System item with Change / Remove / quantity, the merchandise
+    // subtotal, one selected-payment centerpiece and a compact comparison.
+    // Alternatives open in a focused sheet that PREVIEWS a change (two
+    // complete quotes) without touching the purchase; Apply goes through the
+    // app's own selection functions, Cancel leaves everything as it was.
+    function psBtn(attrs, label, action) {
+      return '<button type="button" ' + attrs + ' onclick="' + action + '" '
+        + 'ontouchend="event.preventDefault();' + action + ';">' + label + '</button>';
+    }
+    var PS_ILLUS_MARK = '◇';
+    function psMark(on) {
+      return on ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '" aria-label="'
+        + escapeHtml(t('ps.illustrative_mark')) + '">' + PS_ILLUS_MARK + '</span>' : '';
+    }
+    function psImg(src, cls) {
+      return src ? '<img class="' + cls + '" src="' + escapeHtml(src) + '" alt="" loading="lazy" decoding="async">' : '';
+    }
+    function psStateKey(state) {
+      if (state === 'below-min') return 'ps.below_min';
+      if (state === 'down-invalid') return 'ps.fix_down';
+      if (state === 'nothing-financed') return 'ps.down_too_large';
+      return 'ps.needs_complete';
+    }
+    function psStepTitle(step, mode) {
+      return t('ps.step_' + step + (mode === 'add' ? '_add' : ''));
+    }
+    // ---- the purchase (left) ------------------------------------------------
+    function psPurchaseHtml(m) {
+      var mt = m.mattress;
+      var html = '<div class="ps-hero">'
+        + '<div class="ps-hero__media">' + psImg(mt.image, 'ps-hero__img') + '</div>'
+        + '<div class="ps-hero__id"><span class="ps-kicker">' + escapeHtml(t('ps.selected_mattress')) + '</span>'
+        + '<h3 class="ps-hero__name">' + escapeHtml(mt.name) + '</h3>'
+        + '<p class="ps-hero__meta">' + escapeHtml([mt.brand, m.sizeLabel].filter(Boolean).join(' · ')) + '</p>'
+        + (mt.modelLine ? '<p class="ps-hero__badge">' + escapeHtml(mt.modelLine) + '</p>' : '')
+        + (mt.why ? '<p class="ps-hero__why" data-ps="fit-why">' + escapeHtml(mt.why) + '</p>' : '')
+        + '<p class="ps-hero__price" data-ps="mattress-price">'
+        + (mt.priced ? escapeHtml(mt.price) + psMark(mt.illustrative)
+          : '<span class="ps-muted">' + escapeHtml(t('ps.no_price_size', { size: m.sizeLabel })) + '</span>')
+        + '</p></div>'
+        + psBtn('class="fin-btn fin-btn-secondary ps-change" id="psChangeMattress" data-ps-open="mattress"',
+          escapeHtml(t('ps.change_mattress')), 'window.psOpenSheet(\'mattress\',\'\',\'\',this)')
+        + '</div>';
+      html += '<div class="ps-block"><span class="ps-kicker" id="psSizeLabel">' + escapeHtml(t('ps.size')) + '</span>'
+        + '<div class="ps-chips ps-chips--size" role="group" aria-labelledby="psSizeLabel">'
+        + m.sizes.map(function (s) {
+          return psBtn('class="ps-chip' + (s.active ? ' is-on' : '') + '" aria-pressed="' + (s.active ? 'true' : 'false')
+            + '" data-ps-size="' + escapeHtml(s.id) + '"',
+            '<span class="ps-chip__name">' + escapeHtml(s.label) + '</span>'
+            + '<span class="ps-chip__price">' + escapeHtml(s.price || t('ps.not_priced')) + '</span>',
+            'window.psSetSize(\'' + psId(s.id) + '\')');
+        }).join('') + '</div></div>';
+      // the Sleep System, compact
+      html += '<div class="ps-block"><span class="ps-kicker">' + escapeHtml(t('ps.system')) + '</span><ul class="ps-rows">';
+      m.steps.forEach(function (st) {
+        st.rows.forEach(function (l) {
+          var qty = '';
+          if (l.split) {
+            qty = '<span class="ps-qty__n ps-qty__fixed">× 2</span>';
+          } else if (l.max > 1) {
+            qty = '<span class="ps-qty" role="group" aria-label="' + escapeHtml(t('ps.qty_label', { name: l.name })) + '">'
+              + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="-1" aria-label="'
+                + escapeHtml(t('ps.qty_less')) + '"' + (l.qty <= 1 ? ' disabled' : ''), '−',
+                'window.psQty(\'' + psId(l.id) + '\',-1)')
+              + '<span class="ps-qty__n">' + l.qty + '</span>'
+              + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="1" aria-label="'
+                + escapeHtml(t('ps.qty_more')) + '"' + (l.qty >= l.max ? ' disabled' : ''), '+',
+                'window.psQty(\'' + psId(l.id) + '\',1)')
+              + '</span>';
+          }
+          html += '<li class="ps-row' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '" data-ps-step="' + escapeHtml(st.step) + '">'
+            + psImg(l.image, 'ps-row__img')
+            + '<span class="ps-row__text"><span class="ps-row__cat">' + escapeHtml(t('ps.cat_' + st.step)) + '</span>'
+            + '<span class="ps-row__name">' + escapeHtml(l.name) + '</span>'
+            + '<span class="ps-row__meta">' + escapeHtml([l.size, (l.priced && l.qty > 1) ? t('ps.each', { amount: l.unit }) : ''].filter(Boolean).join(' · ')) + '</span>'
+            + (l.why ? '<span class="ps-row__why" data-ps-why>' + escapeHtml(l.why) + '</span>' : '') + '</span>'
+            + qty
+            + '<span class="ps-row__amount">' + (l.priced ? escapeHtml(l.ext) + psMark(l.illustrative)
+              : '<span class="ps-muted">' + escapeHtml(t('ps.no_price')) + '</span>') + '</span>'
+            + '<span class="ps-row__actions">'
+            + psBtn('class="ps-link" data-ps-change="' + escapeHtml(l.id) + '"', escapeHtml(t('ps.change')),
+              'window.psOpenSheet(\'accessory\',\'' + psId(st.step) + '\',\'' + psId(l.id) + '\',this)')
+            + psBtn('class="ps-link" data-ps-remove="' + escapeHtml(l.id) + '" aria-label="' + escapeHtml(t('ps.remove_named', { name: l.name })) + '"',
+              escapeHtml(t('ps.remove')), 'window.psRemove(\'' + psId(l.id) + '\')')
+            + '</span></li>';
+          if (st.split && st.split.id === l.id) {
+            var sp = st.split;
+            var spChip = function (on, label) {
+              var cur = sp.on === on;
+              return psBtn('class="ps-chip ps-chip--split' + (cur ? ' is-on' : '') + '" aria-pressed="' + (cur ? 'true' : 'false')
+                + '" data-ps-split="' + (on ? 'on' : 'off') + '"',
+                '<span class="ps-chip__name">' + escapeHtml(label) + '</span>'
+                + (!cur && sp.proposal && sp.proposal.subtotalDiff ? '<span class="ps-chip__price">' + escapeHtml(sp.proposal.subtotalDiff)
+                  + (sp.proposal.monthlyDiff ? ' · ' + escapeHtml(sp.proposal.monthlyDiff) : '') + '</span>' : ''),
+                'window.psSetSplit(\'' + psId(sp.id) + '\',' + (on ? 'true' : 'false') + ')');
+            };
+            html += '<li class="ps-row ps-row--split"><span class="ps-fine">' + escapeHtml(t('ps.split_hint')) + '</span>'
+              + '<span class="ps-chips" role="group" aria-label="' + escapeHtml(t('ps.split_label')) + '">'
+              + spChip(false, t('ps.split_single')) + spChip(true, t('ps.split_two')) + '</span></li>';
+          }
+        });
+        if (st.canAdd) {
+          html += '<li class="ps-row ps-row--add">'
+            + psBtn('class="ps-add" data-ps-add="' + st.step + '"', '+ ' + escapeHtml(psStepTitle(st.step, 'add')),
+              'window.psOpenSheet(\'accessory\',\'' + st.step + '\',\'\',this)') + '</li>';
+        }
+      });
+      html += '</ul>';
+      if (m.complete) {
+        html += '<div class="ps-subtotal" data-ps="subtotal"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+          + '<strong>' + escapeHtml(m.subtotal) + '</strong></div>'
+          + (m.excludes ? '<p class="ps-fine">' + escapeHtml(m.excludes) + '</p>' : '');
+      } else {
+        html += '<div class="ps-subtotal is-incomplete" data-ps="subtotal"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+          + '<strong>' + escapeHtml(t('ps.incomplete')) + '</strong></div>'
+          + '<p class="ps-warn">' + escapeHtml(t('ps.missing', { items: m.missing.join(', ') })) + '</p>';
+      }
+      return html + '</div>';
+    }
+    // ---- the selected payment (right, top) -------------------------------------
+    function psCenterHtml(m) {
+      var r = m.result;
+      var fig = function (k, v, sub) {
+        return '<div class="ps-fig" data-ps-fig="' + k + '"><span class="ps-fig__label">' + escapeHtml(t('ps.fig_' + k)) + '</span>'
+          + '<span class="ps-fig__value">' + escapeHtml(v) + '</span>'
+          + (sub ? '<span class="ps-fig__sub">' + escapeHtml(sub) + '</span>' : '') + '</div>';
+      };
+      var html = '<div class="ps-center" data-ps-center="' + escapeHtml(r.kind) + '">';
+      if (r.kind === 'full') {
+        // One payment: the amount once, framed as one payment. The purchase
+        // area already carries the subtotal and its exclusions.
+        html += '<span class="ps-center__label">' + escapeHtml(t('ps.pay_full')) + '</span>'
+          + '<span class="ps-center__big" data-ps-big>' + escapeHtml(r.amount || t('ps.incomplete')) + '</span>'
+          + '<span class="ps-center__terms">' + escapeHtml(t('ps.one_payment')) + '</span>';
+      } else if (r.kind === 'calc' && r.state === 'calculated') {
+        // The monthly figure tied to its term, APR and down payment; then
+        // what the customer pays in all against what the products cost.
+        html += '<span class="ps-center__label">' + escapeHtml(t('ps.center_example')) + '</span>'
+          + '<span class="ps-center__big" data-ps-big>' + escapeHtml(t('ps.monthly', { amount: r.monthly })) + '</span>'
+          + '<span class="ps-center__terms">' + escapeHtml(t('ps.center_terms', { n: r.term, apr: r.apr, down: r.down })) + '</span>'
+          + '<div class="ps-center__figs">'
+          + fig('cost', r.cost, r.hasDown ? t('ps.cost_sub_down', { down: r.down, n: r.term }) : t('ps.cost_sub_n', { n: r.term }))
+          + fig('interest', r.interest, '')
+          + fig('subtotal', m.subtotal, t('ps.subtotal_sub'))
+          + '</div>';
+      } else if (r.kind === 'calc') {
+        html += '<span class="ps-center__label">' + escapeHtml(t('ps.cmp_terms', { n: r.term, apr: r.apr })) + '</span>'
+          + '<p class="ps-warn">' + escapeHtml(t(psStateKey(r.state))) + '</p>';
+      } else {
+        html += '<span class="ps-center__label">' + escapeHtml(r.label) + '</span>'
+          + '<span class="ps-center__big ps-center__big--muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>'
+          + '<p class="ps-note">' + escapeHtml(t('ps.quote_detail')) + '</p>';
+      }
+      html += '</div>';
+      // supporting details, one disclosure
+      html += '<details class="ps-details" id="psDetails"' + (_psDetailsOpen ? ' open' : '') + ' ontoggle="window.psDetailsToggled(this)">'
+        + '<summary class="ps-details__summary">' + escapeHtml(t('ps.details')) + '</summary><div class="ps-details__body">';
+      if (r.kind === 'calc' && r.state === 'calculated') {
+        html += '<dl class="ps-dl">'
+          + '<div data-ps-dl="financed"><dt>' + escapeHtml(t('ps.fig_financed')) + '</dt><dd>' + escapeHtml(r.financed) + '</dd></div>'
+          + '<div data-ps-dl="down"><dt>' + escapeHtml(t('ps.fig_down')) + '</dt><dd>' + escapeHtml(r.down) + '</dd></div>'
+          + '<div data-ps-dl="scheduled"><dt>' + escapeHtml(t('ps.fig_scheduled')) + '</dt><dd>' + escapeHtml(r.scheduled)
+          + ' <span class="ps-fig__sub">(' + escapeHtml(t('ps.payments_n', { n: r.term })) + ')</span></dd></div>'
+          + '</dl><p class="ps-fine">' + escapeHtml(t(r.exact ? 'ps.rounding_exact' : 'ps.rounding')) + '</p>';
+      }
+      if (m.excludes) html += '<p class="ps-fine">' + escapeHtml(m.excludes) + '</p>';
+      html += '<p class="ps-source">' + escapeHtml(m.priceSource) + '</p>'
+        + '<p class="ps-source">' + escapeHtml(m.paymentSource) + '</p></div></details>';
+      return html;
+    }
+    // ---- the comparison (right) -----------------------------------------------
+    // One row per payment choice, the same reading order everywhere:
+    // the choice (term and APR ARE a plan's name - never repeated beside
+    // it), the monthly payment, then total paid with its interest beneath.
+    // Each cell carries an explicit class, never a sibling position.
+    function psCompareHtml(m) {
+      // A down payment applies to every plan alike: said once, not per row.
+      var dn = m.down.applies && m.down.amount && m.cards.filter(function (c) { return c.downNote; })[0];
+      var html = (dn ? '<p class="ps-cmp__downnote" data-ps="cmp-down">' + escapeHtml(t('ps.cmp_down_note', { amount: m.down.amount })) + '</p>' : '')
+        + '<ul class="ps-cmp" aria-labelledby="psPayLabel">';
+      m.cards.forEach(function (c) {
+        var sel = c.selected;
+        var tick = '<span class="ps-cmp__tick" aria-hidden="true">' + (sel ? '✓' : '') + '</span>';
+        var state = sel ? '<span class="ps-cmp__sel">' + escapeHtml(t('ps.selected')) + '</span>' : '';
+        var name, main, total;
+        var totalCell = function (amount, line) {
+          // Spaces between the stacked spans keep the button's accessible
+          // name readable ("Total paid up to $X"), whatever the layout.
+          return ' <span class="ps-cmp__total"><span class="ps-cmp__total-label">' + escapeHtml(t('ps.fig_cost')) + '</span> '
+            + '<span class="ps-cmp__total-amt">' + escapeHtml(amount) + '</span>'
+            + (line ? ' <span class="ps-cmp__interest">' + escapeHtml(line) + '</span>' : '') + '</span>';
+        };
+        if (c.kind === 'full') {
+          name = t('ps.pay_full');
+          main = '<span class="ps-cmp__main ps-cmp__main--text">' + escapeHtml(t('ps.one_payment_short')) + '</span>';
+          total = c.amount ? totalCell(c.amount, t('ps.no_interest')) : '<span class="ps-cmp__total ps-muted">' + escapeHtml(t('ps.incomplete')) + '</span>';
+        } else if (c.kind === 'calc') {
+          name = '';   // term and APR, two deliberate lines (below)
+          if (c.monthly) {
+            main = '<span class="ps-cmp__main">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>';
+            total = totalCell(c.total, t('ps.card_interest', { amount: c.interest }));
+          } else {
+            main = '<span class="ps-cmp__main ps-cmp__main--text ps-muted">—</span>';
+            total = '<span class="ps-cmp__total ps-muted">' + escapeHtml(t(psStateKey(c.state))) + '</span>';
+          }
+        } else {
+          name = c.label;
+          main = '<span class="ps-cmp__main ps-cmp__main--text ps-muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>';
+          total = '<span class="ps-cmp__total ps-cmp__total--note">' + escapeHtml(t('ps.quote_sub')) + '</span>';
+        }
+        html += '<li>' + psBtn('class="ps-cmp__row ps-cmp__row--' + c.kind + (sel ? ' is-on' : '') + '" aria-pressed="'
+          + (sel ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
+          tick + '<span class="ps-cmp__name">'
+          + (c.kind === 'calc'
+            ? '<span class="ps-cmp__choice">' + escapeHtml(t('ps.months_n', { n: c.term })) + '</span> <span class="ps-cmp__apr">' + escapeHtml(t('ps.apr', { apr: c.apr })) + '</span>'
+            : '<span class="ps-cmp__choice">' + escapeHtml(name) + '</span>')
+          + (state ? ' ' + state : '') + '</span> '
+          + main + ' ' + total,
+          'window.psSetPlan(\'' + psId(c.id) + '\')') + '</li>';
+      });
+      return html + '</ul>';
+    }
+    function psDownMessage(m) {
+      var s = m.down.state;
+      if (!m.down.applies) return t('ps.down_choose_plan');
+      if (s === 'negative' || s === 'invalid') return t('ps.down_invalid');
+      if (s === 'too-large') return t('ps.down_too_large');
+      if (s === 'ok') return t('ps.down_applied');
+      return t('ps.down_hint');
+    }
+    function psDownHtml(m) {
+      return '<label class="ps-kicker" for="psDownInput">' + escapeHtml(t('ps.down_label')) + '</label>'
+        + '<div class="ps-down__row"><span class="ps-down__cur" aria-hidden="true">$</span>'
+        + '<input id="psDownInput" class="ps-down__input" type="text" inputmode="decimal" autocomplete="off" '
+        + 'aria-describedby="psDownMsg" value="' + escapeHtml(m.down.raw) + '"'
+        + (m.down.applies ? '' : ' disabled') + ' oninput="window.psSetDown(this.value)">'
+        + ['0', '250', '500', '1000'].map(function (v) {
+          // The preset in force is marked (text weight, border and
+          // aria-pressed); a typed amount that matches no preset marks none.
+          var on = m.down.applies && m.down.preset === v;
+          return psBtn('class="ps-chip ps-chip--sm' + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false')
+            + '" data-ps-down="' + v + '"' + (m.down.applies ? '' : ' disabled'),
+            escapeHtml(v === '0' ? t('ps.down_none') : formatPriceAmount(Number(v) * 100, 'USD')),
+            'window.psSetDown(\'' + v + '\',true)');
+        }).join('') + '</div>'
+        + '<p class="ps-down__msg' + ((m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large') ? ' is-error' : '')
+        + '" id="psDownMsg" role="status">' + escapeHtml(psDownMessage(m)) + '</p>';
+    }
+    var _psDetailsOpen = false;
+    window.psDetailsToggled = function (el) { _psDetailsOpen = !!(el && el.open); };
+    function renderPurchaseStudio(partial) {
+      var box = document.getElementById('purchaseStudio');
+      if (!box) return;
+      var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
+      var total = document.getElementById('hf2SystemTotal');
+      var hero = document.getElementById('hf2FinalistHero');
+      var sysSec = document.getElementById('hf2SleepSystemSection');
+      if (!m.show) {
+        box.hidden = true;
+        box.innerHTML = '';
+        if (hero) hero.style.display = '';
+        return;
+      }
+      if (total) { total.hidden = true; total.innerHTML = ''; }
+      box.hidden = false;
+      // Back on the Summary by any route: the Results way-back has served.
+      // (The Summary renders BEFORE its screen activates, so look once the
+      // navigation has settled.)
+      if (_psReturn) sessionTimeout(function () {
+        var hs = document.getElementById('hf2Screen');
+        if (_psReturn && hs && hs.classList.contains('active')) { _psReturn = false; psRenderReturn(); }
+      }, 0);
+      if (m.empty) {
+        if (hero) hero.style.display = '';
+        box.innerHTML = '<p class="ps-note">' + escapeHtml(t('ps.choose_first')) + '</p>';
+        return;
+      }
+      // ONE presentation of the selected purchase: the Summary's separate
+      // finalist hero and Sleep System list yield to this one while it shows.
+      if (hero) hero.style.display = 'none';
+      if (sysSec) sysSec.style.display = 'none';
+      if (partial && document.getElementById('psDownInput')) {
+        // Typing in the down payment repaints the figures, not the field.
+        document.getElementById('psCenterBox').innerHTML = psCenterHtml(m);
+        document.getElementById('psCompareBox').innerHTML = psCompareHtml(m);
+        var msg = document.getElementById('psDownMsg');
+        if (msg) {
+          msg.textContent = psDownMessage(m);
+          msg.classList.toggle('is-error', m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large');
+        }
+        Array.prototype.forEach.call(document.querySelectorAll('#purchaseStudio [data-ps-down]'), function (b) {
+          var on = m.down.applies && m.down.preset === b.getAttribute('data-ps-down');
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        var note = document.getElementById('psChangeNote');
+        if (note) note.remove();
+        return;
+      }
+      box.innerHTML = '<div class="ps-head"><span class="ps-kicker">' + escapeHtml(t('ps.kicker')) + '</span>'
+        + '<h2 class="ps-title" id="psTitle" tabindex="-1">' + escapeHtml(t('ps.title')) + '</h2></div>'
+        + '<div class="ps-layout"><div class="ps-col ps-col--main" id="psMainBox">' + psPurchaseHtml(m) + '</div>'
+        + '<div class="ps-col ps-col--pay">'
+        // Not a live region: a repaint per keystroke must not re-read the
+        // panel. Changes are announced once, concisely, through #psLive.
+        + (_psChangeNote ? '<p class="ps-confirm" id="psChangeNote">' + escapeHtml(psChangeNoteText(_psChangeNote)) + '</p>' : '')
+        + '<div id="psCenterBox">' + psCenterHtml(m) + '</div>'
+        + '<div class="ps-down">' + psDownHtml(m) + '</div>'
+        + '<span class="ps-kicker" id="psPayLabel">' + escapeHtml(t('ps.pay_label')) + '</span>'
+        + '<div id="psCompareBox">' + psCompareHtml(m) + '</div>'
+        + psBtn('class="fin-btn fin-btn-secondary ps-edit" id="psEditSystem"', escapeHtml(t('ps.edit_system')), 'window.showAccessories()')
+        + '</div></div>';
+      // An open change sheet follows the purchase and the language.
+      if (_psSheet && typeof renderPsSheet === 'function') renderPsSheet();
+    }
+    function psRepaint(focusSel, keepNote) {
+      if (!keepNote) _psChangeNote = null;
+      if (typeof renderHf2 === 'function') renderHf2();
+      else renderPurchaseStudio();
+      if (focusSel) {
+        var el = document.querySelector('#purchaseStudio ' + focusSel);
+        if (el && !el.disabled && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      }
+    }
+    function psAnnounce(text, fromDown) {
+      var live = document.getElementById('psLive');
+      if (!live) return;
+      // Any other announcement supersedes a pending down-payment one.
+      if (!fromDown) _psDownSay++;
+      live.textContent = '';
+      sessionTimeout(function () { live.textContent = text; }, 30);
+    }
+
+    // ---- the change sheet -------------------------------------------------------
+    var _psSheet = null;   // { kind, step, target, pick, opener }
+    function psSheetModel() {
+      if (!_psSheet) return { show: false };
+      return _psSheet.kind === 'mattress' ? psMattressSheet() : psAccessorySheet(_psSheet.step, _psSheet.target);
+    }
+    function psPreviewHtml(sm, opt) {
+      if (!opt) return '<p class="ps-fine">' + escapeHtml(t('ps.sheet_pick')) + '</p>';
+      var p = opt.proposal;
+      if (!p) return '<p class="ps-fine">' + escapeHtml(t('ps.sheet_current')) + '</p>';
+      var html = '<div class="ps-preview" data-ps-preview>';
+      if (!p.complete) {
+        return html + '<p class="ps-warn">' + escapeHtml(t('ps.missing', { items: p.missing.join(', ') })) + '</p></div>';
+      }
+      html += '<div class="ps-preview__row"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+        + '<span class="ps-preview__vals">' + escapeHtml(p.currentSubtotal) + ' → <strong>' + escapeHtml(p.subtotal) + '</strong>'
+        + (p.subtotalDiff ? ' <span class="ps-preview__diff">(' + escapeHtml(p.subtotalDiff) + ')</span>' : '') + '</span></div>';
+      if (p.monthly) {
+        html += '<div class="ps-preview__row"><span>' + escapeHtml(t('ps.preview_monthly', { plan: sm.planLabel })) + '</span>'
+          + '<span class="ps-preview__vals">' + escapeHtml(t('ps.monthly', { amount: p.currentMonthly })) + ' → <strong>'
+          + escapeHtml(t('ps.monthly', { amount: p.monthly })) + '</strong>'
+          + ' <span class="ps-preview__diff">(' + escapeHtml(p.monthlyDiff) + ')</span></span></div>';
+      } else {
+        html += '<p class="ps-fine">' + escapeHtml(t('ps.preview_no_monthly_' + (p.monthlyNote === 'full' || p.monthlyNote === 'quote' ? p.monthlyNote
+          : (p.monthlyNote === 'nothing-financed' ? 'down' : 'other')))) + '</p>';
+      }
+      if (opt.configNote) html += '<p class="ps-preview__config" data-ps-config>' + escapeHtml(opt.configNote) + '</p>';
+      var why = sm.kind === 'mattress' ? opt.fit : opt.reason;
+      if (why) html += '<p class="ps-preview__why">' + escapeHtml(why) + '</p>';
+      return html + '</div>';
+    }
+    function renderPsSheet() {
+      var sheet = document.getElementById('psSheet');
+      var bd = document.getElementById('psSheetBackdrop');
+      if (!sheet || !bd) return;
+      var sm = psSheetModel();
+      if (!_psSheet || !sm.show) { psCloseSheetQuiet(); return; }
+      var had = document.activeElement && sheet.contains(document.activeElement) ? document.activeElement : null;
+      var refocus = !had ? '' : (had.id ? '#' + had.id
+        : (had.getAttribute('data-ps-sheet-opt') ? '[data-ps-sheet-opt="' + had.getAttribute('data-ps-sheet-opt') + '"]' : ''));
+      var pick = _psSheet.pick;
+      var all = sm.options.slice();
+      var title = sm.kind === 'mattress' ? t('ps.change_mattress') : psStepTitle(sm.step, sm.mode);
+      var opt = function (o, id) {
+        var on = pick === id;
+        var body = (o.image ? psImg(o.image, 'ps-opt__img') : '')
+          + '<span class="ps-opt__text"><span class="ps-opt__name">' + escapeHtml(o.name)
+          + (o.current ? ' <span class="ps-opt__cur">' + escapeHtml(t('ps.current')) + '</span>' : '')
+          + (o.saved && !o.current ? ' <span class="ps-opt__tag">' + escapeHtml(t('ps.saved')) + '</span>' : '') + '</span>'
+          + (o.modelLine ? '<span class="ps-opt__meta">' + escapeHtml(o.modelLine) + '</span>' : '')
+          + ((sm.kind === 'mattress' ? o.fit : o.reason) ? '<span class="ps-opt__why">' + escapeHtml(sm.kind === 'mattress' ? o.fit : o.reason) + '</span>' : '')
+          + (o.configNote ? '<span class="ps-opt__config">' + escapeHtml(o.configNote) + '</span>' : '')
+          + '</span><span class="ps-opt__nums"><span class="ps-opt__price">'
+          + (o.priced ? escapeHtml(o.config && o.config.quantity > 1 ? t('ps.each', { amount: o.price }) : o.price) + psMark(o.illustrative)
+            : escapeHtml(o.sizeNote || t('ps.not_priced'))) + '</span>'
+          + (o.proposal && o.proposal.subtotalDiff ? '<span class="ps-opt__delta">' + escapeHtml(t('ps.system_change', { amount: o.proposal.subtotalDiff })) + '</span>' : '')
+          + (o.proposal && o.proposal.monthlyDiff ? '<span class="ps-opt__delta">' + escapeHtml(o.proposal.monthlyDiff) + '</span>' : '')
+          + '</span>';
+        return '<li>' + psBtn('class="ps-sopt' + (on ? ' is-on' : '') + (o.current ? ' is-current' : '') + '" aria-pressed="' + (on ? 'true' : 'false')
+          + '" data-ps-sheet-opt="' + escapeHtml(id) + '"', body, 'window.psSheetPick(\'' + psId(id) + '\')') + '</li>';
+      };
+      var list = all.map(function (o) { return opt(o, o.id); }).join('');
+      if (sm.kind === 'mattress' && sm.more > 0) {
+        list += '<li>' + psBtn('class="ps-add ps-sheet__more" id="psSheetMore"', escapeHtml(t('ps.more_matches', { n: sm.more })),
+          'window.psSheetMore()') + '</li>';
+      }
+      if (sm.none) {
+        list += opt({ name: t('ps.none_' + sm.step), current: sm.none.current, proposal: sm.none.proposal, priced: false,
+                      sizeNote: ' ', reason: '' }, '__none');
+      }
+      var picked = pick === '__none' ? (sm.none ? { proposal: sm.none.proposal, current: sm.none.current } : null)
+        : all.filter(function (o) { return o.id === pick; })[0] || null;
+      var canApply = !!(picked && !picked.current);
+      var applyLabel = psApplyLabel(sm, pick, picked);
+      // The persistent language bar is inert beneath this modal, so the sheet
+      // carries its own switch (the payment workspace's pattern), offered
+      // only when this retailer configures more than one language.
+      var langs = (STORE_CONFIG && Array.isArray(STORE_CONFIG.languages)) ? STORE_CONFIG.languages : ['en'];
+      var langGroup = langs.length < 2 ? '' : '<div class="fin-ws-lang ps-sheet__lang" role="group" aria-label="'
+        + escapeHtml(t('pay.ws.lang_group')) + '">' + ['en', 'es'].filter(function (l) { return langs.indexOf(l) !== -1; }).map(function (l) {
+          return psBtn('id="psSheetLang' + (l === 'en' ? 'En' : 'Es') + '" data-lang="' + l + '" aria-pressed="' + (currentLang === l ? 'true' : 'false') + '"',
+            escapeHtml(t('session.lang_' + l)), 'window.finWsSetLang(\'' + l + '\')');
+        }).join('') + '</div>';
+      sheet.innerHTML = '<div class="ps-sheet__head"><div class="ps-sheet__titles"><h2 class="ps-sheet__title" id="psSheetTitle" tabindex="-1">' + escapeHtml(title) + '</h2>'
+        + (sm.kind === 'mattress' && sm.size ? '<p class="ps-fine">' + escapeHtml(t('ps.sheet_size', { size: sm.size })) + '</p>' : '')
+        + '</div>' + langGroup + '</div><ul class="ps-sheet__list">' + list + '</ul>'
+        + '<div class="ps-sheet__foot"><div class="ps-sheet__preview" aria-live="polite">' + psPreviewHtml(sm, picked) + '</div>'
+        + '<div class="ps-sheet__actions">'
+        + psBtn('class="fin-btn fin-btn-primary" id="psSheetApply"' + (canApply ? '' : ' disabled'), escapeHtml(applyLabel), 'window.psSheetApply()')
+        + psBtn('class="fin-btn fin-btn-secondary" id="psSheetCancel"', escapeHtml(t('ps.cancel')), 'window.psCloseSheet()')
+        + (sm.kind === 'mattress' ? psBtn('class="ps-link ps-sheet__browse" id="psSheetBrowse"', escapeHtml(t('ps.browse_all')), 'window.psBrowseAll()') : '')
+        + '</div></div>';
+      sheet.hidden = false;
+      bd.hidden = false;
+      psInertBackground(sheet, bd);
+      // A repaint (a language switch, a pick) keeps focus where it was.
+      var back = refocus ? sheet.querySelector(refocus) : null;
+      if (back && typeof back.focus === 'function') back.focus({ preventScroll: true });
+    }
+    window.psOpenSheet = function (kind, step, target, opener) {
+      _psSheet = { kind: kind === 'mattress' ? 'mattress' : 'accessory', step: step || '', target: target || '', pick: '',
+                   opener: opener && opener.id ? '#' + opener.id
+                     : (opener && opener.getAttribute ? (opener.getAttribute('data-ps-change') ? '[data-ps-change="' + opener.getAttribute('data-ps-change') + '"]'
+                       : (opener.getAttribute('data-ps-add') ? '[data-ps-add="' + opener.getAttribute('data-ps-add') + '"]' : '')) : '') };
+      renderPsSheet();
+      var title = document.getElementById('psSheetTitle');
+      if (title) title.focus({ preventScroll: true });
+    };
+    // The Apply button names the action it takes (bilingual templates,
+    // never concatenated fragments).
+    function psApplyLabel(sm, pick, picked) {
+      if (!picked || picked.current) return t('ps.apply');
+      if (sm.kind === 'mattress') return t('ps.apply_mattress');
+      if (pick === '__none') return t('ps.apply_remove_' + sm.step);
+      var verb = sm.mode === 'add' ? 'add' : 'replace';
+      var n = picked.config && picked.config.quantity > 1 && !picked.config.split ? picked.config.quantity : 1;
+      return n > 1 ? t('ps.apply_' + verb + '_' + sm.step + '_n', { n: n }) : t('ps.apply_' + verb + '_' + sm.step);
+    }
+    window.psSheetMore = function () {
+      if (!_psSheet || _psSheet.kind !== 'mattress') return;
+      var firstNew = document.querySelectorAll('#psSheet [data-ps-sheet-opt]').length;
+      _psSheet.more = true;
+      renderPsSheet();
+      var el = document.querySelectorAll('#psSheet [data-ps-sheet-opt]')[firstNew];
+      if (el) el.focus({ preventScroll: false });
+    };
+    window.psSheetPick = function (id) {
+      if (!_psSheet) return;
+      _psSheet.pick = id;
+      renderPsSheet();
+      var el = document.querySelector('#psSheet [data-ps-sheet-opt="' + id + '"]');
+      if (el) el.focus({ preventScroll: true });
+    };
+    // Background isolation while the sheet is open - the financing
+    // workspace's ownership pattern: every body child except the sheet and
+    // its backdrop becomes inert, and ONLY what this sheet changed is
+    // remembered and released. Anything already inert (a closed dialog, a
+    // screen under another overlay) is left exactly as its owner set it.
+    var _psInerted = [];
+    function psInertBackground(sheet, bd) {
+      if (_psInerted.length) return;
+      var kids = document.body ? Array.prototype.slice.call(document.body.children) : [];
+      kids.forEach(function (el) {
+        if (el === sheet || el === bd || !el.setAttribute) return;
+        if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+        if (el.hasAttribute('inert')) return;
+        el.setAttribute('inert', '');
+        _psInerted.push({ el: el, wasHidden: el.getAttribute('aria-hidden') === 'true' });
+      });
+    }
+    function psReleaseInert() {
+      _psInerted.forEach(function (rec) {
+        var el = rec.el;
+        if (!el || !el.removeAttribute) return;
+        if (el.getAttribute('aria-hidden') === 'true' && !rec.wasHidden) return;
+        el.removeAttribute('inert');
+      });
+      _psInerted = [];
+    }
+    function psCloseSheetQuiet() {
+      psReleaseInert();
+      _psSheet = null;
+      var sheet = document.getElementById('psSheet');
+      var bd = document.getElementById('psSheetBackdrop');
+      if (sheet) { sheet.hidden = true; sheet.innerHTML = ''; }
+      if (bd) bd.hidden = true;
+    }
+    window.psCloseSheet = function () {
+      var opener = _psSheet ? _psSheet.opener : '';
+      psCloseSheetQuiet();
+      var el = opener ? document.querySelector('#purchaseStudio ' + opener) : null;
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+    };
+    // Browse all matches leaves the purchase exactly as it is and puts a
+    // way back to it at the top of Results.
+    var _psReturn = false;
+    window.psBrowseAll = function () {
+      psCloseSheetQuiet();
+      _psReturn = true;
+      if (typeof window.showResults === 'function') window.showResults();
+      psRenderReturn();
+    };
+    function psRenderReturn() {
+      var bar = document.getElementById('psReturnBar');
+      if (!bar) return;
+      var on = _psReturn && !!psDemoConfig();
+      bar.hidden = !on;
+      bar.innerHTML = on ? psBtn('class="fin-btn fin-btn-primary ps-return__btn" id="psReturnBtn"',
+        escapeHtml(t('ps.back_to_system')), 'window.psReturnToStudio()') : '';
+    }
+    window.psReturnToStudio = function () {
+      _psReturn = false;
+      psRenderReturn();
+      if (typeof window.psOpenStudio === 'function') window.psOpenStudio();
+    };
+    // The purchase's headline figure under the arrangement in view: the
+    // monthly payment for a calculated plan, the subtotal otherwise.
+    function psHeadline() {
+      var c = psContext();
+      if (!c) return null;
+      return { plan: _psPlan, calc: !!c.sel, quote: !c.sel && _psPlan !== 'full',
+               merch: c.complete ? c.merch : null,
+               pay: c.payNow && c.payNow.state === 'calculated' ? c.payNow.payMinor : null };
+    }
+    // ONE restrained confirmation after an applied change, resolved at
+    // render time (so it follows a language switch) and cleared by the next
+    // studio action. Kept as figures, never as translated text.
+    var _psChangeNote = null;   // { name, before, after }
+    function psChangeNoteText(n) {
+      if (!n || !n.before || !n.after) return '';
+      var fmt = function (m) { return formatPriceAmount(m, 'USD'); };
+      var b = n.before, a = n.after;
+      if (a.calc && b.pay !== null && a.pay !== null) {
+        if (a.pay === b.pay) return t('ps.changed_monthly_same', { name: n.name, amount: t('ps.monthly', { amount: fmt(a.pay) }) });
+        return t('ps.changed_monthly', { name: n.name, old: t('ps.monthly', { amount: fmt(b.pay) }), new: t('ps.monthly', { amount: fmt(a.pay) }) });
+      }
+      if (a.merch !== null && b.merch !== null) {
+        if (a.merch === b.merch) return t('ps.changed_same', { name: n.name, amount: fmt(a.merch) });
+        return t(a.plan === 'full' ? 'ps.changed_full' : 'ps.changed_subtotal', { name: n.name, old: fmt(b.merch), new: fmt(a.merch) });
+      }
+      return t('ps.changed_incomplete', { name: n.name });
+    }
+    window.psSheetApply = function () {
+      var s = _psSheet;
+      if (!s || !s.pick) return;
+      var opener = s.opener;
+      var name = '';
+      var before = psHeadline();
+      if (s.kind === 'mattress') {
+        var sm = psMattressSheet();
+        var o = sm.options.filter(function (x) { return x.id === s.pick; })[0];
+        if (!o || o.current) return;
+        name = o.name;
+        window.chooseFinalist(s.pick);
+      } else {
+        var cart = window._accCart || {};
+        if (s.pick === '__none') {
+          Object.keys(cart).forEach(function (id) {
+            var rec = psAccessory(id);
+            if (rec && psStepOf(rec) === s.step) setSleepSystemItem(id, false);
+          });
+          name = t('ps.none_' + s.step);
+        } else {
+          // The configuration the preview priced (quantity, split King),
+          // from the same sheet model, so Apply cannot differ from it.
+          var aopt = psAccessorySheet(s.step, s.target).options.filter(function (x) { return x.id === s.pick; })[0];
+          if (!aopt || aopt.current) return;
+          var cfg = aopt.config || { quantity: 1 };
+          if (s.step === 'pillow' && s.target && s.target !== s.pick) setSleepSystemItem(s.target, false);
+          setSleepSystemItem(s.pick, true);
+          var entry = (window._accCart || {})[s.pick];
+          if (entry) {
+            if (cfg.split) { entry.split = true; entry.quantity = 2; }
+            else {
+              delete entry.split;
+              if (entry.quantity !== cfg.quantity && !setSleepSystemItemQuantity(s.pick, cfg.quantity)) entry.quantity = 1;
+            }
+          }
+          var a = psAccessory(s.pick);
+          name = a ? (L(a.name) || '') : '';
+        }
+      }
+      psCloseSheetQuiet();
+      _psChangeNote = { name: name, before: before, after: psHeadline() };
+      psRepaint(null, true);
+      // focus back to the control that opened the sheet (the same row's
+      // Change when it still exists, else the Change mattress / Add control)
+      var el = (opener && document.querySelector('#purchaseStudio ' + opener))
+        || document.querySelector('#purchaseStudio [data-ps-change="' + s.pick + '"]')
+        || document.getElementById('psChangeMattress');
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      psAnnounce(psChangeNoteText(_psChangeNote));
+    };
+    // Keyboard: Escape cancels; Tab stays inside the open sheet.
+    document.addEventListener('keydown', function (e) {
+      var sheet = document.getElementById('psSheet');
+      if (!_psSheet || !sheet || sheet.hidden) return;
+      // Another dialog above the sheet (the session-safety dialog makes the
+      // sheet inert) owns the keyboard: Escape and Tab are its, not ours.
+      if (sheet.hasAttribute('inert')) return;
+      if (e.key === 'Escape') { e.preventDefault(); window.psCloseSheet(); return; }
+      if (e.key !== 'Tab') return;
+      var f = Array.prototype.slice.call(sheet.querySelectorAll('button:not([disabled]), [tabindex="-1"]'));
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!sheet.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    });
+    // A split King is a King configuration: at any other size the base
+    // returns to one unit (never an invalid split left in the cart).
+    function psNormalizeSplit() {
+      var size = (typeof answers === 'object' && answers) ? answers.mattress_size : '';
+      if (size === 'king') return;
+      var cart = window._accCart || {};
+      Object.keys(cart).forEach(function (id) {
+        if (cart[id] && cart[id].split === true) { delete cart[id].split; cart[id].quantity = 1; }
+      });
+    }
+    // Ids reach inline handlers only when they are plain catalog ids.
+    function psId(id) { return (typeof id === 'string' && /^[A-Za-z0-9_-]+$/.test(id)) ? id : ''; }
+    // The take-home preview's priced row (escaped HTML in title/detail, the
+    // item list plain - the packet renderer escapes items itself).
+    function psTakeHomeRow() {
+      var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
+      if (!m.show || m.empty) return null;
+      // Plain text (the packet renderer escapes items): an illustrative price
+      // carries the same mark as on the Summary, and the price-source line
+      // that explains the mark follows the totals. No notice, no per-price note.
+      var anyIllus = false;
+      var priced = function (on, amount) {
+        if (!on) return amount;
+        anyIllus = true;
+        return amount + ' ' + PS_ILLUS_MARK;
+      };
+      var items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
+        + (m.mattress.priced ? priced(m.mattress.illustrative, m.mattress.price) : t('ps.no_price'))].concat(m.lines.map(function (l) {
+        return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
+          + ' ' + (l.priced ? priced(l.illustrative, l.ext) : t('ps.no_price'));
+      }));
+      var parts = [t('ps.subtotal') + ': ' + (m.complete ? m.subtotal : t('ps.incomplete'))];
+      var r = m.result;
+      if (r.kind === 'calc' && r.state === 'calculated') {
+        // Total PAID from the shared read model (down payment included), the
+        // same figure the Summary and the comparison show.
+        parts.push(t(r.hasDown ? 'ps.th_plan_down' : 'ps.th_plan', { plan: t('ps.cmp_terms', { n: r.term, apr: r.apr }),
+          monthly: t('ps.monthly', { amount: r.monthly }), down: r.down, total: r.costLc }));
+        parts.push(t('ps.card_interest', { amount: r.interestLc }));
+      } else if (r.kind === 'quote') {
+        parts.push(r.label + ': ' + t('pay.fx.to_confirm'));
+      } else if (r.kind === 'full' && m.complete) {
+        parts.push(t('ps.th_full', { amount: m.subtotal }));
+      }
+      if (anyIllus && m.priceSource) parts.push(m.priceSource);
+      // present:false - the recap reads "- in store": the priced system is
+      // shown here, never added to the email (sendResults does not read it).
+      return { present: false, title: escapeHtml(t('ps.th_title')), detail: escapeHtml(parts.join(' · ')), items: items };
+    }
+    // Bring It Home's panel for a path made only of example plans (demo
+    // admission only): each plan's example figures for the current purchase,
+    // from purchaseStudioFor (the Summary's own model), and the way back to
+    // the full comparison. '' for any governed path.
+    function psSheetDemoPanel(plans) {
+      if (typeof demoAdmission !== 'function' || !demoAdmission()) return '';
+      if (!Array.isArray(plans) || !plans.length || !plans.every(function (pl) { return pl && pl.demo === true; })) return '';
+      var m = purchaseStudioFor();
+      if (!m.show) return '';
+      var ids = plans.map(function (pl) { return pl.id; });
+      var html = '<div class="ps-sheet" data-ps-sheet>';
+      if (m.empty || !m.complete) {
+        html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.needs_complete')) + '</p>';
+      } else {
+        html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.sheet_intro', { amount: m.subtotal })) + '</p>'
+          // A down payment applies to every plan alike: said once.
+          + (m.down.amount && m.down.applies ? '<p class="fin-offer__detail" data-ps="bih-down">' + escapeHtml(t('ps.cmp_down_note', { amount: m.down.amount })) + '</p>' : '')
+          + '<ul class="ps-sheet__plans">';
+        var anyFigure = false;
+        m.cards.filter(function (c) { return c.kind === 'calc' && ids.indexOf(c.id) !== -1; }).forEach(function (c) {
+          // The Summary's own card figures (total paid includes any down
+          // payment).
+          if (c.monthly) anyFigure = true;
+          html += '<li class="ps-sheet__plan" data-ps-sheet-plan="' + escapeHtml(c.id) + '">'
+            + '<span class="ps-sheet__label">' + escapeHtml(t('ps.cmp_terms', { n: c.term, apr: c.apr })) + '</span>'
+            + (c.monthly
+              ? '<span class="ps-sheet__amount">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
+                + '<span class="ps-sheet__sub">'
+                + escapeHtml(t('ps.card_total', { amount: c.total })) + ' \u00b7 '
+                + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
+              : '<span class="ps-sheet__sub">' + escapeHtml(t(psStateKey(c.state))) + '</span>')
+            + '</li>';
+        });
+        // Whole-dollar rounding explained where the totals are shown: an
+        // "up to" total is an upper bound, which is why a 0% plan's total can
+        // sit above the purchase price without any interest.
+        html += '</ul>'
+          + (anyFigure ? '<p class="fin-offer__detail" data-ps="bih-rounding">' + escapeHtml(t('ps.sheet_rounding')) + '</p>' : '')
+          + '<p class="fin-offer__disclosure">' + escapeHtml(m.paymentSource) + '</p>';
+      }
+      return html + psBtn('class="fin-btn fin-btn-primary ps-sheet__go" id="psSheetGo"',
+        escapeHtml(t('ps.sheet_go')), 'window.psOpenStudio()') + '</div>';
+    }
+    // From Bring It Home to the Summary's payment comparison.
+    window.psOpenStudio = function () {
+      _psReturn = false;
+      psRenderReturn();
+      if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
+      var hf2 = document.getElementById('hf2Screen');
+      if (!(hf2 && hf2.classList.contains('active')) && typeof window.showSavedPicks === 'function') window.showSavedPicks();
+      sessionTimeout(function () {
+        var box = document.getElementById('purchaseStudio');
+        var title = document.getElementById('psTitle');
+        if (!box || box.hidden) return;
+        box.scrollIntoView({ block: 'start', behavior: 'auto' });
+        if (title) { title.setAttribute('tabindex', '-1'); title.focus({ preventScroll: true }); }
+      }, 60);
+    };
+    window.psSetSize = function (sizeId) {
+      if (PS_SIZES.indexOf(sizeId) === -1 || typeof answers !== 'object' || !answers) return;
+      if (answers.mattress_size === sizeId) return;
+      answers.mattress_size = sizeId;
+      psNormalizeSplit();
+      psRepaint('[data-ps-size="' + sizeId + '"]');
+    };
+    window.psRemove = function (id) {
+      var cart = window._accCart || {};
+      if (!Object.prototype.hasOwnProperty.call(cart, id)) return;
+      var rec = psAccessory(id);
+      var step = rec ? psStepOf(rec) : '';
+      setSleepSystemItem(id, false);
+      psRepaint();
+      var el = document.querySelector('#purchaseStudio [data-ps-add="' + step + '"]')
+        || document.getElementById('psChangeMattress');
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      var m = purchaseStudioFor();
+      psAnnounce(t('ps.removed', { name: rec ? (L(rec.name) || '') : '', subtotal: m.complete ? m.subtotal : t('ps.incomplete') }));
+    };
+    window.psQty = function (id, delta) {
+      var entry = (window._accCart || {})[id];
+      if (!entry) return;
+      var cur = (typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1;
+      setSleepSystemItemQuantity(id, cur + delta);
+      psRepaint();
+      var after = (window._accCart || {})[id];
+      var rec = psAccessory(id);
+      if (after) psAnnounce(t('ps.qty_now', { name: rec ? (L(rec.name) || '') : '', n: after.quantity }));
+      var same = document.querySelector('#purchaseStudio [data-ps-qty="' + id + '"][data-ps-delta="' + delta + '"]');
+      var other = document.querySelector('#purchaseStudio [data-ps-qty="' + id + '"][data-ps-delta="' + (-delta) + '"]');
+      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);
+      if (target) target.focus({ preventScroll: true });
+    };
+    window.psSetSplit = function (id, on) {
+      var entry = (window._accCart || {})[id];
+      if (!entry) return;
+      if (on) { entry.split = true; entry.quantity = 2; }
+      else { delete entry.split; entry.quantity = 1; }
+      psRepaint('[data-ps-split="' + (on ? 'on' : 'off') + '"]');
+    };
+    window.psSetPlan = function (id) {
+      if (typeof id !== 'string' || !id) return;
+      _psPlan = id;
+      psRepaint('[data-ps-plan="' + psId(id) + '"]');
+      psAnnounce(psPaymentSummaryText());
+    };
+    // One concise sentence for the payment in view (the live announcement
+    // after a plan or down-payment change - never the whole panel).
+    function psPaymentSummaryText() {
+      var m = purchaseStudioFor();
+      if (!m.show || m.empty) return '';
+      var r = m.result;
+      if (r.kind === 'full') return m.complete ? t('ps.say_full', { amount: m.subtotal }) : t('ps.needs_complete');
+      if (r.kind === 'calc' && r.state === 'calculated') {
+        return t(r.hasDown ? 'ps.say_plan' : 'ps.say_plan_nodown', { monthly: t('ps.monthly', { amount: r.monthly }), n: r.term, apr: r.apr, down: r.down, total: r.costLc });
+      }
+      if (r.kind === 'calc') return t(psStateKey(r.state));
+      return r.label + ': ' + t('pay.fx.to_confirm');
+    }
+    var _psDownSay = 0;
+    window.psSetDown = function (raw, fromChip) {
+      var calc = (typeof psPlans === 'function') ? psPlans().calc : [];
+      if (!calc.some(function (pl) { return pl.id === _psPlan; })) return;
+      _psDownRaw = String(raw == null ? '' : raw).slice(0, 12);
+      _psChangeNote = null;
+      if (fromChip) {
+        if (_psDownRaw === '0') _psDownRaw = '';
+        renderPurchaseStudio();
+        var el = document.querySelector('#purchaseStudio [data-ps-down="' + (raw || '0') + '"]');
+        if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+        psAnnounce(psPaymentSummaryText());
+        return;
+      }
+      renderPurchaseStudio(true);
+      // Typing announces once, after a pause - not per keystroke.
+      var token = ++_psDownSay;
+      sessionTimeout(function () {
+        if (token !== _psDownSay) return;
+        var m = purchaseStudioFor();
+        psAnnounce(m.show && m.down && (m.down.state === 'ok' || m.down.state === 'none') ? psPaymentSummaryText() : psDownMessage(m), true);
+      }, 900);
+    };
 
     // Financing copy accessor (config copy block, language-aware).
     function FC(key) {
@@ -15538,7 +17519,8 @@
         category: L(a.category) || '',
         image: a.image || (entry && entry.imageUrl) || '',
         qty: entry ? ((typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1) : 0,
-        max: FIN_WS_STEP_MAX[step] || 1
+        // a split King base is fixed at two units (no stepper can change it)
+        max: (entry && entry.split === true) ? 0 : (FIN_WS_STEP_MAX[step] || 1)
       };
     }
     function finWsPurchase() {
@@ -16360,6 +18342,17 @@
               : '');
       }
 
+      // Payment demo: a path made only of EXAMPLE plans explains itself with
+      // the example figures for this purchase (the same model as the
+      // Summary's payment comparison) and a route to that comparison - never
+      // the governed lender copy, which would present a demo as a provider.
+      if (typeof psSheetDemoPanel === 'function') {
+        finPromotionalByProvider(groups.promotional).forEach(function(grp) {
+          var demoPanel = psSheetDemoPanel(grp.plans);
+          if (demoPanel) bodies[finPathId('promo', grp.provider)] = demoPanel;
+        });
+      }
+
       // One governed, evergreen sentence per path for the comparison table.
       // Never an exact term: the promotional, in-house and Mexico sentences
       // are orientation copy, and evergreen plans' detail is ungated by rule.
@@ -17100,7 +19093,7 @@
     // the persistent utility bar. aria-pressed is the state; the styling only
     // mirrors it.
     function updateLanguageControls() {
-      var groups = document.querySelectorAll('.landing-lang-btn, .session-utility__lang');
+      var groups = document.querySelectorAll('.landing-lang-btn, .session-utility__lang, .ps-sheet__lang button');
       Array.prototype.forEach.call(groups, function(btn) {
         var isActive = btn.getAttribute('data-lang') === currentLang;
         btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -20494,6 +22487,7 @@
     function _renderResults() {
       if (!_resultsState) return;
       window._drawerData = buildDrawerData();
+      if (typeof psRenderReturn === 'function') psRenderReturn();
       // Cards below render their compare state from _compareSelected; the
       // tray is the one compare surface OUTSIDE this render, so refresh it
       // here (after _drawerData, which names its slots) — tier switches and
@@ -21573,6 +23567,7 @@
         var step = (source && typeof sleepSystemStepIdForItem === 'function')
           ? sleepSystemStepIdForItem(source) : null;
         var maxQty = (step && STEP_MAX_QTY[step]) || 1;
+        if (selected.split === true) maxQty = 2;
         var q = selected.quantity;
         var quantity = (typeof q === 'number' && isFinite(q) && Math.floor(q) === q
           && q >= 1 && q <= maxQty) ? q : 1;
@@ -21649,6 +23644,11 @@
           title: FC('emailHeading'),
           detail: finEmailBody() });
       }
+      // Payment demo only: the priced Sleep System and the payment choice
+      // shown on the Summary, so the take-home preview agrees with it. Never
+      // part of the send payload (sendResults does not read this packet).
+      var psRow = (typeof psTakeHomeRow === 'function') ? psTakeHomeRow() : null;
+      if (psRow) packet.push(psRow);
 
       var summaryEl = document.getElementById('emailPreview');
       if (summaryEl) summaryEl.innerHTML = packet.map(function(r) {
@@ -23976,6 +25976,7 @@
         var scored = scoreAccessoriesFromAnswers().find(function(accessory) { return accessory.id === itemId; });
         var priorQty = (window._accCart[itemId] && typeof window._accCart[itemId].quantity === 'number')
           ? window._accCart[itemId].quantity : 1;
+        var priorSplit = !!(window._accCart[itemId] && window._accCart[itemId].split === true);
         window._accCart[itemId] = {
           id: itemId,
           // How many of THIS product. Re-selecting an item keeps the quantity
@@ -23991,6 +25992,7 @@
           // keys through accessoryReasonText() in the current language.
           reasonKeys: scored ? scored.reasons.slice(0, 2).map(accessoryReasonKey).filter(Boolean) : []
         };
+        if (priorSplit) window._accCart[itemId].split = true;
         window._sleepSystemState.decisions[stepId] = { status: 'selected', itemId: itemId };
         analytics.log('sleep_system_item_selected', { itemId: itemId, step: stepId });
       } else {
@@ -24033,6 +26035,9 @@
       if (typeof itemId !== 'string' || !itemId) return false;
       var cart = window._accCart || {};
       if (!Object.prototype.hasOwnProperty.call(cart, itemId)) return false;
+      // A split King base is a configuration (two Twin XL units), changed
+      // only by choosing one base or the split - never by a +/- count.
+      if (cart[itemId] && cart[itemId].split === true) return false;
       var q = Number(quantity);
       if (!isFinite(q) || Math.floor(q) !== q) return false;
       if (q < 1 || q > SLEEP_SYSTEM_MAX_QTY) return false;
@@ -24843,11 +26848,15 @@
       renderHf2Brief();
       renderHf2Priorities();
       renderHf2Picks();
+      // A split King base exists only at King: a size changed anywhere (the
+      // Review screen included) returns it to one base before anything paints.
+      if (typeof psNormalizeSplit === 'function') psNormalizeSplit();
       renderHf2Accessories();
       // The subtotal is derived from the same selection the list above shows,
       // so it repaints in the same pass. typeof-guarded like every other
       // gate consumer, so the sandboxed renderer suites stay runnable.
       if (typeof renderHf2SystemTotal === 'function') renderHf2SystemTotal();
+      if (typeof renderPurchaseStudio === 'function') renderPurchaseStudio();
       renderHf2DiscountButton();
       renderHf2SendButton();
       renderHf2RsaStrip();
@@ -26976,6 +28985,13 @@
         _payWsChange = null;
         _payFulfil = '';
         _payScenario = { open: false, tax: '', delivery: '', down: '', treatment: '' };
+        // Purchase studio: the plan and down payment chosen on the Summary.
+        if (typeof psResetState === 'function') psResetState();
+        if (typeof psCloseSheetQuiet === 'function') psCloseSheetQuiet();
+        var psLiveEl = document.getElementById('psLive');
+        if (psLiveEl) psLiveEl.textContent = '';
+        var psBox = document.getElementById('purchaseStudio');
+        if (psBox) { psBox.hidden = true; psBox.innerHTML = ''; }
         finWsReleaseInert();
 
         // --- 6. contact values, three ways --------------------------------
@@ -27671,6 +29687,10 @@
        navigation. All copy is injected from the generic dictionaries by
        renderSafetyDialog(); the English text below is only a no-JS
        placeholder and is overwritten before the dialog is ever shown. -->
+  <!-- The purchase studio's change sheet (payment demo). A body child, so
+       the background it makes inert while open is never its own ancestor. -->
+  <div class="ps-sheet-backdrop" id="psSheetBackdrop" hidden onclick="window.psCloseSheet()" ontouchend="event.preventDefault();window.psCloseSheet();"></div>
+  <div class="ps-sheet-dialog" id="psSheet" role="dialog" aria-modal="true" aria-labelledby="psSheetTitle" hidden></div>
   <div class="safety-backdrop" id="sessionSafetyBackdrop" hidden></div>
   <div class="safety-dialog" id="sessionSafetyDialog" hidden inert aria-hidden="true"
        role="alertdialog" aria-modal="true"
