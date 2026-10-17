@@ -333,7 +333,11 @@ function buildSendHarness(opts) {
     accessories: [{ id: "a1" }], lang: "en",
     sendId: opts.sendId === undefined ? "AbCdEfGhIjKlMnOpQrStUvWx" : opts.sendId,
   };
-  const emailSendState = { inFlight: true, sendId: payload.sendId, contentKey: "k", previewFingerprint: null };
+  // This attempt's own registry record (owner direction 2026-10-17): each
+  // outcome is written to it, and a post-wipe settle must leave it alone.
+  const attempt = { sendId: payload.sendId, state: "new" };
+  const emailSendState = { inFlight: true, sendId: payload.sendId, contentKey: "k", previewFingerprint: null,
+                           attempts: { k: attempt }, usedIds: { [payload.sendId]: true }, current: attempt };
   const bodies = [];
   const baseFetch = opts.fetch || deferredFetch;
   const recFetch = (url, init) => { bodies.push(init && init.body); return baseFetch(url, init); };
@@ -342,7 +346,7 @@ function buildSendHarness(opts) {
     "document", "console", "setTimeout", "clearTimeout", "requestAnimationFrame",
     "cancelAnimationFrame", "fetch", "gasUrl", "scenarioBlocksEmail", "isEmailPreview",
     "currentLang", "payload", "sendBtn", "errorEl", "confirmation", "out",
-    "t", "emailSendState",
+    "t", "emailSendState", "_attempt",
     `
     ${guardsSrc}
     ${classifiersSrc}
@@ -363,8 +367,8 @@ function buildSendHarness(opts) {
   fn(doc, fakeConsole, clock.setTimeout, clock.clearTimeout, clock.requestAnimationFrame,
     clock.cancelAnimationFrame, recFetch, opts.gasUrl || "", false,
     !opts.gasUrl, "en", payload, els.emailSendBtn, els.emailError, els.emailConfirmation, out,
-    t, emailSendState);
-  return { out, els, bodies, state: emailSendState };
+    t, emailSendState, attempt);
+  return { out, els, bodies, state: emailSendState, attempt };
 }
 
 function sendState(els) {
@@ -544,6 +548,7 @@ section("error diagnostics carry no server- or exception-supplied text");
     await new Promise((r) => setTimeout(r, 0));
     const printed2 = JSON.stringify(consoleLines);
     check(`  ${c.name} — after the wipe: nothing mutated`, untouched(sendState(b.els)));
+    check(`  ${c.name} — after the wipe: the attempt record keeps its pre-wipe state`, b.attempt.state === "in-flight");
     check(`  ${c.name} — after the wipe: no sentinel in console`,
       ![SENTINEL_EMAIL, SENTINEL_NAME, SENTINEL_PHONE].some((s) => printed2.includes(s)));
   }
@@ -646,10 +651,13 @@ section("in-flight guard and sendId lifecycle (static, on the real sendResults)"
     /emailSendState\.inFlight = true;\s*sendBtn\.disabled = true;\s*sendBtn\.setAttribute\('aria-busy', 'true'\);/.test(src));
   check("the stale guard refuses to send when the figures changed since the preview",
     /if \(_fingerprintNow !== emailSendState\.previewFingerprint\) \{\s*emailRefreshPreview\(\);\s*errorEl\.textContent = t\('email\.figures_changed'\);\s*return;/.test(src));
-  check("a change of contact fields or figures makes a new sendId; the same content reuses it",
-    /emailSendState\.contentKey !== null && emailSendState\.contentKey !== _contentKey\)\) \{\s*emailSendState\.sendId = emailNewSendId\(\);/.test(src));
+  check("content sent before this session reuses its own sendId; new content never takes another record's id",
+    /let _attempt = emailSendState\.attempts\[_contentKey\] \|\| null;\s*if \(_attempt\) \{\s*emailSendState\.sendId = _attempt\.sendId;/.test(src)
+    && /if \(!emailSendState\.sendId \|\| emailSendState\.usedIds\[emailSendState\.sendId\] === true\) \{\s*emailSendState\.sendId = emailNewSendId\(\);/.test(src));
   check("the session wipe clears the send state",
     /emailSendState\.inFlight = false;\s*emailSendState\.sendId = null;\s*emailSendState\.contentKey = null;\s*emailSendState\.previewFingerprint = null;/.test(html));
+  check("the session wipe drops the send-attempt registry (it holds recipient addresses)",
+    /emailSendState\.attempts = null;\s*emailSendState\.usedIds = null;\s*emailSendState\.current = null;/.test(html));
   const idSrc = (html.match(/function emailNewSendId\(\) \{[\s\S]*?\n    \}/) || [""])[0];
   const mk = new Function("crypto", idSrc + "\nreturn emailNewSendId;");
   const gen = mk(globalThis.crypto);

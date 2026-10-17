@@ -498,12 +498,15 @@ section("at-most-once: the durable ledger");
     ok.lock.waits === 2 && ok.lock.releases === 2);
 }
 {
-  // (e) concurrent retries: the lock serialises them, so the second always
+  // (e) repeated deliveries: the lock serialises them, so the second always
   // sees the first's record. Simulated by interleaving: the duplicate is
   // decided under the lock after the first has completed.
   const g = buildGas({ props: APPROVED_PROPS });
   const results = [SID(17), SID(17), SID(17)].map((id) => post(g.api, basePayload({ sendId: id })));
-  check("(e) three deliveries of one sendId: one send, two duplicates",
+  // NOT a concurrency test: the requests run one after another against a
+  // simulated lock. Genuinely concurrent Apps Script executions are only
+  // exercised against a real deployment (docs/gas-activation-runbook.md).
+  check("(e) three sequential deliveries of one sendId under the simulated lock: one send, two duplicates",
     results.filter((r) => r.duplicate).length === 2 && g.calls.length === 1);
 }
 

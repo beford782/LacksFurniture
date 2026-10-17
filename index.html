@@ -16300,6 +16300,87 @@
       out.fingerprint = psFingerprint(figures);
       return out;
     }
+    // The PURCHASE IDENTITY behind the summary (owner direction 2026-10-17).
+    // Two keys, two jobs:
+    //   - summary.fingerprint (above) hashes the LOCALIZED figures the
+    //     customer previews - the stale-send guard compares it, so the email
+    //     always carries exactly what was previewed, wording included;
+    //   - this key hashes the substantive purchase facts only - each line's
+    //     kind, product, sku, size, split and quantity, its minor amounts and
+    //     applied offer ids, and (complete purchases) the totals and the
+    //     selected plan with its minor payment figures. No translated label,
+    //     formatted text or timestamp, so English and Spanish agree.
+    // consultationIdentityKey() below folds this identity into the content
+    // key the take-home send's duplicate prevention uses, so a language
+    // switch never makes a new send of the same purchase. It carries no
+    // customer data and is never sent. Null exactly when purchaseSummaryFor
+    // is null.
+    function purchaseIdentityKey() {
+      if (!purchaseSummaryFor(currentLang)) return null;
+      var m = purchaseStudioFor();
+      var ctx = psContext();
+      if (!m || !m.show || !ctx) return null;
+      var q = ctx.q;
+      var complete = !!(m.complete && psComplete(q));
+      var id = {
+        v: 1, currency: 'USD', size: m.size || null, complete: complete,
+        lines: q.lines.map(function (ln) {
+          var priced = ln.resolved === true;
+          return [ln.kind, ln.productId, ln.sku || null, ln.size || null, !!ln.split, ln.quantity, priced,
+                  priced ? ln.unitAmountMinor : null, priced ? ln.extendedAmountMinor : null,
+                  priced ? ln.netAmountMinor : null,
+                  priced ? (Array.isArray(ln.discounts) ? ln.discounts : []).map(function (d) { return [d.offerId, d.amountMinor]; }) : []];
+        })
+      };
+      if (complete) {
+        var r = m.result || {};
+        var p = ctx.payNow || {};
+        var calc = r.kind === 'calc' && r.state === 'calculated';
+        id.merchandiseMinor = q.merchandiseMinor;
+        id.discountMinor = q.discountMinor;
+        id.payment = [_psPlan, r.kind || null, r.state || null, ctx.sel ? ctx.sel.termMonths : null,
+                      calc ? p.downMinor : null, calc ? p.financedMinor : null, calc ? p.payMinor : null,
+                      calc ? p.totalPaidMinor : null, calc ? !!p.totalPaidUpper : null];
+      }
+      return psFingerprint(id);
+    }
+    // The CONTENT IDENTITY of a take-home send (owner direction 2026-10-17):
+    // everything the email carries, as language-neutral state - the quiz
+    // answers (ids and numbers; the Sleep Brief, consultation rows and
+    // recommendations all derive from them), the saved picks and favorite,
+    // the finalist, the Sleep System cart (ids, quantities, split, reason
+    // keys), the consultation priorities (stored as bilingual objects) and
+    // the purchase identity above. The localized text built from this state
+    // is excluded, so the presentation language never changes it; name and
+    // phone are excluded too (an edited name is not a different email); the
+    // credited salesperson is included. Time-varying promotion admission is
+    // NOT (inert while the shipped scenarios are empty). With
+    // the recipient address it keys the session's send-attempt registry, so a
+    // changed shortlist is a NEW send even while no priced purchase is shown.
+    function consultationIdentityKey() {
+      var a = (typeof answers === 'object' && answers) ? answers : {};
+      var cart = (window._accCart && typeof window._accCart === 'object') ? window._accCart : {};
+      var fin = (typeof resolveFinalistState === 'function') ? resolveFinalistState() : null;
+      var tf = (typeof analytics === 'object' && analytics && Array.isArray(analytics.trialFocus)) ? analytics.trialFocus : [];
+      var id = {
+        v: 1,
+        answers: Object.keys(a).sort().map(function (k) { return [k, a[k] === undefined ? null : a[k]]; }),
+        saved: (Array.isArray(window._savedPicks) ? window._savedPicks : []).map(function (p) { return p && p.id ? p.id : null; }),
+        favorite: window._favoriteMattressId || null,
+        finalist: fin ? [fin.kind || null, (fin.item && fin.item.id) || null] : null,
+        cart: Object.keys(cart).sort().map(function (k) {
+          var c = cart[k] || {};
+          return [k, c.quantity === undefined ? null : c.quantity, !!c.split,
+                  Array.isArray(c.reasonKeys) ? c.reasonKeys.slice() : []];
+        }),
+        priorities: tf,
+        // The salesperson the email credits ("Helped by"): a changed
+        // attribution is a different email. A staff id, not customer data.
+        rsa: (typeof getHf2DeviceRsa === 'function') ? getHf2DeviceRsa() : '',
+        purchase: purchaseIdentityKey()
+      };
+      return psFingerprint(id);
+    }
 
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
@@ -16395,7 +16476,7 @@
             + (l.why ? '<span class="ps-row__why" data-ps-why>' + escapeHtml(l.why) + '</span>' : '') + '</span>'
             + qty
             + '<span class="ps-row__amount">' + (l.priced ? '<span class="ps-net">' + escapeHtml(l.ext) + '</span>' + psStruck(l.list) + psOfferTags(l.discounts)
-              : '<span class="ps-muted">' + escapeHtml(t('ps.no_price')) + '</span>') + '</span>'
+              : '<span class="ps-muted">' + escapeHtml(t('ps.price_unavailable')) + '</span>') + '</span>'
             + '<span class="ps-row__actions">'
             + psBtn('class="ps-link" data-ps-change="' + escapeHtml(l.id) + '"', escapeHtml(t('ps.change')),
               'window.psOpenSheet(\'accessory\',\'' + psId(st.step) + '\',\'' + psId(l.id) + '\',this)')
@@ -17022,9 +17103,9 @@
         // No summary (defence in depth; the studio always has one while it
         // shows): the lines as they stand, no total, never emailed.
         items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
-          + (m.mattress.priced ? m.mattress.price : t('ps.no_price'))].concat(m.lines.map(function (l) {
+          + (m.mattress.priced ? m.mattress.price : t('ps.price_unavailable'))].concat(m.lines.map(function (l) {
           return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
-            + ' ' + (l.priced ? l.ext : t('ps.no_price'));
+            + ' ' + (l.priced ? l.ext : t('ps.price_unavailable'));
         }));
         parts = [t('ps.subtotal') + ': ' + t('ps.incomplete')];
       }
@@ -24087,7 +24168,27 @@
     // `unresolved`: a request carrying this sendId left the device and no
     // definitive answer came back (a transport failure, or the server's
     // delivery_unconfirmed) - the email may already be in the inbox.
-    var emailSendState = { inFlight: false, sendId: null, contentKey: null, previewFingerprint: null, unresolved: false };
+    // `attempts` (owner direction 2026-10-17): the session's SEND ATTEMPT
+    // REGISTRY, one record per content key (recipient address + purchase
+    // identity) ever sent this session: { sendId, state }. A content key that
+    // was sent before ALWAYS goes out again under its own original sendId,
+    // whatever was sent in between (A -> B -> A, purchase X -> Y -> X), so
+    // the server's per-sendId ledger can refuse a second email. States:
+    //   'in-flight'  - the request is out (taps are refused meanwhile);
+    //   'uncertain'  - it left the device with no definitive answer
+    //                  (transport failure, delivery_unconfirmed);
+    //   'confirmed'  - the server answered success (or duplicate);
+    //   'failed'     - the server refused it before sending (send_failed,
+    //                  invalid_email, invalid_request, canspam_not_configured):
+    //                  nothing was sent and the server keeps the id retryable.
+    // Every state reuses its sendId; the state only reports the outcome. Each
+    // response updates only its own record. Nothing is ever evicted (an
+    // evicted uncertain record would silently make that content resendable);
+    // the records hold the address, so the new-customer wipe drops the whole
+    // registry, and `usedIds` keeps a fresh id from colliding with a recorded
+    // one.
+    var emailSendState = { inFlight: false, sendId: null, contentKey: null, previewFingerprint: null, unresolved: false,
+                           attempts: null, usedIds: null, current: null };
     // A fresh sendId: 18 random bytes from crypto.getRandomValues, base64url
     // (24 chars of [A-Za-z0-9_-]). No crypto, no id - and a live send then
     // refuses to go rather than sending without one.
@@ -24308,16 +24409,39 @@
         errorEl.textContent = t('email.figures_changed');
         return;
       }
-      // One sendId per recipient and figures: every retry - automatic, the
+      // One sendId per recipient and content: every retry - automatic, the
       // visible "Try again", after a language switch, a re-opened screen or
       // an edited name or phone - reuses it, because an attempt whose answer
       // was lost may already have mailed this address (the server sends at
       // most once per id and answers a repeat as a duplicate). A different
-      // address or different figures is a different email: a new id.
-      const _contentKey = [email, _fingerprintNow || ''].join('\u0001');
-      if (!emailSendState.sendId || (emailSendState.contentKey !== null && emailSendState.contentKey !== _contentKey)) {
-        emailSendState.sendId = emailNewSendId();
+      // address or different content (answers, picks, finalist, Sleep System,
+      // priorities, or the purchase: product, size, quantity, amount, offer,
+      // plan or payment figure) is a different email: a new id. The content
+      // is keyed by consultationIdentityKey(), NOT the localized fingerprint,
+      // so the presentation language never changes the id.
+      const _contentIdNow = (typeof consultationIdentityKey === 'function') ? consultationIdentityKey() : null;
+      // The address is compared case-insensitively (A@x and a@x are one
+      // recipient); the payload still carries it exactly as typed.
+      const _contentKey = [email.toLowerCase(), _contentIdNow || ''].join('\u0001');
+      // The registry decides the id: content sent before this session reuses
+      // its own; new content takes the previewed candidate unless that id
+      // already belongs to another record, else a fresh one.
+      if (!emailSendState.attempts) emailSendState.attempts = Object.create(null);
+      if (!emailSendState.usedIds) emailSendState.usedIds = Object.create(null);
+      let _attempt = emailSendState.attempts[_contentKey] || null;
+      if (_attempt) {
+        emailSendState.sendId = _attempt.sendId;
+      } else {
+        if (!emailSendState.sendId || emailSendState.usedIds[emailSendState.sendId] === true) {
+          emailSendState.sendId = emailNewSendId();
+        }
+        if (emailSendState.sendId) {
+          _attempt = { sendId: emailSendState.sendId, state: 'new' };
+          emailSendState.attempts[_contentKey] = _attempt;
+          emailSendState.usedIds[_attempt.sendId] = true;
+        }
       }
+      emailSendState.current = _attempt;
       emailSendState.contentKey = _contentKey;
       emailSendState.inFlight = true;
       sendBtn.disabled = true;
@@ -24641,8 +24765,14 @@
         // transport failure (network, http_5xx, malformed response); a server
         // refusal (invalid_email, canspam_not_configured, invalid_request,
         // send_failed) is never retried.
+        // Outcomes are written to THIS attempt's own record; the session-wide
+        // flag follows only while this attempt is still the current one.
+        var settle = function(state) {
+          if (_attempt) _attempt.state = state;
+          if (emailSendState.current === _attempt) emailSendState.unresolved = (state === 'uncertain' || state === 'in-flight');
+        };
         var sendAttempt = function(n) {
-          emailSendState.unresolved = true;
+          settle('in-flight');
           fetch(gasUrl, {
             method: 'POST',
             body: JSON.stringify(payload)
@@ -24660,7 +24790,7 @@
           }))
           .then(sessionBound(function(data) {
             if (data && data.success) {
-              emailSendState.unresolved = false;
+              settle('confirmed');
               showSuccess();
             } else if (!data || typeof data !== 'object') {
               // A body that is not a result object is a transport fault.
@@ -24673,7 +24803,7 @@
               // back would put them straight into the console. Only a value
               // drawn from a closed set is logged.
               console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));
-              emailSendState.unresolved = emailFailureCode(data && data.error) === 'delivery_unconfirmed';
+              settle(emailFailureCode(data && data.error) === 'delivery_unconfirmed' ? 'uncertain' : 'failed');
               // delivery_unconfirmed: an earlier attempt of this content may
               // already have been delivered, and the server will not send it
               // again - never "couldn't send", never a retry action.
@@ -24693,6 +24823,7 @@
               sessionTimeout(function() { sendAttempt(1); }, 1500);
               return;
             }
+            settle('uncertain');
             showError(currentLang === 'es' ? 'Error de red. Por favor intenta de nuevo.' : 'Network error. Please try again.', true);
           }));
         };
@@ -29657,14 +29788,19 @@
           sendBtn.disabled = false;
           if (sendBtn.removeAttribute) sendBtn.removeAttribute('aria-busy');
         }
-        // The take-home send's state: no in-flight flag, idempotency key or
-        // previewed fingerprint survives into the next customer's session.
+        // The take-home send's state: no in-flight flag, idempotency key,
+        // previewed fingerprint or send-attempt record survives into the next
+        // customer's session.
         if (typeof emailSendState === 'object' && emailSendState) {
           emailSendState.inFlight = false;
           emailSendState.sendId = null;
           emailSendState.contentKey = null;
           emailSendState.previewFingerprint = null;
           emailSendState.unresolved = false;
+          // The attempt registry holds recipient addresses: dropped whole.
+          emailSendState.attempts = null;
+          emailSendState.usedIds = null;
+          emailSendState.current = null;
         }
 
         // --- 8. analytics -------------------------------------------------

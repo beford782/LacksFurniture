@@ -337,7 +337,6 @@
   "ps.per_month": "{amount}/mes",
   "ps.monthly": "{amount}/mes",
   "ps.not_priced": "Sin precio",
-  "ps.no_price": "Aún sin precio",
   "ps.no_price_size": "Sin precio en {size}",
   "ps.not_in_size": "Sin precio en {size}",
   "ps.step_base": "Cambiar base o soporte",

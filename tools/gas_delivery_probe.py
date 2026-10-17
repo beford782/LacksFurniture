@@ -7,7 +7,7 @@ deployment:
 
   1. POST a synthetic payload shaped exactly like the kiosk's sendResults()
      payload (the same closed key set; every visible value marked as a
-     controlled delivery test; a complete v:1 test quote)    -> {"success": true}
+     controlled delivery test; a complete v:2 test quote)    -> {"success": true}
   2. POST the SAME body again (same sendId)                  -> {"success": true, "duplicate": true}
   3. POST it with a malformed sendId                         -> {"success": false, "error": "invalid_request"}
 
@@ -85,15 +85,15 @@ def _store_config() -> dict:
 
 
 def test_quote(lang: str) -> dict:
-    """A complete v:1 purchase summary, every label marked as a test. The
+    """A complete v:2 purchase summary (the only version Code.gs accepts), every label marked as a test. The
     figures are fixture text, not an offer; Code.gs renders them verbatim."""
     es = lang == "es"
     return {
-        "v": 1, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
+        "v": 2, "complete": True, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
         "lines": [
             {"name": ("PRUEBA - colchón de prueba (no es una oferta)" if es
                       else "TEST - fixture mattress (not an offer)"),
-             "detail": "Queen", "quantity": 1, "listText": "$1.00", "discounts": [], "netText": "$1.00"},
+             "detail": "Queen", "quantity": 1, "priced": True, "listText": "$1.00", "discounts": [], "netText": "$1.00"},
         ],
         "listSubtotalText": "$1.00", "discountText": "$0.00", "merchandiseText": "$1.00",
         "exclusionsText": ("Prueba controlada de entrega: sin precio real" if es

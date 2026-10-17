@@ -134,6 +134,10 @@ const PAY_FACTS = ["tests/payment_facts_check.py"];
 // the studio, offers, the take-home and the recorded email quote. About 90s,
 // inside the per-observer timeout.
 const PURCHASE = ["tests/purchase_flow_check.py"];
+// Its focused send-identity mode (sections 4b and 4c: the language-neutral
+// purchase identity and the session send-attempt registry, asserted on the
+// POSTed sendIds), inside the per-observer timeout. CI runs the file whole.
+const PURCHASE_SEND = ["tests/purchase_flow_check.py --only send-identity"];
 // The offers engine: the REAL offer functions extracted from index.html under
 // an injected clock (boundaries the rendered flow cannot reach in real time).
 const OFFERS = ["tests/offers_engine_check.mjs"];
@@ -3659,9 +3663,10 @@ const MUTATIONS = [
   ["purchase: the take-home says 'To confirm' where the summary and email name the reason (e.g. below minimum)",
     "parts.push(pay.planLabel + ': ' + (pay.note || t('pay.fx.to_confirm')));",
     "parts.push(pay.planLabel + ': ' + t('pay.fx.to_confirm'));", PURCHASE],
+  // Re-anchored 2026-10-17: the session send-attempt registry decides the id.
   ["email: a retry of the same content makes a new sendId (the server cannot dedupe it)",
-    "if (!emailSendState.sendId || (emailSendState.contentKey !== null && emailSendState.contentKey !== _contentKey)) {",
-    "if (true) {", PURCHASE],
+    "      if (_attempt) {\n        emailSendState.sendId = _attempt.sendId;\n      } else {",
+    "      if (false) {\n        emailSendState.sendId = _attempt.sendId;\n      } else {", PURCHASE_SEND],
   ["email: taps while a send is in flight send again",
     "      if (emailSendState.inFlight) return;\n",
     "", PURCHASE],
@@ -3716,6 +3721,47 @@ const MUTATIONS = [
   ["Code.gs: an incomplete summary carrying a subtotal or payment is rendered",
     "      if (Object.prototype.hasOwnProperty.call(q, QUOTE_INCOMPLETE_FORBIDDEN[f])) return null;\n",
     "", EMAIL_PRIORITIES, "Code.gs"],
+  // --- Send identity vs preview fingerprint (owner direction 2026-10-17) ----
+  ["email: the sendId is keyed on the localized preview fingerprint (a language switch makes a new send)",
+    "const _contentKey = [email.toLowerCase(), _contentIdNow || ''].join('\\u0001');",
+    "const _contentKey = [email.toLowerCase(), _fingerprintNow || ''].join('\\u0001');", PURCHASE_SEND],
+  ["email: the purchase identity carries the presentation language",
+    "        v: 1, currency: 'USD', size: m.size || null, complete: complete,",
+    "        v: 1, lang: currentLang, currency: 'USD', size: m.size || null, complete: complete,", PURCHASE_SEND],
+  ["email: the purchase identity ignores line quantities (a changed purchase reuses the sendId)",
+    "ln.size || null, !!ln.split, ln.quantity, priced,",
+    "ln.size || null, !!ln.split, null, priced,", PURCHASE_SEND],
+  ["email: the purchase identity ignores the payment (a changed plan reuses the sendId)",
+    "        id.payment = [_psPlan, r.kind || null,",
+    "        var unusedPayment = [_psPlan, r.kind || null,", PURCHASE_SEND],
+  // --- Session send-attempt registry (owner direction 2026-10-17) ----------
+  ["email: only the LAST content is remembered (A -> B -> A mints a new sendId for A)",
+    "      let _attempt = emailSendState.attempts[_contentKey] || null;",
+    "      let _attempt = (emailSendState.current && emailSendState.contentKey === _contentKey) ? emailSendState.current : null;", PURCHASE_SEND],
+  ["email: new content may reuse an id that already belongs to another record",
+    "if (!emailSendState.sendId || emailSendState.usedIds[emailSendState.sendId] === true) {",
+    "if (!emailSendState.sendId) {", PURCHASE_SEND],
+  ["email: the new-customer wipe keeps the send-attempt registry (an address and its sendId survive into the next session)",
+    "          emailSendState.attempts = null;\n",
+    "", PURCHASE_SEND],
+  ["email: a response writes no outcome to its own attempt record",
+    "          if (_attempt) _attempt.state = state;\n",
+    "", PURCHASE_SEND],
+  ["email: the content identity is the purchase alone (a changed shortlist with no priced purchase reuses the sendId)",
+    "const _contentIdNow = (typeof consultationIdentityKey === 'function') ? consultationIdentityKey() : null;",
+    "const _contentIdNow = (typeof purchaseIdentityKey === 'function') ? purchaseIdentityKey() : null;", PURCHASE_SEND],
+  ["email: the content identity ignores the quiz answers (a changed answer reuses the sendId)",
+    "        answers: Object.keys(a).sort().map(function (k) { return [k, a[k] === undefined ? null : a[k]]; }),",
+    "        answers: [],", PURCHASE_SEND],
+  ["email: the content identity ignores the saved picks (a changed shortlist reuses the sendId)",
+    "        saved: (Array.isArray(window._savedPicks) ? window._savedPicks : []).map(function (p) { return p && p.id ? p.id : null; }),",
+    "        saved: [],", PURCHASE_SEND],
+  ["email: the content identity ignores the credited salesperson (a changed attribution reuses the sendId)",
+    "        rsa: (typeof getHf2DeviceRsa === 'function') ? getHf2DeviceRsa() : '',",
+    "        rsa: '',", PURCHASE_SEND],
+  ["email: the recipient address is compared case-sensitively (A@x and a@x send twice)",
+    "const _contentKey = [email.toLowerCase(), _contentIdNow || ''].join('\\u0001');",
+    "const _contentKey = [email, _contentIdNow || ''].join('\\u0001');", PURCHASE_SEND],
 ];
 
 // ---------------------------------------------------------------------------

@@ -110,15 +110,22 @@ does not use.
 
 **Duplicates: at most one email per `sendId`.** Each request carries a
 client `sendId` (`^[A-Za-z0-9_-]{22,40}$`). The kiosk keeps one id per
-recipient address and figures: its automatic retry, the visible "Try again",
+recipient address (compared case-insensitively) and content: its automatic retry, the visible "Try again",
 a language switch, a re-opened take-home screen and an edited name or phone
-all reuse it; only a different address or different figures (or the
-new-customer wipe) makes a new one. Under the script lock, `Code.gs` checks
+all reuse it; only a different address or different content (or the
+new-customer wipe) makes a new one. (The content is keyed by
+`consultationIdentityKey()` - answers, picks, finalist, Sleep System,
+priorities, the credited salesperson and the purchase, all language-neutral
+- so a language switch
+never makes a new one, quote or not.) A session-only send-attempt
+registry keeps every address and content sent this session with its own id,
+so returning to earlier content (A -> B -> A, X -> Y -> X) reuses that
+content's original id; the new-customer wipe drops it. Under the script lock, `Code.gs` checks
 the script cache (`df-sent:<sendId>`, 6 h, best effort), then the durable
 ledger, the hidden `DreamFinder Sends` tab (one row per id: `id:<sendId>`,
 state, time, kept lead). The ledger row is written and flushed in state
 `sending` **before** MailApp runs, so whatever happens after the send (lost
-response, a throw, the execution limit) a retry can never mail twice:
+response, a throw, the execution limit) a retry of that `sendId` never mails twice (suppression is per `sendId`; it is not guaranteed delivery, and a new `sendId` is a new send - see `docs/launch-readiness-2026-10-16.md` section 1a):
 
 | Ledger state | Meaning | A retry of that `sendId` gets |
 |---|---|---|
@@ -137,7 +144,7 @@ editor: it appends every kept lead in `sent`/`row_pending` to the leads tab,
 marks it `complete` and clears the copy; it sends nothing and logs counts
 only. It also counts `sending`/`unconfirmed` rows: for each, check the inbox
 or BCC copy for that customer before anyone re-sends by hand (a new send from
-the kiosk needs a different address or figures, or a new customer session).
+the kiosk needs a different address or content, or a new customer session).
 The ledger grows by one row per send; archive old rows by hand if it ever
 gets large (the lookup reads column A).
 

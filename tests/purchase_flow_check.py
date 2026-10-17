@@ -342,8 +342,566 @@ except ImportError:
     sys.exit(1)
 
 T0 = time.time()
+# `--only send-identity` runs only sections 4b and 4c (the send identity and
+# the session send-attempt registry): the mutation sweep's focused observer
+# for those properties, inside its per-observer timeout. CI runs the file whole.
+ONLY_SEND_IDENTITY = sys.argv[1:] == ["--only", "send-identity"]
+if sys.argv[1:] and not ONLY_SEND_IDENTITY:
+    print(f"  [FAIL] unknown arguments {sys.argv[1:]} (the only option is --only send-identity)")
+    sys.exit(2)
 with sync_playwright() as p:
     browser = p.chromium.launch()
+    # ======================================================================
+    # 4b. send identity (owner direction 2026-10-17): one recipient + one
+    # purchase = one sendId, whatever the presentation language. The
+    # localized summary fingerprint stays the preview-integrity guard; the
+    # duplicate-prevention identity is purchaseIdentityKey(). Every check
+    # reads the POSTed request bodies themselves (Playwright interception of
+    # the stub's /exec URL), not the screen. This is the CLIENT contract; the
+    # server's per-sendId ledger, cache-loss and interruption cases live in
+    # tests/email_priorities_check.mjs, and real concurrent Apps Script
+    # executions are not exercised anywhere offline.
+    # ======================================================================
+    print("Send identity across languages (one purchase, one sendId):")
+    GURL = MAIN.stub.gas_url.split("?")[0]
+    CORS = {"Access-Control-Allow-Origin": "*"}
+
+    class Gate:
+        """Answers the page's POSTs to the GAS URL: '500' (transport failure,
+        uncertain), 'unconfirmed' (server delivery_unconfirmed), 'ok', or
+        'hold' (kept in flight until released)."""
+
+        def __init__(self, page, mode="500", url=None):
+            self.pg, self.mode, self.bodies, self.held = page, mode, [], []
+            target = (url or GURL).split("?")[0]
+            page.route(lambda u: u.split("?")[0] == target, self.handle)
+
+        def handle(self, route):
+            if route.request.method != "POST":
+                route.continue_()
+                return
+            try:
+                self.bodies.append(json.loads(route.request.post_data or "{}"))
+            except ValueError:
+                self.bodies.append({})
+            if self.mode == "hold":
+                self.held.append(route)
+            else:
+                self.answer(route, self.mode)
+
+        @staticmethod
+        def answer(route, mode):
+            if mode == "500":
+                route.fulfill(status=500, headers=CORS, body="error")
+            else:
+                body = ({"success": True} if mode == "ok"
+                        else {"success": False, "error": "send_failed" if mode == "send_failed" else "delivery_unconfirmed"})
+                route.fulfill(status=200, headers=CORS, content_type="application/json", body=json.dumps(body))
+
+        def release(self, mode):
+            while self.held:
+                self.answer(self.held.pop(0), mode)
+
+        def wait(self, n, ms=8000):
+            t_end = time.time() + ms / 1000
+            while len(self.bodies) < n and time.time() < t_end:
+                self.pg.wait_for_timeout(100)
+            self.pg.wait_for_timeout(500)
+            return len(self.bodies)
+
+        def ids(self):
+            return [b.get("sendId") for b in self.bodies]
+
+        def langs(self):
+            return [b.get("lang") for b in self.bodies]
+
+    def lang_to(page, lang):
+        page.evaluate(f"async () => {{ await switchLanguage('{lang}'); }}")
+        page.wait_for_timeout(300)
+
+    def open_take_home(page, email="identity@example.com"):
+        page.evaluate("window.showEmailCapture()")
+        page.wait_for_timeout(300)
+        page.fill("#emailNameInput", "Fixture")
+        page.fill("#emailInput", email)
+
+    def tap(page):
+        page.click("#emailSendBtn")
+
+    def drop_protector(page):
+        page.evaluate("""() => { const p = getPricingConfig();
+          window.__sidKept = p.products.filter(e => e.productId === 'protector-vertex');
+          p.products = p.products.filter(e => e.productId !== 'protector-vertex'); psRepaint(); }""")
+        page.wait_for_timeout(150)
+
+    def restore_protector(page):
+        page.evaluate("() => { const p = getPricingConfig(); p.products = p.products.concat(window.__sidKept || []); psRepaint(); }")
+
+    def valid(sid):
+        return isinstance(sid, str) and sp.delivery.valid_send_id(sid)
+
+    # ---- the two keys: identity is language-neutral, the fingerprint is not ----
+    for complete in (True, False):
+        pg, errs = open_page(browser, MAIN.url)
+        fresh_studio(pg, "en")
+        if not complete:
+            drop_protector(pg)
+        kind = "complete" if complete else "incomplete"
+        k_en, f_en = pg.evaluate("purchaseIdentityKey()"), pg.evaluate("purchaseSummaryFor(currentLang).fingerprint")
+        c_en = pg.evaluate("purchaseSummaryFor(currentLang).complete")
+        lang_to(pg, "es")
+        k_es, f_es = pg.evaluate("purchaseIdentityKey()"), pg.evaluate("purchaseSummaryFor(currentLang).fingerprint")
+        check(f"{kind} quote: the purchase identity is the same in EN and ES; the preview fingerprint is not",
+              c_en is complete and isinstance(k_en, str) and len(k_en) == 16 and k_en == k_es and f_en != f_es,
+              f"{c_en} {k_en} {k_es} {f_en} {f_es}")
+        lang_to(pg, "en")
+        pg.close()
+
+    # ---- complete quote, uncertain send (HTTP 500), EN -> ES, repeated retries ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    gate = Gate(pg, "500")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(2)
+    sid = gate.ids()[0] if gate.ids() else None
+    check("complete, EN, HTTP 500: two POSTs (one automatic retry), one valid sendId, outcome left unresolved",
+          len(gate.bodies) == 2 and valid(sid) and set(gate.ids()) == {sid}
+          and pg.evaluate("emailSendState.unresolved") is True, str(gate.ids()))
+    lang_to(pg, "es")
+    tap(pg)
+    gate.wait(4)
+    tap(pg)
+    gate.wait(6)
+    check("complete, EN -> ES, then two more retries: every POST carries the SAME sendId",
+          len(gate.bodies) == 6 and set(gate.ids()) == {sid}, str(gate.ids()))
+    check("complete, EN -> ES: the later POSTs are Spanish and carry the Spanish preview fingerprint",
+          gate.langs() == ["en", "en", "es", "es", "es", "es"]
+          and gate.bodies[0]["quote"]["fingerprint"] != gate.bodies[2]["quote"]["fingerprint"]
+          and gate.bodies[2]["quote"]["fingerprint"] == pg.evaluate("purchaseSummaryFor(currentLang).fingerprint"),
+          str(gate.langs()))
+    # the screen is closed and re-opened, in the other language again
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    lang_to(pg, "en")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(8)
+    check("complete, screen closed and re-opened (and back to EN): still the SAME sendId",
+          len(gate.bodies) == 8 and set(gate.ids()) == {sid}, str(gate.ids()))
+    # name and phone are not part of the identity
+    pg.fill("#emailNameInput", "Another Name")
+    tap(pg)
+    gate.wait(10)
+    check("an edited name keeps the sendId (the recipient and purchase are unchanged)",
+          len(gate.bodies) == 10 and set(gate.ids()) == {sid}, str(gate.ids()))
+    # genuine change: the recipient
+    pg.fill("#emailInput", "someone-else@example.com")
+    tap(pg)
+    gate.wait(12)
+    new_r = gate.ids()[10] if len(gate.ids()) > 10 else None
+    check("a different recipient is a different email: a NEW valid sendId (shared by its own retry)",
+          len(gate.bodies) == 12 and valid(new_r) and new_r != sid and gate.ids()[11] == new_r, str(gate.ids()))
+    # genuine change: the purchase (a quantity)
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    k0 = pg.evaluate("purchaseIdentityKey()")
+    pg.evaluate("() => { setSleepSystemItemQuantity('pillow-gel-memory', 1); psRepaint(); }")
+    pg.wait_for_timeout(200)
+    k1 = pg.evaluate("purchaseIdentityKey()")
+    open_take_home(pg, "someone-else@example.com")
+    tap(pg)
+    gate.wait(14)
+    new_q = gate.ids()[12] if len(gate.ids()) > 12 else None
+    check("a changed purchase (pillow quantity 2 -> 1) is a different email: a new identity and a NEW sendId",
+          k0 != k1 and len(gate.bodies) == 14 and valid(new_q) and new_q not in (sid, new_r), str(gate.ids()))
+    # genuine change: the payment (pay in full -> a calculated plan)
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    k2 = pg.evaluate("purchaseIdentityKey()")
+    pg.click(f"#purchaseStudio [data-ps-plan='{P72}']")
+    pg.wait_for_timeout(250)
+    k3 = pg.evaluate("purchaseIdentityKey()")
+    open_take_home(pg, "someone-else@example.com")
+    tap(pg)
+    gate.wait(16)
+    new_p = gate.ids()[14] if len(gate.ids()) > 14 else None
+    check("a changed payment (pay in full -> the 72-month plan) is a different email: a NEW sendId",
+          pg.evaluate("_psPlan") == P72 and k2 != k3 and len(gate.bodies) == 16 and valid(new_p)
+          and new_p not in (sid, new_r, new_q), f"{k2} {k3} {gate.ids()}")
+    lang_to(pg, "es")
+    tap(pg)
+    gate.wait(18)
+    check("... and that plan purchase keeps its own sendId across a language switch",
+          len(gate.bodies) == 18 and gate.ids()[16:] == [new_p, new_p], str(gate.ids()))
+    lang_to(pg, "en")
+    # Payment facts alone (same plan, same lines and offers): a down payment
+    # changes only the financed amount and the monthly payment.
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    lines_a = pg.evaluate("JSON.stringify(psContext().q.lines.map(l => [l.productId, l.netAmountMinor]))")
+    k4 = pg.evaluate("purchaseIdentityKey()")
+    pg.fill("#psDownInput", "500")
+    pg.wait_for_timeout(300)
+    lines_b = pg.evaluate("JSON.stringify(psContext().q.lines.map(l => [l.productId, l.netAmountMinor]))")
+    k5 = pg.evaluate("purchaseIdentityKey()")
+    check("a changed down payment (same plan, same lines and offers) is a new purchase identity",
+          pg.evaluate("_psPlan") == P72 and pg.evaluate("purchaseStudioFor().result.state") == "calculated"
+          and lines_a == lines_b and isinstance(k4, str) and k4 != k5, f"{lines_a == lines_b} {k4} {k5}")
+    pg.fill("#psDownInput", "")
+    pg.wait_for_timeout(200)
+    # session reset: nothing carries over to the next customer
+    pg.evaluate("resetSessionState()")
+    pg.wait_for_timeout(300)
+    check("the new-customer wipe clears the send state (no sendId, content key, fingerprint or unresolved flag)",
+          pg.evaluate("emailSendState.sendId === null && emailSendState.contentKey === null"
+                      " && emailSendState.previewFingerprint === null && emailSendState.unresolved === false"
+                      " && emailSendState.inFlight === false"))
+    check("the new-customer wipe leaves no contact value in the take-home fields",
+          pg.evaluate("['emailInput','emailNameInput','emailPhoneInput'].every(id => !document.getElementById(id) || document.getElementById(id).value === '')"))
+    fresh_studio(pg, "en")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(20)
+    after_wipe = gate.ids()[18] if len(gate.ids()) > 18 else None
+    check("after the wipe the same address and the same purchase start a NEW sendId (no cross-session carry-over)",
+          len(gate.bodies) == 20 and valid(after_wipe) and after_wipe not in (sid, new_r, new_q, new_p), str(gate.ids()))
+    check("send identity (complete): no console errors", not [e for e in errs if "500" not in e], str(errs[:3]))
+    pg.close()
+
+    # ---- the reverse change, ES -> EN, after the server's delivery_unconfirmed ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "es")
+    gate = Gate(pg, "unconfirmed")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(1)
+    sid = gate.ids()[0] if gate.ids() else None
+    check("complete, ES, delivery_unconfirmed: ONE POST (never retried automatically), outcome unresolved",
+          len(gate.bodies) == 1 and valid(sid) and pg.evaluate("emailSendState.unresolved") is True, str(gate.ids()))
+    lang_to(pg, "en")
+    tap(pg)
+    gate.wait(2)
+    check("complete, ES -> EN: a further tap carries the SAME sendId (the server will not send it again)",
+          len(gate.bodies) == 2 and gate.ids() == [sid, sid] and gate.langs() == ["es", "en"], str(gate.ids()))
+    pg.close()
+
+    # ---- an incomplete priced quote (one line unavailable), EN -> ES -> EN ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    drop_protector(pg)
+    gate = Gate(pg, "500")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(2)
+    sid = gate.ids()[0] if gate.ids() else None
+    lang_to(pg, "es")
+    tap(pg)
+    gate.wait(4)
+    lang_to(pg, "en")
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(6)
+    quotes = [b.get("quote") or {} for b in gate.bodies]
+    check("incomplete, EN -> ES -> EN (screen re-opened): six POSTs, every one the SAME sendId",
+          len(gate.bodies) == 6 and valid(sid) and set(gate.ids()) == {sid}, str(gate.ids()))
+    check("incomplete: every POST carries the incomplete summary (priced lines + an unavailable line, no total key)",
+          all(q.get("complete") is False and any(not l.get("priced") for l in q.get("lines", []))
+              and not any(k in q for k in ("merchandiseText", "listSubtotalText", "payment")) for q in quotes),
+          str([q.get("complete") for q in quotes]))
+    restore_protector(pg)
+    pg.close()
+
+    # ---- the quantity of an UNPRICED line (no amount carries the change) ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    pg.evaluate("""() => { const p = getPricingConfig();
+      window.__pillowKept = p.products.filter(e => e.productId === 'pillow-gel-memory');
+      p.products = p.products.filter(e => e.productId !== 'pillow-gel-memory'); psRepaint(); }""")
+    pg.wait_for_timeout(200)
+    gate = Gate(pg, "500")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(2)
+    sid = gate.ids()[0] if gate.ids() else None
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    k6 = pg.evaluate("purchaseIdentityKey()")
+    pg.evaluate("() => { setSleepSystemItemQuantity('pillow-gel-memory', 1); psRepaint(); }")
+    pg.wait_for_timeout(200)
+    k7 = pg.evaluate("purchaseIdentityKey()")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(4)
+    q_after = (gate.bodies[2].get("quote") or {}) if len(gate.bodies) > 2 else {}
+    unpriced_after = [l for l in q_after.get("lines", []) if not l.get("priced")]
+    check("incomplete: the unpriced pillow's quantity (2 -> 1) is a new identity and a NEW sendId",
+          k6 != k7 and len(gate.bodies) == 4 and valid(sid) and gate.ids()[2] not in (None, sid)
+          and gate.ids()[2] == gate.ids()[3] and [l.get("quantity") for l in unpriced_after] == [1],
+          f"{k6} {k7} {gate.ids()}")
+    pg.close()
+
+    # ---- a language switch while the request is in flight ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    gate = Gate(pg, "hold")
+    open_take_home(pg)
+    tap(pg)
+    gate.wait(1)
+    sid = gate.ids()[0] if gate.ids() else None
+    check("in flight: the request has left, the button is busy, the send is unresolved",
+          len(gate.bodies) == 1 and valid(sid) and pg.evaluate("emailSendState.inFlight") is True
+          and pg.evaluate("emailSendState.unresolved") is True)
+    lang_to(pg, "es")
+    check("in flight: the language switch re-renders the preview but keeps the sendId",
+          pg.evaluate("emailSendState.sendId") == sid and pg.evaluate("emailSendState.inFlight") is True)
+    tap(pg)
+    pg.wait_for_timeout(300)
+    check("in flight: a tap while the request is out sends nothing", len(gate.bodies) == 1, str(gate.ids()))
+    gate.mode = "500"
+    gate.release("500")
+    gate.wait(2)
+    tap(pg)
+    gate.wait(4)
+    check("in flight -> HTTP 500 -> retry in Spanish: every POST the SAME sendId",
+          len(gate.bodies) == 4 and set(gate.ids()) == {sid} and gate.langs() == ["en", "en", "es", "es"],
+          f"{gate.ids()} {gate.langs()}")
+    pg.close()
+
+    # ======================================================================
+    # 4c. the session's send-attempt registry (owner direction 2026-10-17):
+    # content sent earlier in the session goes out again under ITS OWN
+    # original sendId, whatever was sent in between; each record keeps its
+    # own outcome; the wipe drops every record.
+    # ======================================================================
+    print("Send-attempt registry (return to earlier content):")
+    STATES = "() => Object.values(emailSendState.attempts || {}).map(a => [a.sendId, a.state])"
+
+    def states(page):
+        return {k: v for k, v in page.evaluate(STATES)}
+
+    def set_pillows(page, n):
+        page.evaluate("window.showSavedPicks()")
+        page.wait_for_timeout(250)
+        page.evaluate(f"() => {{ setSleepSystemItemQuantity('pillow-gel-memory', {n}); psRepaint(); }}")
+        page.wait_for_timeout(200)
+
+    # ---- recipient A -> B -> A, complete quote, with a language switch and a re-open ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    gate = Gate(pg, "500")
+    open_take_home(pg, "a@example.com")
+    tap(pg)
+    gate.wait(2)
+    gate.mode = "ok"
+    pg.fill("#emailInput", "b@example.com")
+    tap(pg)
+    gate.wait(3)
+    id_a, id_b = (gate.ids() + [None, None, None])[0], (gate.ids() + [None, None, None])[2]
+    check("A (HTTP 500, uncertain) then B (confirmed): two distinct valid sendIds, each record keeps its own outcome",
+          valid(id_a) and valid(id_b) and id_a != id_b and gate.ids() == [id_a, id_a, id_b]
+          and states(pg) == {id_a: "uncertain", id_b: "confirmed"}, f"{gate.ids()} {states(pg)}")
+    # B succeeded, so the confirmation shows; come back to the take-home and return to A in Spanish
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(300)
+    lang_to(pg, "es")
+    gate.mode = "500"
+    open_take_home(pg, "a@example.com")
+    tap(pg)
+    gate.wait(5)
+    check("back to A (in Spanish, screen re-opened): A's ORIGINAL sendId, not a new one",
+          gate.ids()[3:] == [id_a, id_a] and gate.langs()[3:] == ["es", "es"], f"{gate.ids()} {gate.langs()}")
+    tap(pg)
+    gate.wait(7)
+    check("... and a further retry of A keeps it", gate.ids()[5:] == [id_a, id_a], str(gate.ids()))
+    gate.mode = "ok"
+    pg.fill("#emailInput", "b@example.com")
+    tap(pg)
+    gate.wait(8)
+    check("back to B (already confirmed): B's original sendId again (the server answers it as a duplicate)",
+          gate.ids()[7:] == [id_b] and states(pg) == {id_a: "uncertain", id_b: "confirmed"}, f"{gate.ids()} {states(pg)}")
+    check("A -> B -> A: exactly two sendIds were ever used", set(gate.ids()) == {id_a, id_b}, str(gate.ids()))
+    pg.close()
+
+    # ---- purchase X -> Y -> X on an INCOMPLETE quote (uncertain), with a language switch ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    drop_protector(pg)
+    gate = Gate(pg, "500")
+    kx = pg.evaluate("purchaseIdentityKey()")
+    open_take_home(pg, "x@example.com")
+    tap(pg)
+    gate.wait(2)
+    set_pillows(pg, 1)
+    ky = pg.evaluate("purchaseIdentityKey()")
+    open_take_home(pg, "x@example.com")
+    tap(pg)
+    gate.wait(4)
+    set_pillows(pg, 2)
+    kx2 = pg.evaluate("purchaseIdentityKey()")
+    lang_to(pg, "es")
+    open_take_home(pg, "x@example.com")
+    tap(pg)
+    gate.wait(6)
+    ids = gate.ids()
+    check("incomplete X -> Y -> X (back in Spanish): X is the same identity again and reuses X's ORIGINAL sendId",
+          kx == kx2 and kx != ky and len(ids) == 6 and valid(ids[0]) and valid(ids[2]) and ids[0] != ids[2]
+          and ids[:2] == [ids[0]] * 2 and ids[2:4] == [ids[2]] * 2 and ids[4:] == [ids[0]] * 2,
+          f"{kx == kx2} {ids}")
+    check("incomplete X -> Y -> X: every POST carried the incomplete summary",
+          all((b.get("quote") or {}).get("complete") is False for b in gate.bodies))
+    check("incomplete X -> Y -> X: both records are uncertain, each under its own id",
+          states(pg) == {ids[0]: "uncertain", ids[2]: "uncertain"}, str(states(pg)))
+    restore_protector(pg)
+    pg.close()
+
+    # ---- purchase X -> Y -> X on a COMPLETE quote (server delivery_unconfirmed) ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    gate = Gate(pg, "unconfirmed")
+    open_take_home(pg, "x@example.com")
+    tap(pg)
+    gate.wait(1)
+    set_pillows(pg, 1)
+    open_take_home(pg, "x@example.com")
+    tap(pg)
+    gate.wait(2)
+    set_pillows(pg, 2)
+    lang_to(pg, "es")
+    open_take_home(pg, "x@example.com")
+    tap(pg)
+    gate.wait(3)
+    ids = gate.ids()
+    check("complete X -> Y -> X (delivery_unconfirmed, back in Spanish): X's ORIGINAL sendId, Y its own",
+          len(ids) == 3 and valid(ids[0]) and valid(ids[1]) and ids[0] != ids[1] and ids[2] == ids[0], str(ids))
+    pg.close()
+
+    # ---- no priced purchase (the shipped, dark pricing state): the rest of
+    # the email - answers, shortlist - is the content, so a changed shortlist
+    # is a NEW send, returning to the earlier one reuses its id, and the
+    # language never matters ----
+    pg, errs = open_page(browser, SHIPPED.url)
+    pg.evaluate(LOAD, {"answers": ANSWERS, "fin": "b7", "avoid": "g5", "items": ITEMS})
+    pg.wait_for_timeout(300)
+    gate = Gate(pg, "ok", SHIPPED.stub.gas_url)
+    check("dark pricing: no purchase identity, the content identity still exists",
+          pg.evaluate("purchaseIdentityKey()") is None and isinstance(pg.evaluate("consultationIdentityKey()"), str))
+    open_take_home(pg, "d@example.com")
+    tap(pg)
+    gate.wait(1)
+    toggle = pg.evaluate("""() => Object.keys(window._drawerData || {}).find(i =>
+      !(window._savedPicks || []).some(p => p.id === i) && i !== window._favoriteMattressId)""")
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(250)
+    pg.evaluate("(id) => window._toggleSavePick(id)", toggle)
+    pg.wait_for_timeout(200)
+    open_take_home(pg, "d@example.com")
+    tap(pg)
+    gate.wait(2)
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(250)
+    pg.evaluate("(id) => window._toggleSavePick(id)", toggle)
+    pg.wait_for_timeout(200)
+    lang_to(pg, "es")
+    open_take_home(pg, "d@example.com")
+    tap(pg)
+    gate.wait(3)
+    lang_to(pg, "en")
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(250)
+    pg.evaluate("() => { answers.firmness = (Number(answers.firmness) === 7 ? 3 : 7); }")
+    open_take_home(pg, "d@example.com")
+    tap(pg)
+    gate.wait(4)
+    ids = gate.ids()
+    check("dark pricing: a changed shortlist after a confirmed send is a NEW sendId (the updated email is not swallowed)",
+          len(ids) >= 2 and valid(ids[0]) and valid(ids[1]) and ids[1] != ids[0], f"{toggle} {ids}")
+    check("dark pricing: returning to the first shortlist (in Spanish) reuses its ORIGINAL sendId",
+          len(ids) >= 3 and ids[2] == ids[0] and gate.langs()[2] == "es", f"{ids} {gate.langs()}")
+    check("dark pricing: a changed quiz answer is a NEW sendId",
+          len(ids) == 4 and valid(ids[3]) and ids[3] not in (ids[0], ids[1]), str(ids))
+    # the credited salesperson is part of the email: a change is a new send
+    pg.evaluate("""() => { const sk = (STORE_CONFIG && STORE_CONFIG.storeKey) || 'unknown';
+      localStorage.setItem('dreamfinder.' + sk + '.deviceRsa', 'Fixture Specialist ' + Date.now()); }""")
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(250)
+    open_take_home(pg, "d@example.com")
+    tap(pg)
+    gate.wait(5)
+    # the same recipient typed in another case is the same recipient
+    pg.evaluate("window.showSavedPicks()")
+    pg.wait_for_timeout(250)
+    open_take_home(pg, "D@Example.COM")
+    tap(pg)
+    gate.wait(6)
+    ids = gate.ids()
+    check("dark pricing: a changed credited salesperson is a NEW sendId",
+          len(ids) >= 5 and valid(ids[4]) and ids[4] not in ids[:4], str(ids))
+    check("dark pricing: the same address in another letter case reuses that content's sendId (sent as typed)",
+          len(ids) == 6 and ids[5] == ids[4] and gate.bodies[5].get("email") == "D@Example.COM", str(ids))
+    pg.evaluate("""() => { const sk = (STORE_CONFIG && STORE_CONFIG.storeKey) || 'unknown';
+      localStorage.removeItem('dreamfinder.' + sk + '.deviceRsa'); }""")
+    check("dark pricing: every POST carries quote null (pricing stays dark)",
+          all(b.get("quote") is None for b in gate.bodies))
+    pg.close()
+
+    # ---- a definitive refusal keeps its record and its id ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    gate = Gate(pg, "send_failed")
+    open_take_home(pg, "f@example.com")
+    tap(pg)
+    gate.wait(1)
+    fid = gate.ids()[0] if gate.ids() else None
+    check("send_failed (nothing was sent): ONE POST, the record says 'failed', the send is not unresolved",
+          len(gate.bodies) == 1 and valid(fid) and states(pg) == {fid: "failed"}
+          and pg.evaluate("emailSendState.unresolved") is False, f"{gate.ids()} {states(pg)}")
+    gate.mode = "ok"
+    tap(pg)
+    gate.wait(2)
+    check("... retrying the same content reuses its id (the server kept it retryable) and the record becomes confirmed",
+          gate.ids() == [fid, fid] and states(pg) == {fid: "confirmed"}, f"{gate.ids()} {states(pg)}")
+    pg.close()
+
+    # ---- a late response from a wiped session touches nothing in the new one ----
+    pg, errs = open_page(browser, MAIN.url)
+    fresh_studio(pg, "en")
+    gate = Gate(pg, "hold")
+    open_take_home(pg, "late@example.com")
+    tap(pg)
+    gate.wait(1)
+    old_id = gate.ids()[0] if gate.ids() else None
+    check("late: the first session's request is held in flight", len(gate.held) == 1 and valid(old_id))
+    pg.evaluate("resetSessionState()")
+    pg.wait_for_timeout(300)
+    check("the wipe drops the attempt registry, the used-id set and the current attempt",
+          pg.evaluate("emailSendState.attempts === null && emailSendState.usedIds === null && emailSendState.current === null"))
+    fresh_studio(pg, "en")
+    gate.mode = "500"
+    open_take_home(pg, "late@example.com")
+    tap(pg)
+    gate.wait(3)
+    new_id = gate.ids()[1] if len(gate.ids()) > 1 else None
+    check("late: the next customer, same address and purchase, gets a NEW sendId (no cross-session carry-over)",
+          valid(new_id) and new_id != old_id and gate.ids()[1:] == [new_id, new_id], str(gate.ids()))
+    gate.release("ok")
+    pg.wait_for_timeout(800)
+    check("late: the old session's success arriving now changes nothing (new record still uncertain, no confirmation)",
+          states(pg) == {new_id: "uncertain"} and pg.evaluate("emailSendState.unresolved") is True
+          and not pg.evaluate("document.getElementById('emailSendBtn').classList.contains('sent')"),
+          str(states(pg)))
+    pg.close()
+
+    if ONLY_SEND_IDENTITY:
+        browser.close()
+        for s_ in (MAIN, FAIL500, STALE, SHIPPED):
+            s_.close()
+        print(f"\nPurchase flow check (--only send-identity): {passed} passed, {failed} failed "
+              f"({time.time() - T0:.0f}s rendered)")
+        sys.exit(1 if failed else 0)
+
     # ======================================================================
     # 2. the rendered purchase studio
     # ======================================================================
