@@ -23,11 +23,17 @@
 //     candidate applies alone, otherwise every combinable applies in order,
 //     each offer at most once per line, percent-off floors, amount-off is per
 //     unit x quantity clamped at the remaining amount;
-//   * the quote: offers run only over a fully resolved quote; the NET
-//     merchandise amount must pass the money admission or the quote is
-//     unresolved; discounts carry {offerId, label, amountMinor};
+//   * the quote: whole-quote offers run only over a fully resolved quote;
+//     the NET merchandise amount must pass the money admission or the quote
+//     is unresolved; discounts carry {offerId, label, amountMinor};
+//   * an INCOMPLETE quote (owner direction 2026-10-16): each resolved line
+//     receives its offers under the same stacking rule unless an offer that
+//     fits it carries a merchandise minimum (then it stays at list price);
+//     pay-in-full-only applies under pay in full only; still no subtotal,
+//     savings total or payment; the complete path is unchanged;
 //   * the email gate: quote enters the payload only while
-//     pricing.surfaces.email is true and the summary is a v1 record;
+//     pricing.surfaces.email is true and the summary is a v2 record -
+//     complete, or incomplete and carrying no total key at all;
 //   * the payment-demo path is retired: no demo adapter, context or mark.
 //
 // Run: node tests/offers_engine_check.mjs
@@ -65,7 +71,8 @@ const fnRe = (n) => new RegExp(`function ${n}\\([^)]*\\)\\s*\\{[\\s\\S]*?\\n    
 const Lsrc = (html.match(fnRe("L")) || [""])[0];
 const escSrc = (html.match(fnRe("escapeHtml")) || [""])[0];
 check("L() and escapeHtml() extracted", Lsrc.length > 0 && escSrc.length > 0);
-for (const name of ["offerAdmitted", "admittedOffers", "offerMatchesLine", "quoteApplyOffers", "quoteOfferTerms",
+for (const name of ["offerAdmitted", "admittedOffers", "offerMatchesLine", "offerFitsLine", "quoteApplyOffers",
+                    "quoteDiscountLine", "quoteApplyLineOffers", "quoteOfferTerms",
                     "pricingPresentationApproved", "offerEffectValid", "psEnabled", "purchaseSummaryFor",
                     "emailQuoteGate", "psFingerprint"]) {
   const d = new RegExp(`function\\s+${name}\\s*\\(`, "g");
@@ -113,7 +120,7 @@ function makeEnv({ pricing, financing = null, nowMs = CLOCK, lang = "en", finali
   return new Function(
     "document", "STORE_CONFIG", "currentLang", "getFinancingConfig", "t", "Date", "window",
     "answers", "resolveFinalistState", "ACCESSORIES", "financingPlanFresh", "answerLabelFor",
-    `"use strict";\n${src}\nreturn { offerAdmitted, admittedOffers, offerMatchesLine, quoteApplyOffers,
+    `"use strict";\n${src}\nreturn { offerAdmitted, admittedOffers, offerMatchesLine, quoteApplyOffers, quoteApplyLineOffers,
       quoteOfferTerms, quote: buildConsultationQuote, psEnabled, emailQuoteGate, psFingerprint,
       purchaseSummaryFor, psPay, quoteQualifyingAmount, approved: pricingPresentationApproved };`)(
     { getElementById: () => null }, STORE_CONFIG, lang, () => financing, (k) => "DICT:" + k, DATE_SHIM, win,
@@ -165,8 +172,9 @@ check("shipped config admits no offer, even one planted into it",
   env.admittedOffers(Object.assign(clone(shipped.pricing), { offers: [OFFER()] }), CLOCK).length === 0);
 check("shipped config: the studio is not admitted (psEnabled false)",
   makeEnv({ pricing: shipped.pricing }).psEnabled() === false);
-check("shipped config: the email quote is null even for a v1 summary",
-  makeEnv({ pricing: shipped.pricing }).emailQuoteGate({ v: 1, lines: [] }) === null);
+check("shipped config: the email quote is null even for a complete v2 summary",
+  makeEnv({ pricing: shipped.pricing }).emailQuoteGate({ v: 2, complete: true, lines: [] }) === null
+  && makeEnv({ pricing: shipped.pricing }).emailQuoteGate({ v: 2, complete: false, lines: [] }) === null);
 
 // ---------------------------------------------------------------------------
 section("Admission: the governed offer, and every gate fail-closed");
@@ -364,6 +372,65 @@ const apply = (lines, offers, payment) => env.quoteApplyOffers(lines, { offers, 
 }
 
 // ---------------------------------------------------------------------------
+section("Incomplete quote: line-level offers (quoteApplyLineOffers, pure)");
+// ---------------------------------------------------------------------------
+{
+  const lineApply = (lines, offers, payment) => env.quoteApplyLineOffers(lines, { offers, payment });
+  const UNPRICED = (over = {}) => ACCL(Object.assign({ productId: "pillow-flow", resolved: false, currency: null,
+    unitAmountMinor: null, extendedAmountMinor: null, netAmountMinor: null }, over));
+  const r = lineApply([LINE(), UNPRICED()], [OFFER()]);
+  check("a resolved line receives an 'any' offer with no minimum: 10% of $1,000.00, net $900.00",
+    r.lines[0].discountMinor === 10000 && r.lines[0].netAmountMinor === 90000
+    && r.lines[0].discounts[0].offerId === "spring-sale-10" && r.appliedOffers.join(",") === "spring-sale-10");
+  check("the unresolved line is untouched: no discount, no number",
+    r.lines[1].resolved === false && r.lines[1].discounts.length === 0 && r.lines[1].netAmountMinor === null
+    && r.lines[1].extendedAmountMinor === null);
+  check("no subtotal, savings total or merchandise amount is produced (lines and applied ids only)",
+    JSON.stringify(Object.keys(r).sort()) === JSON.stringify(["appliedOffers", "lines"]));
+  const minBlocked = lineApply([LINE(), UNPRICED()], [OFFER({ minimumMerchandiseMinor: 50000 })]);
+  check("an offer that fits the line but carries a MINIMUM blocks the line (list price; the minimum needs the whole purchase)",
+    minBlocked.lines[0].discountMinor === 0 && minBlocked.lines[0].discounts.length === 0
+    && minBlocked.lines[0].netAmountMinor === 100000 && minBlocked.appliedOffers.length === 0);
+  const minZero = lineApply([LINE(), UNPRICED()], [OFFER({ minimumMerchandiseMinor: 0 })]);
+  check("any non-null minimum blocks, even 0 (fail closed, no inference)", minZero.lines[0].discountMinor === 0);
+  const minWithOther = lineApply([LINE(), UNPRICED()],
+    [OFFER({ id: "plain-10" }), OFFER({ id: "big-min", minimumMerchandiseMinor: 50000, priority: 5 })]);
+  check("a minimum-bearing candidate blocks the line even beside a minimum-free one (its outcome could change the stack)",
+    minWithOther.lines[0].discountMinor === 0 && minWithOther.appliedOffers.length === 0);
+  const minOther = lineApply([LINE(), ACCL()],
+    [OFFER(), OFFER({ id: "acc-min", eligibility: { productKinds: ["accessory"] }, minimumMerchandiseMinor: 50000 })]);
+  check("a minimum offer that does NOT fit a line blocks only the lines it fits",
+    minOther.lines[0].discountMinor === 10000 && minOther.lines[1].discountMinor === 0);
+  const cash = OFFER({ id: "cash-5", payment: "pay-in-full-only", effect: { type: "percent-off", basisPoints: 500 } });
+  check("pay-in-full-only applies line-level under pay in full",
+    lineApply([LINE(), UNPRICED()], [cash], "full").lines[0].discountMinor === 5000);
+  check("pay-in-full-only never applies under a plan (financed), and does not block the 'any' offer there",
+    lineApply([LINE(), UNPRICED()], [cash], "financed").lines[0].discountMinor === 0
+    && lineApply([LINE(), UNPRICED()], [OFFER(), cash], "financed").lines[0].discountMinor === 10000);
+  const exc = OFFER({ id: "excl-15", stacking: "exclusive", priority: 0, effect: { type: "percent-off", basisPoints: 1500 } });
+  const comb = OFFER({ id: "comb-10", stacking: "combinable", priority: 10 });
+  check("stacking is the full path's: an exclusive first candidate applies alone",
+    lineApply([LINE(), UNPRICED()], [comb, exc]).lines[0].discounts.map((d) => d.offerId).join(",") === "excl-15");
+  check("combinables apply in (priority, id) order on the remaining amount, exactly as on a complete quote",
+    (() => { const offers = [OFFER({ id: "b-five", priority: 1, effect: { type: "percent-off", basisPoints: 500 } }), OFFER({ id: "a-ten", priority: 1 })];
+      const a = lineApply([LINE(), UNPRICED()], offers).lines[0];
+      const b = apply([LINE()], offers).lines[0];
+      return a.discounts.map((d) => d.offerId).join(",") === "a-ten,b-five" && a.netAmountMinor === 85500
+        && JSON.stringify(a) === JSON.stringify(b); })());
+  const frozen = [Object.freeze(LINE()), Object.freeze(UNPRICED())];
+  let threw = null, fr = null;
+  try { fr = lineApply(frozen, [OFFER()]); } catch (e) { threw = e; }
+  check("PURE: frozen inputs are not mutated", !threw && frozen[0].discountMinor === 0 && fr.lines[0] !== frozen[0]);
+  // The complete path is unchanged: the same lines through quoteApplyOffers
+  // equal the line rule wherever no minimum is involved.
+  const offers = [OFFER(), OFFER({ id: "acc-5", eligibility: { productKinds: ["accessory"] }, effect: { type: "percent-off", basisPoints: 500 } })];
+  check("complete path: line-level and whole-quote application agree line by line when no minimum is involved",
+    JSON.stringify(apply([LINE(), ACCL()], offers).lines) === JSON.stringify(lineApply([LINE(), ACCL()], offers).lines));
+  check("source: the incomplete path blocks a line on any fitting minimum before applying",
+    /if \(fits\[f\]\.minimumMerchandiseMinor !== null\) return ln;/.test(gateBlock));
+}
+
+// ---------------------------------------------------------------------------
 section("The quote: buildConsultationQuote over the governed fixture");
 // ---------------------------------------------------------------------------
 {
@@ -403,9 +470,25 @@ section("The quote: buildConsultationQuote over the governed fixture");
   const unresolved = makeEnv({ pricing: fxP([fxOffer()]), financing: clone(fx.financing), nowMs: FCLOCK,
     finalist: { kind: "chosen", item: M }, win: { _accCart: { "pillow-flow": { id: "pillow-flow" } } },
     accessories: [{ id: "pillow-flow", name: "Flow", price: 108 }] }).quote("results", "queen");
-  check("offers never run over an UNRESOLVED quote: no line carries a discount, nothing is applied",
-    unresolved.status === "unresolved" && unresolved.lines.every((l) => l.discounts.length === 0 && l.discountMinor === 0)
-    && unresolved.appliedOffers.length === 0);
+  check("an UNRESOLVED quote: the resolved mattress line carries its 10% (line-level), the unpriced line none",
+    unresolved.status === "unresolved" && unresolved.lines[0].discountMinor === 36990
+    && unresolved.lines[0].netAmountMinor === 332910 && unresolved.lines[1].resolved === false
+    && unresolved.lines[1].discounts.length === 0 && unresolved.appliedOffers.join(",") === "spring-sale-10");
+  check("...and still NO subtotal, list subtotal, savings total or currency",
+    unresolved.merchandiseMinor === null && unresolved.listMerchandiseMinor === null
+    && unresolved.discountMinor === 0 && unresolved.currency === null);
+  const unresolvedMin = makeEnv({ pricing: fxP([fxOffer({ minimumMerchandiseMinor: 100000 })]), financing: clone(fx.financing), nowMs: FCLOCK,
+    finalist: { kind: "chosen", item: M }, win: { _accCart: { "pillow-flow": { id: "pillow-flow" } } },
+    accessories: [{ id: "pillow-flow", name: "Flow", price: 108 }] }).quote("results", "queen");
+  check("an UNRESOLVED quote with a minimum-bearing offer: the mattress stays at its list price, nothing applied",
+    unresolvedMin.status === "unresolved" && unresolvedMin.lines[0].discountMinor === 0
+    && unresolvedMin.lines[0].netAmountMinor === 369900 && unresolvedMin.appliedOffers.length === 0);
+  const unresolvedFin = makeEnv({ pricing: fxP([fxOffer({ id: "cash-5", payment: "pay-in-full-only", effect: { type: "percent-off", basisPoints: 500 } })]),
+    financing: clone(fx.financing), nowMs: FCLOCK, finalist: { kind: "chosen", item: M },
+    win: { _accCart: { "pillow-flow": { id: "pillow-flow" } } }, accessories: [{ id: "pillow-flow", name: "Flow", price: 108 }] });
+  check("an UNRESOLVED quote: pay-in-full-only applies line-level to the 'full' quote and never to the financed one",
+    unresolvedFin.quote("results", "queen").lines[0].discountMinor === 18495
+    && unresolvedFin.quote("results", "queen", { payment: "financed" }).lines[0].discountMinor === 0);
   const dark = makeEnv({ pricing: Object.assign(fxP([fxOffer()]), { displayEnabled: false }), financing: clone(fx.financing),
     nowMs: FCLOCK, finalist: { kind: "chosen", item: M } }).quote("results", "queen");
   check("display disabled: nothing resolves and no offer is admitted", dark.merchandiseMinor === null && dark.appliedOffers.length === 0);
@@ -427,11 +510,20 @@ section("Qualifying amount and the email gate");
     && !/qualifyingMinor: q\.merchandiseMinor/.test(gateBlock));
   const on = makeEnv({ pricing: PRICING({ surfaces: { handoff: true, email: true } }) });
   const off = makeEnv({ pricing: PRICING({ surfaces: { handoff: true, email: false } }) });
-  const sum = { v: 1, lines: [] };
-  check("emailQuoteGate: surfaces.email true + a v1 summary -> that same summary", on.emailQuoteGate(sum) === sum);
-  check("emailQuoteGate: surfaces.email false -> null", off.emailQuoteGate(sum) === null);
-  check("emailQuoteGate: a non-v1 / absent summary -> null",
-    on.emailQuoteGate({ v: 2 }) === null && on.emailQuoteGate(null) === null && on.emailQuoteGate("x") === null);
+  const sum = { v: 2, complete: true, lines: [] };
+  const part = { v: 2, complete: false, lines: [], incompleteText: "x" };
+  check("emailQuoteGate: surfaces.email true + a complete v2 summary -> that same summary", on.emailQuoteGate(sum) === sum);
+  check("emailQuoteGate: surfaces.email true + an incomplete v2 summary without totals -> that same summary",
+    on.emailQuoteGate(part) === part);
+  check("emailQuoteGate: surfaces.email false -> null (complete and incomplete)",
+    off.emailQuoteGate(sum) === null && off.emailQuoteGate(part) === null);
+  check("emailQuoteGate: a non-v2 / absent / undeclared-completeness summary -> null",
+    on.emailQuoteGate({ v: 1, lines: [] }) === null && on.emailQuoteGate({ v: 2, lines: [] }) === null
+    && on.emailQuoteGate({ v: 2, complete: "no" }) === null && on.emailQuoteGate(null) === null && on.emailQuoteGate("x") === null);
+  for (const key of ["listSubtotalText", "discountText", "merchandiseText", "merchandiseMinor", "discountMinor", "payment"]) {
+    check(`emailQuoteGate: an incomplete summary carrying ${key} (even blank) is refused`,
+      on.emailQuoteGate(Object.assign({}, part, { [key]: key === "payment" ? { kind: "full", totalText: "$1" } : "" })) === null);
+  }
   check("psEnabled needs enabled, displayEnabled AND the handoff surface",
     on.psEnabled() === true
     && makeEnv({ pricing: PRICING({ surfaces: { handoff: false } }) }).psEnabled() === false

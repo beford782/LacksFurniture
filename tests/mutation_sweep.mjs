@@ -2574,12 +2574,12 @@ const MUTATIONS = [
   // stale and activation-unapproved are OFF, never a message. The rendered
   // harness observes both as well (its stale/unapproved drills expect OFF).
   ["2.2 contract: a STALE price reaches a surface (freshness no longer gates visibility)",
-    "      if (!fresh || !eligible) return off;",
-    "      if (!eligible) return off;",
+    "      if (!fresh || !eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;",
+    "      if (!eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;",
     PRICING_GATE_RENDERED, "index.html"],
   ["2.2 contract: an activation-unapproved price reaches a surface (eligibility no longer gates visibility)",
-    "      if (!fresh || !eligible) return off;",
-    "      if (!fresh) return off;",
+    "      if (!fresh || !eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;",
+    "      if (!fresh) return pricingEntryFor(p, m.id, sku) ? off : unpriced;",
     PRICING_GATE_RENDERED, "index.html"],
   // Codex correction 2026-09-09: the runtime money admission mirrors the
   // governed validator; Intl.NumberFormat is formatting only.
@@ -2603,8 +2603,8 @@ const MUTATIONS = [
   // SKU resolves nothing -> not-judgeable -> OFF), so the contract check's
   // source pin is its observer, like the two masked 2.2a entries above.
   ["2.2 contract: the no-record OFF rule is dropped (defence in depth; source-pinned)",
-    "      if (!sku) return off;",
-    "      if (false) return off;",
+    "      if (!sku) return unpriced;",
+    "      if (false) return unpriced;",
     PRICING_GATE.concat(PRICING), "index.html"],
   ["2.2a: the drawer renderer prints while the gate is OFF",
     "      if (pres.state === 'off' || !pres.text) {",
@@ -3333,14 +3333,18 @@ const MUTATIONS = [
 
   // --- PR #132 review repairs, second round (2026-09-27) -------------------
   // Two admissible size variants of one accessory family (the website drill).
-  ["website preview: the served document is judged whole again (a second size of one family is a duplicate and the preview will not start)",
-    "    return [(z, [e for e, vz in zip(products, variant_sizes) if vz is None or vz == z])\n            for z in sizes]",
-    "    return [(z, list(products)) for z in sizes]",
-    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
-  ["website preview: one sku may serve two products as long as no single customer size sees both",
-    "        if e[\"sku\"] in seen:",
-    "        if False:",
-    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  // #777/#778 re-anchored 2026-10-17: the harness's per-size projection
+  // (size_projections) was retired when per-size accessory prices became
+  // production config; the whole document is judged once by validate_pricing,
+  // so these guards now target the validator's own rules.
+  ["website preview: two entries for one product-size are both admitted (per-size identity duplicate unchecked)",
+    "                if ident in seen_identity:",
+    "                if False:",
+    WEBSITE_ADMISSION, "tools/validation.py"],
+  ["website preview: one sku may serve two product-sizes (duplicate-sku rule disabled)",
+    "                elif sku in seen_sku:",
+    "                elif False:",
+    WEBSITE_ADMISSION, "tools/validation.py"],
   ["website preview: two sizes of one family naming the same sku are both priced",
     "            if shared:",
     "            if False:",
@@ -3664,9 +3668,11 @@ const MUTATIONS = [
   ["email: figures that changed after the preview are sent anyway",
     "if (_fingerprintNow !== emailSendState.previewFingerprint) {",
     "if (false) {", PURCHASE],
-  ["Code.gs: a sendId that already sent is sent again (the dedupe cache is not consulted)",
-    "    if (sendCache.get(dedupeKey)) {",
-    "    if (false) {", DELIVERY, "Code.gs"],
+  // Re-anchored 2026-10-16: the durable send ledger is the authority (the
+  // cache is only a fast path), so the ledger lookup is what must bite.
+  ["Code.gs: a sendId that already sent is sent again (the durable ledger is not consulted)",
+    "    if (prior) {",
+    "    if (false) {", EMAIL_PRIORITIES, "Code.gs"],
   ["email: the quote enters the payload while pricing.surfaces.email is false",
     "      if (!pricingSurfaceEnabled('email')) return null;\n",
     "", PURCHASE],
@@ -3684,6 +3690,32 @@ const MUTATIONS = [
   ["per-size accessory: the validator stops binding a per-size entry's sku to accessorySkus[size]",
     "                    elif sku and sku != ident_cat[size]:",
     "                    elif False:", PRICING_VALIDATOR, "tools/validation.py"],
+  // --- At-most-once email per sendId (2026-10-16) ---------------------------
+  ["Code.gs: the 'sending' marker is not written before the send (a crash after it resends)",
+    "    ledger.appendRow([SENDS_ID_PREFIX + sendId, SEND_STATE_SENDING, new Date(), pendingLead]);\n",
+    "", EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: a MailApp exception is followed by a plain-text resend",
+    "      Logger.log('doPost: MailApp threw; delivery_unconfirmed, the sendId will not send again: ' + mailErr.toString());",
+    "      MailApp.sendEmail(email, subject, plainBody, { name: senderName });", EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: a 'sending' / 'unconfirmed' ledger state is answered as a delivered duplicate",
+    "      if (prior.state === SEND_STATE_SENT || prior.state === SEND_STATE_ROW_PENDING",
+    "      if (true || prior.state === SEND_STATE_SENT || prior.state === SEND_STATE_ROW_PENDING", EMAIL_PRIORITIES, "Code.gs"],
+  ["email: re-opening or re-rendering the take-home screen makes a new sendId (a lost-answer send can repeat)",
+    "      if (!emailSendState.sendId || (!emailSendState.inFlight && !emailSendState.unresolved)) {",
+    "      if (true) {", DELIVERY],
+  // --- Scope-limited failures (owner direction 2026-10-16) -------------------
+  ["pricing gate: 'price unavailable' shows while the pricing block is not wholly approved",
+    "      var unpriced = pricingPresentationApproved(p)\n",
+    "      var unpriced = true\n", PRICING_GATE],
+  ["pricing gate: an existing stale or uncleared entry says 'price unavailable' instead of OFF",
+    "      if (!fresh || !eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;",
+    "      if (!fresh || !eligible) return unpriced;", PRICING_GATE],
+  ["offers: on an incomplete quote a minimum-bearing offer no longer withholds the line's discount",
+    "          if (fits[f].minimumMerchandiseMinor !== null) return ln;\n",
+    "", OFFERS],
+  ["Code.gs: an incomplete summary carrying a subtotal or payment is rendered",
+    "      if (Object.prototype.hasOwnProperty.call(q, QUOTE_INCOMPLETE_FORBIDDEN[f])) return null;\n",
+    "", EMAIL_PRIORITIES, "Code.gs"],
 ];
 
 // ---------------------------------------------------------------------------

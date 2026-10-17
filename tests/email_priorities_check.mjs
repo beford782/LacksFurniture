@@ -59,31 +59,70 @@ function buildGas(opts = {}) {
   const frozen = {};
   const rows = [];
   if (!opts.noLeadsTab) tabs.set("Leads", rows);
+  // Each tab is an array of rows (row 1 = index 0). The send ledger ("DreamFinder
+  // Sends") is created by Code.gs with its header; opts.ledgerThrows makes
+  // every ledger read/write throw, opts.markerThrows only the marker append,
+  // opts.rowThrows only the LEADS append (the ledger keeps working).
+  const LEDGER = "DreamFinder Sends";
+  const hidden = [];
+  let flushes = 0;
+  const ledgerGuard = (n) => { if (n === LEDGER && opts.ledgerThrows) throw new Error("forced ledger failure"); };
   const sheetFor = (n) => ({
-    appendRow: (r) => { if (opts.rowThrows) throw new Error("forced Sheet failure"); tabs.get(n).push(r); },
+    appendRow: (r) => {
+      ledgerGuard(n);
+      if (n === LEDGER && opts.markerThrows && r[1] === "sending") throw new Error("forced marker failure");
+      if (n !== LEDGER && opts.rowThrows) throw new Error("forced Sheet failure");
+      tabs.get(n).push(r.slice());
+    },
     setFrozenRows: (k) => { frozen[n] = k; },
+    hideSheet: () => { hidden.push(n); },
     getName: () => n,
+    getLastRow: () => { ledgerGuard(n); return tabs.get(n).length; },
+    getRange: (r, c, nr = 1, nc = 1) => ({
+      getValues: () => { ledgerGuard(n); return tabs.get(n).slice(r - 1, r - 1 + nr).map((row) => {
+        const out = []; for (let j = 0; j < nc; j++) out.push(row[c - 1 + j] === undefined ? "" : row[c - 1 + j]); return out; }); },
+      setValues: (vals) => {
+        ledgerGuard(n);
+        if (n === LEDGER && opts.stateWriteThrows) throw new Error("forced ledger state failure");
+        vals.forEach((v, i) => { const row = tabs.get(n)[r - 1 + i]; v.forEach((x, j) => { row[c - 1 + j] = x; }); });
+      },
+    }),
   });
-  const SpreadsheetApp = { getActiveSpreadsheet: () => ({
-    getSheetByName: (n) => (tabs.has(n) ? sheetFor(n) : null),
-    insertSheet: (n) => { tabs.set(n, n === "Leads" ? rows : []); inserted.push(n); return sheetFor(n); },
-    // Whichever tab is active is never the target.
-    getActiveSheet: () => { throw new Error("getActiveSheet must not be used"); },
-  }) };
+  const SpreadsheetApp = {
+    flush: () => { flushes += 1; },
+    getActiveSpreadsheet: () => ({
+      getSheetByName: (n) => (tabs.has(n) ? sheetFor(n) : null),
+      insertSheet: (n) => { ledgerGuard(n); tabs.set(n, n === "Leads" ? rows : []); inserted.push(n); return sheetFor(n); },
+      // Whichever tab is active is never the target.
+      getActiveSheet: () => { throw new Error("getActiveSheet must not be used"); },
+    }) };
+  // MailApp: every call is counted (calls), delivered ones recorded (sent).
+  // A forced failure throws; opts.throwAfterDelivery records the message
+  // first (Google accepted it, then the call threw).
+  const calls = [];
   const MailApp = {
     sendEmail: (to, subject, body, o) => {
-      if (mailFailuresLeft > 0) { mailFailuresLeft -= 1; throw new Error("forced MailApp failure"); }
+      calls.push(to);
+      if (mailFailuresLeft > 0) {
+        mailFailuresLeft -= 1;
+        if (opts.throwAfterDelivery) sent.push({ to, subject, body, opts: o || {} });
+        throw new Error("forced MailApp failure");
+      }
       sent.push({ to, subject, body, opts: o || {} });
     },
-    getRemainingDailyQuota: () => 97,
+    getRemainingDailyQuota: () => (opts.quota === undefined ? 97 : opts.quota),
   };
   // Script lock + script cache (sendId duplicate suppression). One fresh
   // cache per harness instance, so each buildGas() is a fresh deployment.
+  // opts.cacheEvicts: the cache forgets everything (best-effort service).
   const cache = new Map();
-  const LockService = { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) };
+  const lock = { waits: 0, releases: 0 };
+  const LockService = { getScriptLock: () => ({
+    waitLock: () => { lock.waits += 1; if (opts.lockTimeout) throw new Error("Lock timeout"); },
+    releaseLock: () => { lock.releases += 1; } }) };
   const CacheService = { getScriptCache: () => ({
-    get: (k) => (cache.has(k) ? cache.get(k) : null),
-    put: (k, v) => { cache.set(k, String(v)); } }) };
+    get: (k) => (opts.cacheEvicts ? null : (cache.has(k) ? cache.get(k) : null)),
+    put: (k, v) => { if (!opts.cacheEvicts) cache.set(k, String(v)); } }) };
   // Script Properties: empty (an unconfigured deployment) unless set.
   const props = Object.assign({}, opts.props || {});
   const PropertiesService = { getScriptProperties: () => ({
@@ -95,6 +134,7 @@ function buildGas(opts = {}) {
     ;return {
       doPost: function(e) { return doPost(e); },
       checkDeployment: function() { return checkDeployment(); },
+      recoverPendingLeads: function() { return recoverPendingLeads(); },
       buildSimpleHtml: function(d, f, es, s) { return buildSimpleHtml(d, f, es, s); },
       breakHtmlBuilder: function() {
         buildSimpleHtml = function() { throw new Error('forced HTML failure'); };
@@ -106,7 +146,8 @@ function buildGas(opts = {}) {
     };`)(Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService, PropertiesService, GmailApp);
   // Sets the stub Script Properties - never a source edit.
   api.approveCanSpam = () => Object.assign(props, APPROVED_PROPS);
-  return { api, log, rows, sent, tabs, inserted, frozen, props, cache,
+  return { api, log, rows, sent, calls, tabs, inserted, frozen, props, cache, lock, hidden,
+    ledger: () => tabs.get(LEDGER) || [], flushes: () => flushes,
     setMailFailures: (n) => { mailFailuresLeft = n; },
     setSafeDataSink: (fn) => api.captureSafeData(fn) };
 }
@@ -246,7 +287,7 @@ section("optional Script Properties: BCC, reply-to, leads tab name");
     g.sent.length === 1 && "htmlBody" in g.sent[0].opts
     && g.sent[0].opts.bcc === "leads@example.test" && g.sent[0].opts.replyTo === "store@example.test");
   g = buildGas({ props: OPTIONAL });
-  g.setMailFailures(1);
+  g.api.breakHtmlBuilder();
   post(g.api, basePayload());
   check("...and on the plain-text fallback send",
     g.sent.length === 1 && !("htmlBody" in g.sent[0].opts)
@@ -262,16 +303,16 @@ section("optional Script Properties: BCC, reply-to, leads tab name");
   post(g.api, basePayload());
   const leads = g.tabs.get("Leads") || [];
   check("a missing Leads tab is created once, header row frozen, then the lead row",
-    JSON.stringify(g.inserted) === JSON.stringify(["Leads"]) && g.frozen.Leads === 1 && leads.length === 2
+    JSON.stringify(g.inserted.filter((n) => n !== "DreamFinder Sends")) === JSON.stringify(["Leads"]) && g.frozen.Leads === 1 && leads.length === 2
     && JSON.stringify(leads[0]) === JSON.stringify(["Timestamp", "Name", "Email", "Phone", "Dream Code", "Lang",
       "Matches", "Accessories", "RSA", "Send ID"]) && leads[1].length === 10, JSON.stringify(leads[0]));
   post(g.api, basePayload());
   check("the next lead reuses the tab (no second insert, no second header)",
-    g.inserted.length === 1 && leads.length === 3);
+    g.inserted.length === 2 && leads.length === 3);
   g = buildGas({ props: Object.assign({ LEADS_SHEET_NAME: "Lacks Leads" }, APPROVED_PROPS) });
   post(g.api, basePayload());
   check("LEADS_SHEET_NAME names the tab the row goes to",
-    g.rows.length === 0 && (g.tabs.get("Lacks Leads") || []).length === 2 && g.inserted[0] === "Lacks Leads");
+    g.rows.length === 0 && (g.tabs.get("Lacks Leads") || []).length === 2 && g.inserted.includes("Lacks Leads") && !g.inserted.includes("Leads"));
 }
 
 section("checkDeployment(): the operator's editor check sends nothing and reports names only");
@@ -293,24 +334,177 @@ section("checkDeployment(): the operator's editor check sends nothing and report
 section("the lead row: written only after a successful send, carrying the sendId");
 {
   const g = buildGas({ props: APPROVED_PROPS });
-  g.setMailFailures(2);
   const body = basePayload({ sendId: "rowOrderSendId-000000000001" });
-  const r1 = post(g.api, body);
-  check("both MailApp attempts fail: send_failed, NO row, nothing cached",
-    r1.error === "send_failed" && g.rows.length === 0 && g.sent.length === 0 && g.cache.size === 0);
   const r2 = post(g.api, body);
-  check("the client's retry of the same sendId sends once and writes exactly ONE row",
+  check("a first POST sends once and writes exactly ONE row",
     r2.success === true && !r2.duplicate && g.sent.length === 1 && g.rows.length === 1);
   check("the row's right-most (10th) cell is the sendId",
     g.rows.length === 1 && g.rows[0].length === 10 && g.rows[0][9] === "rowOrderSendId-000000000001");
   const r3 = post(g.api, body);
-  check("a third POST of that sendId is {success:true, duplicate:true}: no row, no email",
+  check("a second POST of that sendId is {success:true, duplicate:true}: no row, no email",
     r3.success === true && r3.duplicate === true && g.sent.length === 1 && g.rows.length === 1);
-  const gf = buildGas({ props: APPROVED_PROPS, rowThrows: true });
-  const rf = post(gf.api, basePayload({ sendId: "rowOrderSendId-000000000002" }));
-  check("a Sheet write failure AFTER the send still answers success (no retry, no second email) and records the sendId",
-    rf.success === true && gf.sent.length === 1 && gf.cache.has("df-sent:rowOrderSendId-000000000002")
-    && gf.log.some((l) => l.includes("lead row not written")));
+}
+
+// ===========================================================================
+// AT-MOST-ONCE PER sendId (2026-10-16). A duplicate customer email is worse
+// than a lost one. Every path below counts MailApp CALLS (not just delivered
+// messages): exactly zero or one per sendId, whatever fails and whatever the
+// client retries.
+// ===========================================================================
+const SID = (n) => "atMostOnceSendId-" + String(n).padStart(8, "0");
+const ledgerRow = (g, id) => g.ledger().find((r) => r[0] === "id:" + id);
+section("at-most-once: the durable ledger");
+{
+  const g = buildGas({ props: APPROVED_PROPS });
+  const r = post(g.api, basePayload({ sendId: SID(1) }));
+  const row = ledgerRow(g, SID(1));
+  check("the ledger tab is created hidden with its header, then one row per sendId",
+    g.inserted.includes("DreamFinder Sends") && g.hidden.includes("DreamFinder Sends")
+    && JSON.stringify(g.ledger()[0]) === JSON.stringify(["Send ID", "State", "Updated", "Pending lead"])
+    && g.ledger().length === 2, JSON.stringify(g.ledger()[0]));
+  check("a completed send leaves the ledger 'complete' with no kept lead copy",
+    r.success === true && row && row[1] === "complete" && row[3] === "" && g.calls.length === 1);
+  check("the marker is flushed before the send", g.flushes() >= 1);
+}
+{
+  // (a) the send succeeded but the response was lost: the retry is a duplicate.
+  const g = buildGas({ props: APPROVED_PROPS });
+  post(g.api, basePayload({ sendId: SID(2) }));
+  const again = post(g.api, basePayload({ sendId: SID(2) }));
+  check("(a) lost response: the same sendId again is duplicate success; ONE MailApp call in all",
+    again.success === true && again.duplicate === true && g.calls.length === 1 && g.rows.length === 1);
+}
+{
+  // (d) the cache evicted (or > 6 h later): the ledger still answers duplicate.
+  const g = buildGas({ props: APPROVED_PROPS, cacheEvicts: true });
+  post(g.api, basePayload({ sendId: SID(3) }));
+  const again = post(g.api, basePayload({ sendId: SID(3) }));
+  check("(d) cache miss with the durable record present: duplicate, no second MailApp call, no second row",
+    again.success === true && again.duplicate === true && g.calls.length === 1 && g.rows.length === 1
+    && g.log.some((l) => l.includes("already sent (ledger)")));
+}
+{
+  // (b) the execution died after the marker (before 'sent' was recorded):
+  // the marker is all that survives. A retry must NOT send.
+  const g = buildGas({ props: APPROVED_PROPS, cacheEvicts: true });
+  g.tabs.set("DreamFinder Sends", [["Send ID", "State", "Updated", "Pending lead"],
+    ["id:" + SID(4), "sending", new Date(), "[]"]]);
+  const r = post(g.api, basePayload({ sendId: SID(4) }));
+  check("(b) a 'sending' marker (crash after the send, before the record): delivery_unconfirmed, NO MailApp call",
+    r.success === false && r.error === "delivery_unconfirmed" && g.calls.length === 0 && g.rows.length === 0);
+  const r2 = post(g.api, basePayload({ sendId: SID(4) }));
+  check("(b) ...and it stays that way on every later retry",
+    r2.error === "delivery_unconfirmed" && g.calls.length === 0);
+  const other = post(g.api, basePayload({ sendId: SID(5) }));
+  check("(b) another sendId is unaffected", other.success === true && g.calls.length === 1);
+}
+{
+  // An unrecognised ledger state fails closed too.
+  const g = buildGas({ props: APPROVED_PROPS });
+  g.tabs.set("DreamFinder Sends", [["Send ID", "State", "Updated", "Pending lead"], ["id:" + SID(6), "edited by hand", "", ""]]);
+  const r = post(g.api, basePayload({ sendId: SID(6) }));
+  check("an unrecognised ledger state is delivery_unconfirmed (fail closed), no MailApp call",
+    r.error === "delivery_unconfirmed" && g.calls.length === 0);
+  const near = post(g.api, basePayload({ sendId: SID(6).toUpperCase() }));
+  check("ledger ids match exactly (case-sensitive): a different-case id is a different send",
+    near.success === true && g.calls.length === 1);
+}
+{
+  // (c) MailApp throws: outcome unknown. No plain-text fallback, no resend.
+  const g = buildGas({ props: APPROVED_PROPS, throwAfterDelivery: true });
+  g.setMailFailures(1);
+  const r = post(g.api, basePayload({ sendId: SID(7) }));
+  check("(c) MailApp throws (after Google accepted the message): delivery_unconfirmed, ONE call, no fallback send",
+    r.error === "delivery_unconfirmed" && g.calls.length === 1 && g.sent.length === 1 && g.rows.length === 0);
+  check("(c) the ledger says 'unconfirmed' and keeps the lead for the owner",
+    ledgerRow(g, SID(7))[1] === "unconfirmed" && ledgerRow(g, SID(7))[3].length > 0);
+  const again = post(g.api, basePayload({ sendId: SID(7) }));
+  check("(c) the client's retry of that sendId sends NOTHING (still one MailApp call)",
+    again.error === "delivery_unconfirmed" && g.calls.length === 1 && g.sent.length === 1);
+}
+{
+  // An HTML BUILD failure is pre-delivery: the plain-text email goes once.
+  const g = buildGas({ props: APPROVED_PROPS });
+  g.api.breakHtmlBuilder();
+  const r = post(g.api, basePayload({ sendId: SID(8) }));
+  check("an HTML build failure (before any delivery) sends the plain-text email: ONE call, success",
+    r.success === true && g.calls.length === 1 && !("htmlBody" in g.sent[0].opts));
+}
+{
+  // (b') the lead row throws after the send.
+  const g = buildGas({ props: APPROVED_PROPS, rowThrows: true });
+  const r = post(g.api, basePayload({ sendId: SID(9) }));
+  const row = ledgerRow(g, SID(9));
+  check("(f) a lead-row failure AFTER the send answers success with ONE call, logged",
+    r.success === true && g.calls.length === 1 && g.log.some((l) => l.includes("lead row not written")));
+  check("(f) ...and the lead is KEPT: ledger 'row_pending' carrying the 10-cell row with the sendId",
+    row && row[1] === "row_pending" && JSON.parse(row[3]).length === 10 && JSON.parse(row[3])[9] === SID(9));
+  check("(f) the dedupe cache records 'sent'", g.cache.get("df-sent:" + SID(9)) === "sent");
+  const again = post(g.api, basePayload({ sendId: SID(9) }));
+  check("(f) a retry is a duplicate: still ONE call", again.duplicate === true && g.calls.length === 1);
+}
+{
+  // recoverPendingLeads(): the kept lead reaches the Leads tab once; nothing is sent.
+  const g = buildGas({ props: APPROVED_PROPS, rowThrows: true });
+  post(g.api, basePayload({ sendId: SID(10) }));
+  g.tabs.get("DreamFinder Sends").push(["id:" + SID(11), "unconfirmed", "", "[]"]);
+  // The same ledger in a deployment whose Leads tab accepts writes again.
+  const g3 = buildGas({ props: APPROVED_PROPS });
+  g3.tabs.set("DreamFinder Sends", g.ledger());
+  const rep = g3.api.recoverPendingLeads();
+  check("recoverPendingLeads appends the kept lead once, marks it complete, counts the unconfirmed one, sends nothing",
+    rep.recovered === 1 && rep.unconfirmed === 1 && g3.rows.length === 1 && g3.rows[0][9] === SID(10)
+    && g3.rows[0][0] instanceof Date && ledgerRow(g3, SID(10))[1] === "complete" && ledgerRow(g3, SID(10))[3] === ""
+    && g3.calls.length === 0, JSON.stringify(rep));
+  const rep2 = g3.api.recoverPendingLeads();
+  check("a second recovery finds nothing to append", rep2.recovered === 0 && g3.rows.length === 1);
+  check("its log carries counts only", g3.log.every((l) => !l.includes("customer@example.test")));
+}
+{
+  // Ledger 'sent' write fails after the send: the 'sending' marker remains,
+  // so a later retry (cache gone) still never sends.
+  const g = buildGas({ props: APPROVED_PROPS, stateWriteThrows: true, cacheEvicts: true });
+  const r = post(g.api, basePayload({ sendId: SID(12) }));
+  const again = post(g.api, basePayload({ sendId: SID(12) }));
+  check("ledger state writes failing after the send: success once, then delivery_unconfirmed; ONE call",
+    r.success === true && again.error === "delivery_unconfirmed" && g.calls.length === 1);
+}
+{
+  // Pre-send failures: nothing sent, the same sendId stays retryable.
+  for (const [label, o, logNeedle] of [
+    ["the ledger cannot be read", { ledgerThrows: true }, "doPost error"],
+    ["the marker cannot be written", { markerThrows: true }, "doPost error"],
+    ["the daily quota is exhausted", { quota: 0 }, "quota_exhausted"],
+    ["(e) the lock cannot be taken", { lockTimeout: true }, "lock_timeout"],
+  ]) {
+    const g = buildGas(Object.assign({ props: APPROVED_PROPS }, o));
+    const r = post(g.api, basePayload({ sendId: SID(13) }));
+    check(`${label}: send_failed, NO MailApp call, no row`,
+      r.error === "send_failed" && g.calls.length === 0 && g.rows.length === 0
+      && g.log.some((l) => l.includes(logNeedle)), JSON.stringify(r));
+    check(`${label}: no 'sending' marker is left behind (the sendId stays retryable)`,
+      !g.ledger().some((x) => x[1] === "sending"));
+  }
+  const gq = buildGas({ props: Object.assign({ RESULT_EMAIL_BCC: "leads@example.test" }, APPROVED_PROPS), quota: 1 });
+  const rq = post(gq.api, basePayload({ sendId: SID(14) }));
+  check("the quota counts the BCC recipient: 1 left with a BCC configured refuses", rq.error === "send_failed" && gq.calls.length === 0);
+  const lockT = buildGas({ props: APPROVED_PROPS, lockTimeout: true });
+  post(lockT.api, basePayload({ sendId: SID(15) }));
+  check("(e) a lock that was never acquired is never released", lockT.lock.waits === 1 && lockT.lock.releases === 0);
+  const ok = buildGas({ props: APPROVED_PROPS });
+  post(ok.api, basePayload({ sendId: SID(16) }));
+  post(ok.api, basePayload({ sendId: SID(16) }));
+  check("(e) the lock is taken and released on every path, duplicates included",
+    ok.lock.waits === 2 && ok.lock.releases === 2);
+}
+{
+  // (e) concurrent retries: the lock serialises them, so the second always
+  // sees the first's record. Simulated by interleaving: the duplicate is
+  // decided under the lock after the first has completed.
+  const g = buildGas({ props: APPROVED_PROPS });
+  const results = [SID(17), SID(17), SID(17)].map((id) => post(g.api, basePayload({ sendId: id })));
+  check("(e) three deliveries of one sendId: one send, two duplicates",
+    results.filter((r) => r.duplicate).length === 2 && g.calls.length === 1);
 }
 
 // ===========================================================================
@@ -768,10 +962,10 @@ section("existing doPost behavior untouched");
   const res = post(g.api, basePayload({ priorities: PRIORITIES_EN }));
   check("no new error code was introduced (success carries none)",
     res.success === true && !("error" in res));
-  check("the error codes Code.gs emits are the classified four (invalid_request joined with sendId, 2026-10-15)",
+  check("the error codes Code.gs emits are the classified five (invalid_request joined with sendId 2026-10-15, delivery_unconfirmed 2026-10-16)",
     JSON.stringify([...new Set((gs.match(/error: '([a-z_]+)'/g) || [])
       .map((m) => m.match(/'([a-z_]+)'/)[1]))].sort())
-    === JSON.stringify(["canspam_not_configured", "invalid_email", "invalid_request", "send_failed"]));
+    === JSON.stringify(["canspam_not_configured", "delivery_unconfirmed", "invalid_email", "invalid_request", "send_failed"]));
 }
 
 // ===========================================================================
@@ -835,6 +1029,64 @@ section("accessory quantities: carried, bounded, and stated beside each product"
     post(g2.api, basePayload({ accessories: [{ name: "Pillow", category: "C", quantity: q, imageUrl: "" }] }));
     check(`a count of ${q} is carried as ${q}`, !!s2 && s2.accessories[0].quantity === q);
   }
+}
+
+// ===========================================================================
+// The purchase summary v2 through Code.gs (owner direction 2026-10-16): an
+// INCOMPLETE purchase renders its priced lines and its "price unavailable"
+// lines with no total of any kind; one carrying a total is refused whole.
+section("Code.gs: an incomplete purchase summary (complete:false)");
+{
+  const PRICED = { name: "Quote Mattress", detail: "Queen", quantity: 1, priced: true, listText: "$2,000.00",
+    discounts: [{ label: "Quote Sale", amountText: "\u2212$200.00" }], netText: "$1,800.00" };
+  const UNPRICED = { name: "Quote <i>Base</i>", detail: "Queen", quantity: 1, priced: false, statusText: "Price unavailable" };
+  const PARTIAL = { v: 2, complete: false, currency: "USD", size: "queen", sizeLabel: "Queen",
+    lines: [PRICED, UNPRICED], incompleteText: "No total yet: confirmed in store.",
+    exclusionsText: "Before tax", offerTerms: ["Quote Sale: 10% off."], provenance: "Prices verified" };
+  const sendQuote = (quote) => {
+    const g = buildGas();
+    g.api.approveCanSpam();
+    const res = post(g.api, basePayload({ quote }));
+    return { res, g, h: g.sent.length ? (g.sent[0].opts.htmlBody || "") : "", p: g.sent.length ? (g.sent[0].body || "") : "" };
+  };
+  const ok = sendQuote(PARTIAL);
+  check("incomplete summary: an email was actually sent", ok.res.success === true && ok.g.sent.length === 1);
+  for (const [part, text] of [["HTML", ok.h], ["plain", ok.p]]) {
+    check(`incomplete summary (${part}): the quote heading, the priced line's list / discount / net figures render`,
+      ["Your quote", "Quote Mattress", "$2,000.00", "\u2212$200.00", "$1,800.00"].every((v) => text.includes(v)));
+    check(`incomplete summary (${part}): the unpriced line is named with "Price unavailable", and the note renders`,
+      text.includes("Price unavailable") && text.includes("No total yet: confirmed in store."));
+    check(`incomplete summary (${part}): NO subtotal, savings total, payment or plan row`,
+      ["Merchandise subtotal", "List subtotal", "Discounts", "Pay in full", "Monthly payment", "Amount financed", "Total paid"]
+        .every((v) => !text.includes(v)));
+  }
+  check("incomplete summary: hostile markup in an unpriced line's name is escaped (HTML) and stripped (plain)",
+    ok.h.includes("Quote &lt;i&gt;Base&lt;/i&gt;") && !ok.h.includes("<i>Base</i>") && ok.p.includes("Quote iBase/i"));
+  const refused = [
+    ["a merchandise subtotal", Object.assign({}, PARTIAL, { merchandiseText: "$1,800.00" })],
+    ["a payment block", Object.assign({}, PARTIAL, { payment: { kind: "full", totalText: "$1,800.00" } })],
+    ["a list subtotal", Object.assign({}, PARTIAL, { listSubtotalText: "$2,000.00" })],
+    ["a savings total (even blank)", Object.assign({}, PARTIAL, { discountText: "" })],
+    ["a minor-unit total", Object.assign({}, PARTIAL, { merchandiseMinor: 180000 })],
+    ["an unpriced line carrying a figure", Object.assign({}, PARTIAL, { lines: [PRICED, Object.assign({}, UNPRICED, { netText: "$1.00" })] })],
+    ["no unpriced line at all", Object.assign({}, PARTIAL, { lines: [PRICED] })],
+    ["no incomplete note", Object.assign({}, PARTIAL, { incompleteText: "" })],
+    ["a v1 record", Object.assign({}, PARTIAL, { v: 1 })],
+  ];
+  for (const [label, quote] of refused) {
+    const r = sendQuote(quote);
+    check(`incomplete summary carrying ${label}: refused WHOLE (email still sent, no quote section in either part)`,
+      r.res.success === true && r.g.sent.length === 1 && !r.h.includes("Your quote") && !r.p.includes("Your quote")
+      && !r.h.includes("$1,800.00") && !r.p.includes("$1,800.00"));
+  }
+  const complete = sendQuote({ v: 2, complete: true, currency: "USD", sizeLabel: "Queen", lines: [PRICED],
+    listSubtotalText: "$2,000.00", discountText: "\u2212$200.00", merchandiseText: "$1,800.00", exclusionsText: "",
+    offerTerms: [], payment: { kind: "full", totalText: "$1,800.00" }, provenance: "" });
+  check("a complete v2 summary still renders its subtotal and payment (both parts)",
+    complete.g.sent.length === 1 && ["Merchandise subtotal", "Pay in full"].every((v) => complete.h.includes(v) && complete.p.includes(v)));
+  check("a complete summary carrying an unpriced line is refused whole",
+    !sendQuote({ v: 2, complete: true, currency: "USD", lines: [PRICED, UNPRICED], merchandiseText: "$1,800.00",
+      offerTerms: [], payment: { kind: "full", totalText: "$1,800.00" } }).h.includes("Your quote"));
 }
 
 // ===========================================================================

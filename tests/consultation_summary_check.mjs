@@ -472,12 +472,27 @@ function buildGas() {
     MimeType: { JSON: "json" },
     createTextOutput: (s) => ({ setMimeType: () => ({ getContent: () => s }), getContent: () => s }),
   };
-  // The bound leads Spreadsheet: its "Leads" tab already exists (no header).
+  // The bound leads Spreadsheet: its "Leads" tab already exists (no header);
+  // the hidden send ledger ("DreamFinder Sends") is created by Code.gs.
+  const ledger = [];
+  const tabFor = (n) => (n === "Leads" ? rows : ledger);
+  const sheet = (n) => ({
+    appendRow: (r) => tabFor(n).push(r.slice()), setFrozenRows: () => {}, hideSheet: () => {},
+    getName: () => n, getLastRow: () => tabFor(n).length,
+    getRange: (r, c, nr = 1, nc = 1) => ({
+      getValues: () => tabFor(n).slice(r - 1, r - 1 + nr).map((row) => row.slice(c - 1, c - 1 + nc)),
+      setValues: (v) => v.forEach((vals, i) => vals.forEach((x, j) => { tabFor(n)[r - 1 + i][c - 1 + j] = x; })) }),
+  });
+  let ledgerMade = false;
   const SpreadsheetApp = {
-    getActiveSpreadsheet: () => ({ getSheetByName: (n) => (n === "Leads" ? { appendRow: (r) => rows.push(r) } : null) }),
+    flush: () => {},
+    getActiveSpreadsheet: () => ({
+      getSheetByName: (n) => (n === "Leads" || (n === "DreamFinder Sends" && ledgerMade) ? sheet(n) : null),
+      insertSheet: (n) => { if (n !== "DreamFinder Sends") throw new Error("unexpected tab " + n); ledgerMade = true; return sheet(n); } }),
   };
   const MailApp = {
     sendEmail: (to, subject, body, opts) => sent.push({ to, subject, body, opts: opts || {} }),
+    getRemainingDailyQuota: () => 97,
   };
   // Script Properties: empty (unconfigured) until approveCanSpam() sets them.
   const props = {};
@@ -888,6 +903,47 @@ const CHOSEN = { id: "g1", name: "Cloud Nine", brand: "Restonic · Comfort Care"
   ];
   const lf = html.replace(/\r\n/g, "\n");
   for (const f of FINDS) check(`candidate sweep find matches exactly once: ${JSON.stringify(f.trim().slice(0, 52))}…`, lf.split(f).length - 1 === 1);
+}
+
+// ===========================================================================
+// The purchase summary v2 beside the consultation (owner direction
+// 2026-10-16): an INCOMPLETE purchase (complete:false) renders after the
+// Sleep Brief in the customer's language - priced lines, "price unavailable"
+// lines, the note - with no total of any kind, on the normal send AND the
+// plain-text fallback; one that carries a total is refused whole while the
+// consultation itself is untouched.
+section("Code.gs: an incomplete purchase summary beside the consultation (ES, both paths)");
+{
+  const PARTIAL_ES = { v: 2, complete: false, currency: "USD", size: "queen", sizeLabel: "Queen",
+    lines: [
+      { name: "Colchón Prueba", detail: "Queen", quantity: 1, priced: true, listText: "$1,500.00",
+        discounts: [], netText: "$1,500.00" },
+      { name: "Base Prueba", detail: "Queen", quantity: 1, priced: false, statusText: "Precio no disponible" }],
+    incompleteText: "Aún no hay total: se confirma en la tienda.", exclusionsText: "", offerTerms: [], provenance: "" };
+  const run = (quote, breakHtml) => {
+    const g = buildGas();
+    g.api.approveCanSpam();
+    if (breakHtml) g.api.breakHtmlBuilder();
+    const res = post(g.api, gasPayload({ lang: "es", quote }));
+    return { res, g, h: g.sent.length ? (g.sent[0].opts.htmlBody || "") : "", p: g.sent.length ? g.sent[0].body : "" };
+  };
+  const ok = run(PARTIAL_ES, false);
+  check("ES incomplete quote: sent, and the quote section follows the consultation lines in the HTML part",
+    ok.res.success === true && ok.h.indexOf("Tu cotizaci") > ok.h.indexOf("Queen · test lower-back support carefully")
+    && ok.h.indexOf("Queen · test lower-back support carefully") !== -1);
+  for (const [part, text] of [["HTML", ok.h], ["plain", ok.p]]) {
+    check(`ES incomplete quote (${part}): priced line figure, "Precio no disponible" and the note render; no subtotal or payment`,
+      text.includes("$1,500.00") && text.includes("Precio no disponible") && text.includes("Aún no hay total: se confirma en la tienda.")
+      && !text.includes("Subtotal de mercanc") && !text.includes("Pago de contado") && !text.includes("Pago mensual"));
+  }
+  const fb = run(PARTIAL_ES, true);
+  check("ES incomplete quote, HTML build failed: the plain-text fallback carries the same lines and note, no total",
+    fb.res.success === true && fb.g.sent.length === 1 && !("htmlBody" in fb.g.sent[0].opts)
+    && fb.p.includes("Precio no disponible") && fb.p.includes("$1,500.00") && !fb.p.includes("Subtotal de mercanc"));
+  const bad = run(Object.assign({}, PARTIAL_ES, { merchandiseText: "$1,500.00", payment: { kind: "full", totalText: "$1,500.00" } }), false);
+  check("an incomplete quote carrying a subtotal and payment is refused whole; the consultation still renders",
+    bad.res.success === true && !bad.h.includes("Tu cotizaci") && !bad.p.includes("Tu cotizaci")
+    && bad.h.includes("Queen · test lower-back support carefully"));
 }
 
 // ===========================================================================

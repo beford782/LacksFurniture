@@ -487,8 +487,11 @@
   "ps.prices_verified": "Prices verified {date} · {host}",
   "ps.terms_verified": "Terms verified {date} · {host}",
   "ps.th_title_quote": "Your quote",
+  "ps.price_unavailable": "Price unavailable",
+  "ps.quote_incomplete": "No total yet: an item in this purchase has no price available. The total and any payment are confirmed in store.",
   "ps.preview_savings": "Includes {amount} in savings",
   "email.figures_changed": "The prices or payment changed since this preview. Review the updated quote above, then save again.",
   "email.retry": "Try again →",
-  "email.retrying": "Trying again…"
+  "email.retrying": "Trying again…",
+  "email.delivery_unconfirmed": "This email may already have been sent. Please check your inbox and spam folder; if it isn't there, ask your sales specialist for help."
 }

@@ -567,9 +567,35 @@ with sync_playwright() as p:
               pg.evaluate("document.querySelector('[data-ps-big]')") is None and "$" not in (pg.evaluate(CARD, P72) or "")
               and "$" not in (pg.evaluate(CARD, P0) or ""))
         thd = pg.evaluate("psTakeHomeRow().detail")
-        check(f"{tag} a missing price: no shared summary, no payment or total paid on the take-home",
-              pg.evaluate("purchaseSummaryFor(currentLang)") is None and "/m" not in thd and total_paid_in(thd) is None
-              and "$" not in (pg.evaluate(TXT, "#psCenterBox") or ""), thd)
+        psum = pg.evaluate("purchaseSummaryFor(currentLang)") or {}
+        TOTAL_KEYS = ("listSubtotalText", "discountText", "merchandiseText", "merchandiseMinor", "discountMinor", "payment")
+        check(f"{tag} a missing price: the shared summary is INCOMPLETE (v2, complete:false) and carries no total key at all",
+              psum.get("v") == 2 and psum.get("complete") is False and not any(k in psum for k in TOTAL_KEYS)
+              and psum.get("incompleteText") == pg.evaluate("t('ps.quote_incomplete')"), str(sorted(psum))[:200])
+        ul = [l for l in psum.get("lines", []) if not l.get("priced")]
+        pl = [l for l in psum.get("lines", []) if l.get("priced")]
+        check(f"{tag} a missing price: the unpriced line says 'price unavailable' with no figure; the priced lines keep theirs",
+              len(ul) == 1 and "TEMPUR-Ergo" in ul[0]["name"] and ul[0].get("statusText") == pg.evaluate("t('ps.price_unavailable')")
+              and not any(k in ul[0] for k in ("listText", "netText", "discounts"))
+              and len(pl) >= 2 and all(money_minor(l["netText"]) is not None for l in pl), str(ul)[:200])
+        check(f"{tag} a missing price: no payment or total paid on the take-home, the payment centerpiece shows no figure",
+              "/m" not in thd and total_paid_in(thd) is None and "$" not in (pg.evaluate(TXT, "#psCenterBox .ps-center") or "")
+              and pg.evaluate("escapeHtml(t('ps.quote_incomplete'))") in thd, thd)
+        # Line-level offers on the incomplete purchase (owner direction
+        # 2026-10-16): the pillow keeps its minimum-free $20 offer; every
+        # mattress offer is withheld because fx-min-big (a minimum) fits the
+        # mattress line, so it shows its list price, unstruck.
+        irows = {r["id"]: r["offers"] for r in pg.evaluate(ROWS)}
+        ihero = pg.evaluate("Array.from(document.querySelectorAll('.ps-hero [data-ps-offer]')).map(e => e.dataset.psOffer)")
+        check(f"{tag} incomplete purchase: the priced pillow keeps its line offer; the mattress (a minimum offer fits it) stays at list",
+              irows.get("pillow-gel-memory") == ["fx-pillow-20"] and ihero == []
+              and pg.evaluate("document.querySelector('.ps-hero .ps-was')") is None, f"{irows} {ihero}")
+        check(f"{tag} incomplete purchase: the applied line offer's terms are shown beside it, and no savings total",
+              "fx-pillow-20" in [o["offerId"] for o in pg.evaluate("purchaseStudioFor().offerTerms")]
+              and pg.evaluate("document.querySelector('[data-ps=\"savings\"]')") is None)
+        check(f"{tag} a missing price (pricing ACTIVE): the gate says 'price-unavailable' for that product, not silence",
+              pg.evaluate("pricePresentationFor('handoff', ACCESSORIES.find(a => a.id === 'base-tempur-ergo'), answers.mattress_size, null).state")
+              == "price-unavailable")
         pg.click("[data-ps-change='base-tempur-ergo']")
         pg.click("[data-ps-sheet-opt='base-bt3000']")
         pg.click("#psSheetApply")
@@ -1254,8 +1280,30 @@ with sync_playwright() as p:
     pg.wait_for_timeout(150)
     sid4 = send_email(pg, "unpriced@example.com", 1200)
     r4 = MAIN.by_send(sid4)
-    check("a line with no price: no subtotal on screen, no summary, and the payload quote is null",
-          pg.evaluate("purchaseSummaryFor(currentLang)") is None and len(r4) == 1 and r4[0]["json"].get("quote") is None)
+    q4 = (r4[0]["json"].get("quote") or {}) if len(r4) == 1 else {}
+    th4 = pg.evaluate("psTakeHomeRow()")
+    check("a line with no price: the payload quote is the INCOMPLETE summary - priced lines, a 'price unavailable' line, no total key",
+          len(r4) == 1 and q4.get("v") == 2 and q4.get("complete") is False
+          and not any(k in q4 for k in ("listSubtotalText", "discountText", "merchandiseText", "merchandiseMinor", "discountMinor", "payment"))
+          and any(not l.get("priced") and l.get("statusText") for l in q4.get("lines", []))
+          and any(l.get("priced") and l.get("netText") for l in q4.get("lines", [])), str(q4)[:300])
+    check("a line with no price: no subtotal on screen",
+          "$" not in (pg.evaluate(TXT, "[data-ps='subtotal']") or "$"))
+
+    def th_items(q):
+        out = []
+        for l in q.get("lines", []):
+            head = l["name"] + (" (" + l["detail"] + ")" if l.get("detail") else "") + (" × " + str(l["quantity"]) if l["quantity"] > 1 else "")
+            if not l.get("priced"):
+                out.append(head + " " + l["statusText"])
+            else:
+                off = ", ".join(d["label"] + " " + d["amountText"] for d in l["discounts"])
+                out.append(head + " " + l["netText"] + (" (" + off + ")" if off else ""))
+        return out
+    check("the take-home preview shows exactly what the email carries (same fingerprint, same items, the same note)",
+          th4["present"] is True and th4["fingerprint"] == q4.get("fingerprint") and th4["items"] == th_items(q4)
+          and pg.evaluate("(s) => escapeHtml(s)", q4.get("incompleteText") or "MISSING") in th4["detail"],
+          str(th4)[:300])
     pg.evaluate("() => { const p = getPricingConfig(); p.products = p.products.concat(window.__pfKept); }")
     check("send section: no console errors", not errs, str(errs[:3]))
     pg.close()

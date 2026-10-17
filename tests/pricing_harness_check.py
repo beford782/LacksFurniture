@@ -1349,14 +1349,17 @@ def rendered():
                     expect_ready("available, king answered (queen priced)", r)
                     # Accessory prices carry no size, so the featured accessory's governed
                     # amount is the ONE dollar figure that legitimately remains on this walk.
-                    check("available, king answered (queen priced): every mattress surface is OFF (no applicable SKU: no slot, no copy); the only figure is the sizeless governed accessory amount",
-                          r["drawer"]["state"] is None and r["drawer"]["hidden"] is True and r["resultsSlots"] == 0
-                          and r["anchor"]["slots"] == 0 and r["hero"]["slots"] == 0 and r["plan"]["slots"] == 0
+                    # Owner direction 2026-10-16: with pricing ACTIVE, a mattress
+                    # with no SKU at the answered size says "price unavailable"
+                    # for itself (governed copy, never a number) instead of
+                    # silence; the queen figure is never borrowed.
+                    check("available, king answered (queen priced): every mattress surface says the governed 'price unavailable' (no applicable SKU), never a number; the only figure is the sizeless governed accessory amount",
+                          r["drawer"]["state"] == "price-unavailable" and r["drawer"]["hidden"] is False and r["resultsSlots"] > 0
                           and len(r["dollarDigits"]) == 1 and r["featured"]["governed"] == 1 and r["featured"]["legacy"] == 0,
                           f"drawer={r['drawer']['state']} results={r['resultsSlots']} dollars={r['dollarDigits']} featured={r['featured']}")
-                    # No applicable SKU for the answered size: the compare modal
-                    # is exactly the OFF modal, and its size line says "King".
-                    expect_compare_off("available, king answered (queen priced)", r.get("compare") or {}, "en")
+                    # The compare modal states the unavailable copy (no figure, no
+                    # difference), and its size line says "King".
+                    expect_compare_unavailable("available, king answered (queen priced)", r.get("compare") or {}, "en")
             finally:
                 s.shutdown(); s.server_close()
         # ---- compare modal behaviours (slice 2.2h): language switch and reset -
@@ -1681,8 +1684,8 @@ def rendered_purchase():
                 check(f"{tag}: no page errors", not errors, "; ".join(errors[:2]))
                 check(f"{tag}: the app exposes purchaseSummaryFor (contract section 3)", r.get("hasSummaryFn") is True)
                 sm = r.get("summary") or {}
-                check(f"{tag}: the shared purchase summary is present (v 1, USD)",
-                      sm.get("v") == 1 and sm.get("currency") == "USD", json.dumps(sm)[:200])
+                check(f"{tag}: the shared purchase summary is present (v 2, complete, USD)",
+                      sm.get("v") == 2 and sm.get("complete") is True and sm.get("currency") == "USD", json.dumps(sm)[:200])
                 check(f"{tag}: summary merchandise is the NET of the independent offer arithmetic",
                       sm.get("merchandiseMinor") == want[2] and sm.get("discountMinor") == want[1],
                       f"got merch={sm.get('merchandiseMinor')} disc={sm.get('discountMinor')} want {want[2]}/{want[1]}")
@@ -1702,7 +1705,7 @@ def rendered_purchase():
         quotes = [x["json"].get("quote") for x in rec if isinstance(x.get("json"), dict)]
         check("purchase: every recorded payload carries a valid sendId and the quote (email surface on)",
               rec and all(isinstance(x.get("json"), dict) and srv.delivery.valid_send_id(x["json"].get("sendId")) for x in rec)
-              and all(isinstance(q, dict) and q.get("v") == 1 for q in quotes))
+              and all(isinstance(q, dict) and q.get("v") == 2 and q.get("complete") is True for q in quotes))
         check("purchase: the emailed quote's figures equal the independent arithmetic (no second computation)",
               len(quotes) == len(wants) and all((q or {}).get("merchandiseMinor") == w[2] and (q or {}).get("discountMinor") == w[1]
                                                 for q, w in zip(quotes, wants)),

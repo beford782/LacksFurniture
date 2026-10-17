@@ -293,6 +293,8 @@ $checks = @(
     # modes, every failure path, and Code.gs replayed against the recorded
     # payload. Rendered; needs the same playwright Chromium as the layout check.
     @{ Name = 'delivery harness (send-nothing live path, rendered)'; Exe = $pythonExecutable; Args = @('tests/delivery_harness_check.py') },
+    # The controlled real-delivery probe, checked offline (no network).
+    @{ Name = 'gas delivery probe (offline)'; Exe = $pythonExecutable; Args = @('tests/gas_delivery_probe_check.py') },
     # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink - the
     # three .drawer-promotion tokens pinned in source and every rendered line's
     # contrast measured through Chromium with the illustrative scenario

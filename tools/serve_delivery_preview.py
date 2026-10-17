@@ -35,8 +35,8 @@ Send identity and duplicates (emulating Code.gs's doPost, 2026-10-15):
   `invalid_request`. A sendId that already produced a success is answered
   {"success": true, "duplicate": true} and recorded with outcome `duplicate`
   (Code.gs appends no row and sends no email for it). Every recorded POST
-  carries an `outcome`: sent, duplicate, invalid_request, refused:<code>,
-  echo, http_500, malformed.
+  carries an `outcome`: sent, sent_response_lost, duplicate,
+  invalid_request, refused:<code>, echo, http_500, malformed.
 
 Responses (`--respond`):
   success                 {"success": true}                      (the live happy path)
@@ -50,6 +50,13 @@ Responses (`--respond`):
                           (what the SHIPPED Code.gs returns: its CAN-SPAM
                           values are still sentinels, so it sends nothing)
   send_failed             {"success": false, "error": "send_failed"}
+  delivery_unconfirmed    {"success": false, "error": "delivery_unconfirmed"}
+                          (Code.gs: an earlier attempt of this sendId may
+                          already have gone out; it is never resent)
+  lost_response           the FIRST POST of each sendId is SENT (remembered,
+                          outcome `sent_response_lost`) but answered HTTP 500,
+                          as if the answer was lost on the way back; the
+                          client's retry of that sendId is then a duplicate
   echo                    {"success": false, "error": "rejected: <the address
                           the page sent>"} — a hostile endpoint that echoes
                           its input; the page must classify it, never print it
@@ -110,11 +117,13 @@ import validation  # noqa: E402
 INTERCEPT_CONFIG = "/data/store-config.json"
 STUB_PATH = "/exec"
 RECORDED_PATH = "/__delivery/recorded"
-RESPONSES = ("success", "flaky", "invalid_request", "invalid_email", "canspam_not_configured",
-             "send_failed", "echo", "http_500", "malformed")
+RESPONSES = ("success", "flaky", "lost_response", "invalid_request", "invalid_email",
+             "canspam_not_configured", "send_failed", "delivery_unconfirmed", "echo", "http_500",
+             "malformed")
 # The closed set Code.gs can answer with; the page classifies anything else
 # as `unclassified` (index.html EMAIL_FAILURE_CODES).
-GAS_ERROR_CODES = ("invalid_request", "invalid_email", "canspam_not_configured", "send_failed")
+GAS_ERROR_CODES = ("invalid_request", "invalid_email", "canspam_not_configured", "send_failed",
+                   "delivery_unconfirmed")
 # Code.gs SEND_ID_PATTERN.
 SEND_ID_RE = re.compile(r"^[A-Za-z0-9_-]{22,40}$")
 
@@ -227,6 +236,9 @@ class StubState:
                 return (200, "application/json",
                         encode({"success": False, "error": respond}), "refused:" + respond)
             self.sent.add(send_id)
+            if respond == "lost_response":
+                return (500, "application/json",
+                        encode({"success": False, "error": "send_failed"}), "sent_response_lost")
             return 200, "application/json", encode({"success": True}), "sent"
 
 

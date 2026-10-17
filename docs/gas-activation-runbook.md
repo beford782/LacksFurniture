@@ -83,8 +83,9 @@ Web app (Execute as: Me; Who has access: Anyone).
 2. Run `checkDeployment` from the editor (Run menu). Its first run prompts
    the owner's consent for the two scopes. It sends nothing and writes no
    lead; it creates the leads tab with its 10-column header
-   (`docs/gas-rsa-field-addition.md`) and logs `ready`, the refusing
-   property names, the leads tab and the remaining daily recipient quota.
+   (`docs/gas-rsa-field-addition.md`) and the hidden send ledger tab
+   `DreamFinder Sends`, and logs `ready`, the refusing property names, both
+   tabs and the remaining daily recipient quota.
    Continue only when `ready` is true.
 3. Copy the deployment's **`/exec` URL** and its deployment ID.
 
@@ -101,18 +102,44 @@ does not use.
 |---|---|
 | `{success:true}` | email sent, then one Sheet row appended |
 | `{success:true, duplicate:true}` | this `sendId` already sent; **no row, no email** |
+| `{success:false, error:'delivery_unconfirmed'}` | an attempt of this `sendId` may already have gone out (MailApp threw, or an earlier execution stopped after its pre-send marker); it is **never resent**. The kiosk shows "This email may already have been sent. Please check your inbox and spam folder..." |
 | `{success:false, error:'invalid_request'}` | body not a JSON object, or `sendId` missing/malformed |
 | `{success:false, error:'invalid_email'}` | address fails the shape check |
 | `{success:false, error:'canspam_not_configured'}` | a required Script Property is unset, blank, malformed or a sentinel |
-| `{success:false, error:'send_failed'}` | anything else (malformed optional property, lock timeout, mail failure); detail in the GAS log only |
+| `{success:false, error:'send_failed'}` | nothing was sent: malformed optional property, lock timeout, ledger/Sheet unreadable, daily quota exhausted, any error before the send; the same `sendId` stays retryable; detail in the GAS log only |
 
-**Duplicates.** Each request carries a client `sendId`
-(`^[A-Za-z0-9_-]{22,40}$`, reused for the client's retry). Under the script
-lock, a `sendId` recorded in the script cache (`df-sent:<sendId>`, 6 h, best
-effort) answers `duplicate`. The record and the lead row are written only
-**after** a successful send, so a failed send leaves nothing behind and its
-retry yields one email and one row. A row write that fails after the send is
-logged, not surfaced (a failure answer would invite a second email).
+**Duplicates: at most one email per `sendId`.** Each request carries a
+client `sendId` (`^[A-Za-z0-9_-]{22,40}$`). The kiosk keeps one id per
+recipient address and figures: its automatic retry, the visible "Try again",
+a language switch, a re-opened take-home screen and an edited name or phone
+all reuse it; only a different address or different figures (or the
+new-customer wipe) makes a new one. Under the script lock, `Code.gs` checks
+the script cache (`df-sent:<sendId>`, 6 h, best effort), then the durable
+ledger, the hidden `DreamFinder Sends` tab (one row per id: `id:<sendId>`,
+state, time, kept lead). The ledger row is written and flushed in state
+`sending` **before** MailApp runs, so whatever happens after the send (lost
+response, a throw, the execution limit) a retry can never mail twice:
+
+| Ledger state | Meaning | A retry of that `sendId` gets |
+|---|---|---|
+| `sending` | marker written; the execution stopped before recording an outcome | `delivery_unconfirmed` |
+| `unconfirmed` | MailApp threw (Google may have accepted it); no plain-text resend | `delivery_unconfirmed` |
+| `sent` | delivered; the lead row not yet written | `duplicate` |
+| `row_pending` | delivered; the lead-row append failed, the lead kept in column D | `duplicate` |
+| `complete` | delivered and the lead row written; the kept copy cleared | `duplicate` |
+
+Only an HTML **build** failure (before any delivery) falls back to a
+plain-text-only email. Pre-send failures (lock, ledger, quota, marker) write
+no marker and answer `send_failed`.
+
+**Recovery (operator, editor only).** Run `recoverPendingLeads` from the
+editor: it appends every kept lead in `sent`/`row_pending` to the leads tab,
+marks it `complete` and clears the copy; it sends nothing and logs counts
+only. It also counts `sending`/`unconfirmed` rows: for each, check the inbox
+or BCC copy for that customer before anyone re-sends by hand (a new send from
+the kiosk needs a different address or figures, or a new customer session).
+The ledger grows by one row per send; archive old rows by hand if it ever
+gets large (the lookup reads column A).
 
 **The quote section** ("Your quote" / "Tu cotización") renders verbatim from
 the client's purchase summary when it is complete (all-or-nothing, no server
@@ -128,7 +155,8 @@ python tools/serve_delivery_preview.py --respond success --port 8000
 Serves the app with an in-memory `gasUrl` pointing at a loopback stub that
 answers like `Code.gs` (`--respond canspam_not_configured` is what an
 unconfigured deployment answers; `invalid_request`, `invalid_email`,
-`send_failed`, `echo`, `http_500`, `malformed`, `flaky` and `--unreachable`
+`send_failed`, `delivery_unconfirmed`, `echo`, `http_500`, `malformed`,
+`flaky`, `lost_response` (sent, then the answer lost) and `--unreachable`
 drive each path). Nothing is deployed, sent or stored.
 `tests/delivery_harness_check.py` runs it headless in CI and replays the
 recorded payload through the real `doPost`.
@@ -150,6 +178,46 @@ recorded payload through the real `doPost`.
    - re-POSTing the same body answers `duplicate` with no second row or email;
    - invalid email shows the friendly message; the GAS log is shape-only.
 3. Run `checkDeployment()` again and note the remaining quota.
+
+## Controlled delivery test (owner address only; needs Blake's authorization)
+
+Run once the deployment exists, Script Properties are set and
+`checkDeployment()` reports `ready: true`. It sends exactly **one** real
+email, to the address typed twice, and needs no kiosk or `gasUrl` change.
+It never runs in CI (the probe refuses under `CI` unless `--dry-run`); its
+offline check is `python tests/gas_delivery_probe_check.py`.
+
+```
+# 1. Inspect the three request bodies; no network:
+python tools/gas_delivery_probe.py --gas-url https://script.google.com/macros/s/<deploymentId>/exec \
+    --to <your own address> --confirm-recipient <your own address> --dry-run
+# 2. Send (EN), then repeat with --lang es for the Spanish email:
+python tools/gas_delivery_probe.py --gas-url https://script.google.com/macros/s/<deploymentId>/exec \
+    --to <your own address> --confirm-recipient <your own address>
+```
+
+The probe POSTs a synthetic payload with the kiosk's exact key set (every
+visible value marked `CONTROLLED DELIVERY TEST`, a $1.00 test quote), then
+the same body again, then a malformed `sendId`, and expects
+`{success:true}`, `{success:true, duplicate:true}` and
+`{success:false, error:'invalid_request'}`. Exit 0 = all three as expected.
+Then check by hand:
+
+- **Inbox:** exactly **one** email per run (plus one BCC copy if
+  `RESULT_EMAIL_BCC` is set); subject "Your Sleep Brief from Lacks Furniture" /
+  "Tu Resumen de Sueño de Lacks Furniture"; the "Your quote" / "Tu
+  cotización" section with the TEST line; the footer's postal address,
+  unsubscribe link and privacy contact. Check spam too.
+- **Sheet, Leads tab:** one new row, name "DreamFinder Delivery Test", RSA
+  `delivery-probe`, `Send ID` = the id the probe printed.
+- **Sheet, hidden `DreamFinder Sends` tab** (View → Hidden sheets): one row
+  `id:<that id>` in state `complete` with column D empty.
+- **Executions log:** shape-only lines (no address, no figure), one
+  `duplicate ... (cache)` line for step 2 and one `invalid_request` for step 3.
+- Delete the test rows afterwards if wanted (leave the header rows).
+
+Anything else (two emails, a `FAIL` line, a ledger row stuck in `sending`)
+stops activation; keep the probe output and the execution log for review.
 
 ## Phase D — Go live (explicit owner authorization, PR only)
 

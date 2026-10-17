@@ -487,8 +487,11 @@
   "ps.prices_verified": "Precios verificados el {date} · {host}",
   "ps.terms_verified": "Términos verificados el {date} · {host}",
   "ps.th_title_quote": "Tu cotización",
+  "ps.price_unavailable": "Precio no disponible",
+  "ps.quote_incomplete": "Aún no hay total: un artículo de esta compra no tiene precio disponible. El total y cualquier pago se confirman en la tienda.",
   "ps.preview_savings": "Incluye {amount} de ahorro",
   "email.figures_changed": "Los precios o el pago cambiaron desde esta vista previa. Revisa la cotización actualizada arriba y vuelve a guardar.",
   "email.retry": "Intentar de nuevo →",
-  "email.retrying": "Intentando de nuevo…"
+  "email.retrying": "Intentando de nuevo…",
+  "email.delivery_unconfirmed": "Es posible que este correo ya se haya enviado. Revisa tu bandeja de entrada y la carpeta de spam; si no está ahí, pide ayuda a tu especialista de sueño."
 }

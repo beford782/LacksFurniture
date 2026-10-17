@@ -13753,7 +13753,8 @@
     //                     keeps it that way until the final activation gate.
     //                     ALSO off (Codex correction, 2026-09-09 — the
     //                     roadmap's state table, restored): no applicable
-    //                     catalog record or SKU for this product-size; the
+    //                     catalog record or SKU for this product-size while
+    //                     the pricing block is not wholly approved; the
     //                     resolver's freshness axis absent or not 'fresh'
     //                     (stale, not-judgeable); its eligibility axis absent
     //                     or not 'eligible' (activation-unapproved). Stale and
@@ -13761,7 +13762,12 @@
     //                     no state copy, no number, no email material, no
     //                     analytics, no persistence — nothing a customer can
     //                     see or that could be read as "approved but hidden".
-    //   price-unavailable ONLY when freshness is 'fresh' AND eligibility is
+    //   price-unavailable while the pricing block is ACTIVE (enabled,
+    //                     displayEnabled, this surface on, presentation and
+    //                     authority approved) and this product-size has no
+    //                     SKU or no pricing entry at all (owner direction
+    //                     2026-10-16: one product's gap is said for that
+    //                     product, never silence) -- OR when freshness is 'fresh' AND eligibility is
     //                     'eligible' but the admitted price cannot be resolved
     //                     or safely formatted — it fails the runtime money
     //                     admission below (safe-integer minor units, positive,
@@ -13916,6 +13922,18 @@
       }
     }
 
+    // Whether pricing.products carries ANY entry for this product's SKU
+    // (valid or not). Absent -> the product-size is simply not priced;
+    // present -> its own freshness / eligibility / validity decides.
+    function pricingEntryFor(p, productId, sku) {
+      var list = (p && Array.isArray(p.products)) ? p.products : [];
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (e && typeof e === 'object' && e.productId === productId && e.sku === sku) return true;
+      }
+      return false;
+    }
+
     // The gate. Returns a closed presentation record:
     //   { state: 'off' | 'price-unavailable' | 'available',
     //     amountMinor, currency, kind, text, notes, calculation, threshold }
@@ -13926,10 +13944,24 @@
       if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
       var o =(opts && typeof opts === 'object') ? opts : {};
+      // A product-size pricing does not cover (owner direction 2026-10-16:
+      // a failure disables only its own scope). While the WHOLE pricing
+      // block is active - every presentation approval recorded and a named
+      // authority (pricingPresentationApproved) on top of the surface check
+      // above - a product with no SKU at this size, or no pricing entry for
+      // its SKU, says "price unavailable" for itself instead of silence. The
+      // governed state copy, never a number. Dark (every shipped state): off,
+      // exactly as before. A stale, uncleared or otherwise invalid ENTRY that
+      // does exist stays off below (inert internal data).
+      var unpriced = pricingPresentationApproved(p)
+        ? { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
+            text: pricingStateCopy('price-unavailable'), notes: [],
+            calculation: 'unavailable', threshold: 'unknown' }
+        : off;
       var sku = pricingSkuFor(m, size);
       // No applicable catalog record / SKU for this product-size: nothing to
-      // ask the resolver about, and nothing to show.
-      if (!sku) return off;
+      // ask the resolver about.
+      if (!sku) return unpriced;
       var rec = pricingCatalogRecord(m);
       var accessory = pricingIsAccessory(rec);
       var sizedAccessory = accessory && pricingAccessorySized(rec);
@@ -13949,7 +13981,7 @@
       // for activation-unapproved ("nothing on any shipped/live surface").
       var fresh = !!(r && r.freshness && r.freshness.status === 'fresh');
       var eligible = !!(r && r.eligibility && r.eligibility.status === 'eligible');
-      if (!fresh || !eligible) return off;
+      if (!fresh || !eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;
       // Fresh and eligible: the price is either admitted, or the surface may
       // say only that a price is unavailable — never a number.
       var resolved = !!(r && r.price && r.price.status === 'resolved');
@@ -14029,7 +14061,7 @@
     // nothing, stores nothing, persists nothing, and never reaches an
     // analytics field. It reaches the email ONLY as the shared purchase
     // summary (purchaseSummaryFor), and only while pricing.surfaces.email is
-    // true and that summary is complete - shipped config sends quote:null -
+    // true (complete, or incomplete with no total) - shipped config sends quote:null -
     // so the gate's stateless contract holds and the session wipe still has
     // nothing of its own to clear. It renders nothing itself.
     //
@@ -14192,9 +14224,10 @@
         currency: admitted ? pres.currency : null,
         unitAmountMinor: admitted ? pres.amountMinor : null,
         extendedAmountMinor: admitted ? pres.amountMinor * qty : null,
-        // Offer facts (filled by quoteApplyOffers only when the WHOLE quote
-        // resolves; until then a line carries no discount and its net is its
-        // extended amount, or null).
+        // Offer facts (filled by quoteApplyOffers when the WHOLE quote
+        // resolves, or line by line by quoteApplyLineOffers when it does not;
+        // otherwise a line carries no discount and its net is its extended
+        // amount, or null).
         brand: quoteBrandFor(kind, record),
         discounts: [],
         discountMinor: 0,
@@ -14339,6 +14372,14 @@
     }
     // Whether one admitted offer can apply to one resolved line.
     function offerMatchesLine(o, ln, listMinor, payment) {
+      if (!offerFitsLine(o, ln, payment)) return false;
+      if (o.minimumMerchandiseMinor !== null && listMinor < o.minimumMerchandiseMinor) return false;
+      return true;
+    }
+    // Everything about one offer and one line EXCEPT the merchandise
+    // minimum (which needs the whole purchase): kinds, products, brands,
+    // sizes, exclusions, and the payment the quote is for.
+    function offerFitsLine(o, ln, payment) {
       var el = o.eligibility;
       if (el.productKinds.indexOf(ln.kind) === -1) return false;
       if (el.productIds && el.productIds.indexOf(ln.productId) === -1) return false;
@@ -14347,7 +14388,6 @@
       var ex = o.exclusions || {};
       if (ex.productIds && ex.productIds.indexOf(ln.productId) !== -1) return false;
       if (ex.brands && (ln.brand === null || ex.brands.indexOf(ln.brand) !== -1)) return false;
-      if (o.minimumMerchandiseMinor !== null && listMinor < o.minimumMerchandiseMinor) return false;
       if (o.payment === 'pay-in-full-only' && payment !== 'full') return false;
       return true;
     }
@@ -14367,9 +14407,21 @@
       var applied = [];
       var total = 0;
       var out = lines.map(function (ln) {
+        var cands = offers.filter(function (o) { return offerMatchesLine(o, ln, list, payment); });
+        var next = quoteDiscountLine(ln, cands, applied);
+        total += next.discountMinor;
+        return next;
+      });
+      return { lines: out, listMerchandiseMinor: list, discountMinor: total,
+               appliedOffers: applied, merchandiseMinor: list - total };
+    }
+    // One line under its candidate offers (already ordered): an exclusive
+    // first candidate applies alone, otherwise every combinable applies in
+    // order, each at most once, on the REMAINING amount, never below zero.
+    // Returns a new line; `applied` collects the offer ids used, in order.
+    function quoteDiscountLine(ln, cands, applied) {
         var next = {};
         for (var k in ln) if (Object.prototype.hasOwnProperty.call(ln, k)) next[k] = ln[k];
-        var cands = offers.filter(function (o) { return offerMatchesLine(o, ln, list, payment); });
         var use = !cands.length ? [] : (cands[0].stacking === 'exclusive' ? [cands[0]]
           : cands.filter(function (o) { return o.stacking === 'combinable'; }));
         var remaining = ln.extendedAmountMinor;
@@ -14390,11 +14442,34 @@
         next.discounts = discounts;
         next.discountMinor = ln.extendedAmountMinor - remaining;
         next.netAmountMinor = remaining;
-        total += next.discountMinor;
         return next;
+    }
+    // An INCOMPLETE quote (owner direction 2026-10-16: a missing price
+    // disables only its own line, and a missing optional offer never
+    // disables a valid purchase). Each RESOLVED line receives its offers
+    // under exactly the rule above, but only when the line's outcome cannot
+    // depend on what is still unknown: if ANY offer that fits the line
+    // carries a merchandise minimum, the minimum needs the whole purchase,
+    // so the line stays at its list price until the quote is complete (fail
+    // closed). A pay-in-full-only offer depends only on the payment the
+    // quote is for, which is known: it applies under pay in full and never
+    // under a plan, exactly as on a complete quote. No subtotal, savings
+    // total, financed amount or payment exists here.
+    function quoteApplyLineOffers(lines, ctx) {
+      var c = (ctx && typeof ctx === 'object') ? ctx : {};
+      var offers = Array.isArray(c.offers) ? c.offers.slice() : [];
+      offers.sort(function (a, b) { return a.priority !== b.priority ? a.priority - b.priority : (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)); });
+      var payment = c.payment === 'financed' ? 'financed' : 'full';
+      var applied = [];
+      var out = lines.map(function (ln) {
+        if (!ln || ln.resolved !== true) return ln;
+        var fits = offers.filter(function (o) { return offerFitsLine(o, ln, payment); });
+        for (var f = 0; f < fits.length; f++) {
+          if (fits[f].minimumMerchandiseMinor !== null) return ln;
+        }
+        return quoteDiscountLine(ln, fits, applied);
       });
-      return { lines: out, listMerchandiseMinor: list, discountMinor: total,
-               appliedOffers: applied, merchandiseMinor: list - total };
+      return { lines: out, appliedOffers: applied };
     }
     // The terms of every offer applied to a quote, in application order,
     // read back from the configured offer of that id.
@@ -14457,7 +14532,9 @@
       var listMinor = merchandiseMinor;
       var discountMinor = 0;
       var appliedOffers = [];
-      // Offers run ONLY over a fully resolved quote. Everything downstream
+      var lineOffers = [];
+      // Whole-quote offers run ONLY over a fully resolved quote (an
+      // incomplete one gets line-level offers only, below). Everything downstream
       // (subtotal, down-payment bound, financed amount, payments, qualifying
       // amount, monthly differences, compare, take-home, email) reads the
       // NET merchandiseMinor, so a discount can never be applied twice. A
@@ -14470,6 +14547,15 @@
           discountMinor = applied.discountMinor;
           appliedOffers = applied.appliedOffers;
           merchandiseMinor = priceMoneyValid(applied.merchandiseMinor, currency) ? applied.merchandiseMinor : null;
+        }
+      } else if (resolvedCount > 0) {
+        // Incomplete: line-level offers only (quoteApplyLineOffers), and
+        // still no subtotal, savings total or payment.
+        var lineAdmitted = admittedOffers(getPricingConfig(), Date.now());
+        if (lineAdmitted.length) {
+          var partial = quoteApplyLineOffers(lines, { offers: lineAdmitted, payment: payment });
+          lines = partial.lines;
+          lineOffers = partial.appliedOffers;
         }
       }
       // Whether a mattress is part of this purchase is a FACT ABOUT THE
@@ -14495,7 +14581,9 @@
         quoteFor: payment,
         listMerchandiseMinor: merchandiseMinor === null ? null : listMinor,
         discountMinor: merchandiseMinor === null ? 0 : discountMinor,
-        appliedOffers: merchandiseMinor === null ? [] : appliedOffers,
+        // On an incomplete quote: the offers applied line by line (their
+        // terms are shown beside those lines), never a savings total.
+        appliedOffers: merchandiseMinor === null ? lineOffers : appliedOffers,
         merchandiseMinor: merchandiseMinor
       };
     }
@@ -16076,7 +16164,9 @@
         listSubtotal: (complete && q.discountMinor > 0) ? fmt(q.listMerchandiseMinor) : '',
         savings: (complete && q.discountMinor > 0) ? fmt(q.discountMinor) : '',
         discountMinor: complete ? q.discountMinor : 0,
-        offerTerms: complete ? offerTerms : [],
+        // Every applied offer's terms - on an incomplete purchase, the
+        // line-level offers its priced lines carry (never a savings total).
+        offerTerms: offerTerms,
         // Financing in view drops a pay-in-full-only offer: said explicitly,
         // with the difference, never silently.
         cashGap: (_psPlan !== 'full' && ctx.cashGap > 0) ? fmt(ctx.cashGap) : '',
@@ -16094,20 +16184,36 @@
     }
 
     // The email payload's `quote`: the shared summary itself, and only while
-    // pricing.surfaces.email is true and the summary is a complete v1
-    // record; null otherwise (every shipped state).
+    // pricing.surfaces.email is true and the summary is a v2 record - either
+    // complete, or incomplete and carrying NO total of any kind; null
+    // otherwise (every shipped state).
     function emailQuoteGate(summary) {
       if (!pricingSurfaceEnabled('email')) return null;
-      return (summary && typeof summary === 'object' && summary.v === 1) ? summary : null;
+      if (!summary || typeof summary !== 'object' || summary.v !== 2) return null;
+      if (summary.complete === true) return summary;
+      if (summary.complete !== false) return null;
+      var totals = ['listSubtotalText', 'discountText', 'merchandiseText', 'merchandiseMinor', 'discountMinor', 'payment'];
+      for (var i = 0; i < totals.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(summary, totals[i])) return null;
+      }
+      return summary;
     }
     // ─── Shared purchase summary (owner direction 2026-10-15) ───
     // ONE closed record of the purchase as the studio shows it, consumed by
     // the take-home preview and the email payload - no second computation.
     // Every *Text field is produced by the same formatters the screen uses
     // (formatPriceAmount, psBound, t()). null unless the studio is admitted
-    // and the quote is complete with a mattress, and null for a language
-    // other than the active one (the active dictionary is the only
-    // formatter the screen has).
+    // (a priced mattress), and null for a language other than the active
+    // one (the active dictionary is the only formatter the screen has).
+    //
+    // v2 (owner direction 2026-10-16: one unpriced line must not remove
+    // every priced figure). `complete: true` is the whole purchase with its
+    // totals and payment, as before. `complete: false` lists every line -
+    // the priced ones with their list / discount / net (line-level offers
+    // only), the rest marked "price unavailable" - and carries NO subtotal,
+    // savings total, financed amount, payment or plan figure at all; the
+    // keys are absent, never blank (emailQuoteGate and Code.gs refuse an
+    // incomplete summary that carries one).
     function psFingerprint(obj) {
       // FNV-1a and a second mixing lane over the stable JSON of the figures.
       var s = JSON.stringify(obj);
@@ -16123,21 +16229,40 @@
     function purchaseSummaryFor(lang) {
       if (typeof lang === 'string' && lang && lang !== currentLang) return null;
       var m = purchaseStudioFor();
-      if (!m || !m.show || m.empty || !m.complete || !m.mattress || !m.mattress.priced) return null;
+      if (!m || !m.show || m.empty || !m.mattress || !m.mattress.priced) return null;
       var ctx = psContext();
-      if (!ctx || !psComplete(ctx.q)) return null;
+      if (!ctx) return null;
       var q = ctx.q;
+      var complete = !!(m.complete && psComplete(q));
       var fmt = ctx.fmt;
       var lines = q.lines.map(function (ln) {
-        return {
+        var line = {
           name: ln.kind === 'mattress' ? m.mattress.name : quoteLineName(ln),
           detail: ln.size ? (ln.split ? t('ps.split_line', { size: sizeLabelFor(ln.size) }) : sizeLabelFor(ln.size)) : '',
           quantity: ln.quantity,
-          listText: fmt(ln.extendedAmountMinor),
-          discounts: psDiscountsOf(ln, fmt).map(function (d) { return { label: d.label, amountText: '−' + d.amount }; }),
-          netText: fmt(ln.netAmountMinor)
+          priced: ln.resolved === true
         };
+        if (!line.priced) {
+          line.statusText = t('ps.price_unavailable');
+          return line;
+        }
+        line.listText = fmt(ln.extendedAmountMinor);
+        line.discounts = psDiscountsOf(ln, fmt).map(function (d) { return { label: d.label, amountText: '−' + d.amount }; });
+        line.netText = fmt(ln.netAmountMinor);
+        return line;
       });
+      var figures;
+      if (!complete) {
+        figures = {
+          v: 2, complete: false, currency: 'USD', size: m.size, sizeLabel: m.sizeLabel,
+          lines: lines,
+          incompleteText: t('ps.quote_incomplete'),
+          exclusionsText: m.excludes || '',
+          offerTerms: m.offerTerms.map(function (o) { return o.label + ': ' + o.terms; }),
+          provenance: m.priceSource || ''
+        };
+        return psSummaryOut(figures);
+      }
       var r = m.result;
       var payment;
       if (r.kind === 'calc' && r.state === 'calculated') {
@@ -16153,8 +16278,8 @@
       } else {
         payment = { kind: 'full', totalText: m.subtotal };
       }
-      var figures = {
-        v: 1, currency: 'USD', size: m.size, sizeLabel: m.sizeLabel,
+      figures = {
+        v: 2, complete: true, currency: 'USD', size: m.size, sizeLabel: m.sizeLabel,
         lines: lines,
         listSubtotalText: fmt(q.listMerchandiseMinor),
         discountText: q.discountMinor > 0 ? '−' + fmt(q.discountMinor) : '',
@@ -16164,6 +16289,11 @@
         payment: payment,
         provenance: [m.priceSource, m.paymentSource].filter(Boolean).join(' · ')
       };
+      return psSummaryOut(figures);
+    }
+    // The summary record: the figures, when they were computed, and the
+    // fingerprint of the figures alone (the stale-send guard).
+    function psSummaryOut(figures) {
       var out = {};
       for (var k in figures) if (Object.prototype.hasOwnProperty.call(figures, k)) out[k] = figures[k];
       out.computedAt = new Date(Date.now()).toISOString();
@@ -16848,9 +16978,10 @@
     // item list plain - the packet renderer escapes items itself). Built
     // from the SAME shared summary the email payload carries
     // (purchaseSummaryFor), so the preview and the send can never disagree.
-    // When pricing.surfaces.email is true and the summary is complete the
-    // row is part of what is sent ("Your quote"); otherwise it is shown in
-    // store only and nothing priced enters the payload.
+    // When pricing.surfaces.email is true the row is part of what is sent
+    // ("Your quote": the complete purchase, or an incomplete one with its
+    // priced lines and no total); otherwise it is shown in store only and
+    // nothing priced enters the payload.
     function psTakeHomeRow() {
       var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
       if (!m.show || m.empty) return null;
@@ -16859,11 +16990,19 @@
       var items, parts;
       if (sum) {
         items = sum.lines.map(function (l) {
+          var head = l.name + (l.detail ? ' (' + l.detail + ')' : '') + (l.quantity > 1 ? ' × ' + l.quantity : '');
+          if (!l.priced) return head + ' ' + l.statusText;
           var off = l.discounts.map(function (d) { return d.label + ' ' + d.amountText; }).join(', ');
-          return l.name + (l.detail ? ' (' + l.detail + ')' : '') + (l.quantity > 1 ? ' × ' + l.quantity : '')
-            + ' ' + l.netText + (off ? ' (' + off + ')' : '');
+          return head + ' ' + l.netText + (off ? ' (' + off + ')' : '');
         });
         parts = [];
+      }
+      if (sum && sum.complete === false) {
+        // An incomplete purchase: the priced lines and the unpriced ones,
+        // exactly as the email states them - and no total of any kind.
+        parts.push(sum.incompleteText);
+        if (sum.exclusionsText) parts.push(sum.exclusionsText);
+      } else if (sum) {
         if (sum.discountText) parts.push(t('ps.savings') + ': ' + sum.discountText);
         parts.push(t(sum.discountText ? 'ps.your_price' : 'ps.subtotal') + ': ' + sum.merchandiseText);
         var pay = sum.payment;
@@ -16880,7 +17019,8 @@
         }
         if (sum.exclusionsText) parts.push(sum.exclusionsText);
       } else {
-        // An incomplete purchase: the lines as they stand, no total.
+        // No summary (defence in depth; the studio always has one while it
+        // shows): the lines as they stand, no total, never emailed.
         items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
           + (m.mattress.priced ? m.mattress.price : t('ps.no_price'))].concat(m.lines.map(function (l) {
           return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
@@ -23944,7 +24084,10 @@
     // in-flight flag, this content's idempotency key, the content it was made
     // for, and the summary fingerprint the preview rendered. Reset by the
     // session wipe and whenever the take-home screen opens.
-    var emailSendState = { inFlight: false, sendId: null, contentKey: null, previewFingerprint: null };
+    // `unresolved`: a request carrying this sendId left the device and no
+    // definitive answer came back (a transport failure, or the server's
+    // delivery_unconfirmed) - the email may already be in the inbox.
+    var emailSendState = { inFlight: false, sendId: null, contentKey: null, previewFingerprint: null, unresolved: false };
     // A fresh sendId: 18 random bytes from crypto.getRandomValues, base64url
     // (24 chars of [A-Za-z0-9_-]). No crypto, no id - and a live send then
     // refuses to go rather than sending without one.
@@ -24037,13 +24180,19 @@
       // It is "Your quote" - part of the send - only while
       // pricing.surfaces.email is true; otherwise it is shown in store only.
       // The fingerprint it rendered is what sendResults checks before any
-      // send, and a new sendId is made for this preview.
+      // send. A new sendId is made for this preview ONLY when no send is out
+      // and none is unresolved: this screen is re-rendered by a language
+      // switch (even mid-send) and re-opened from the handoff, and a send
+      // whose answer was lost may already have gone out under the current
+      // id - its retry must keep that id (the server sends at most once per
+      // id). Nor is the in-flight flag cleared here.
       var psRow = (typeof psTakeHomeRow === 'function') ? psTakeHomeRow() : null;
       if (psRow) packet.push(psRow);
       emailSendState.previewFingerprint = (psRow && psRow.fingerprint) || null;
-      emailSendState.sendId = emailNewSendId();
-      emailSendState.contentKey = null;
-      emailSendState.inFlight = false;
+      if (!emailSendState.sendId || (!emailSendState.inFlight && !emailSendState.unresolved)) {
+        emailSendState.sendId = emailNewSendId();
+        emailSendState.contentKey = null;
+      }
 
       var summaryEl = document.getElementById('emailPreview');
       if (summaryEl) summaryEl.innerHTML = packet.map(function(r) {
@@ -24159,10 +24308,13 @@
         errorEl.textContent = t('email.figures_changed');
         return;
       }
-      // One sendId per content: retries of the same figures and contact
-      // fields reuse it (the server sends at most once per id); any change
-      // of either makes a new one.
-      const _contentKey = [email, name, phone, _fingerprintNow || '', currentLang].join('\u0001');
+      // One sendId per recipient and figures: every retry - automatic, the
+      // visible "Try again", after a language switch, a re-opened screen or
+      // an edited name or phone - reuses it, because an attempt whose answer
+      // was lost may already have mailed this address (the server sends at
+      // most once per id and answers a repeat as a duplicate). A different
+      // address or different figures is a different email: a new id.
+      const _contentKey = [email, _fingerprintNow || ''].join('\u0001');
       if (!emailSendState.sendId || (emailSendState.contentKey !== null && emailSendState.contentKey !== _contentKey)) {
         emailSendState.sendId = emailNewSendId();
       }
@@ -24490,6 +24642,7 @@
         // refusal (invalid_email, canspam_not_configured, invalid_request,
         // send_failed) is never retried.
         var sendAttempt = function(n) {
+          emailSendState.unresolved = true;
           fetch(gasUrl, {
             method: 'POST',
             body: JSON.stringify(payload)
@@ -24507,6 +24660,7 @@
           }))
           .then(sessionBound(function(data) {
             if (data && data.success) {
+              emailSendState.unresolved = false;
               showSuccess();
             } else if (!data || typeof data !== 'object') {
               // A body that is not a result object is a transport fault.
@@ -24519,7 +24673,13 @@
               // back would put them straight into the console. Only a value
               // drawn from a closed set is logged.
               console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));
-              showError(currentLang === 'es' ? 'No pudimos enviar tu correo — por favor pide a tu especialista de sueño que lo reenvíe.' : 'We couldn\'t send your email — please ask your sales specialist to re-send it.');
+              emailSendState.unresolved = emailFailureCode(data && data.error) === 'delivery_unconfirmed';
+              // delivery_unconfirmed: an earlier attempt of this content may
+              // already have been delivered, and the server will not send it
+              // again - never "couldn't send", never a retry action.
+              showError(emailFailureCode(data && data.error) === 'delivery_unconfirmed'
+                ? t('email.delivery_unconfirmed')
+                : (currentLang === 'es' ? 'No pudimos enviar tu correo — por favor pide a tu especialista de sueño que lo reenvíe.' : 'We couldn\'t send your email — please ask your sales specialist to re-send it.'));
             }
           }))
           .catch(sessionBound(function(err) {
@@ -29279,7 +29439,8 @@
       'invalid_email',            // Code.gs: recipient failed _isValidEmail()
       'canspam_not_configured',   // Code.gs: retailer CAN-SPAM values still sentinels
       'send_failed',              // Code.gs: doPost catch-all; detail stays in its Logger
-      'invalid_request'           // Code.gs: missing/malformed sendId (or request shape)
+      'invalid_request',          // Code.gs: missing/malformed sendId (or request shape)
+      'delivery_unconfirmed'      // Code.gs: this sendId may already have gone out; never resent
     ];
     function emailFailureCode(raw) {
       return (typeof raw === 'string' && EMAIL_FAILURE_CODES.indexOf(raw) !== -1)
@@ -29503,6 +29664,7 @@
           emailSendState.sendId = null;
           emailSendState.contentKey = null;
           emailSendState.previewFingerprint = null;
+          emailSendState.unresolved = false;
         }
 
         // --- 8. analytics -------------------------------------------------

@@ -36,19 +36,48 @@ var MAX_EMAIL_PRIORITIES = 3;
 // Every request carries a client-generated `sendId` (crypto.getRandomValues,
 // reused for the client's automatic retry of the same content). A request
 // without a well-formed one is refused `invalid_request` before anything is
-// written or sent. A sendId that already produced a successful send answers
-// {success:true, duplicate:true} with NO sheet row and NO email, so a retry
-// after a lost response can never mail the customer twice. The record lives
-// in the script cache (CacheService; best-effort, 6 h maximum lifetime) and
-// the check-then-send runs under the script lock (LockService) so two
-// concurrent deliveries of one sendId cannot both pass the check. Neither
-// service (nor PropertiesService) needs an OAuth scope beyond the two the
-// manifest declares (appsscript.json: script.send_mail for MailApp,
-// spreadsheets.currentonly for the bound leads Sheet).
+// written or sent.
+//
+// AT-MOST-ONCE per sendId (2026-10-16): a duplicate customer email is worse
+// than a lost one, and "rows written after sending" alone does not prevent
+// one (a crash between the send and any later record would leave the retry
+// free to send again). So everything runs under the script lock
+// (LockService), and the durable record is a hidden ledger tab in the bound
+// Sheet (SENDS_SHEET_NAME: one row per sendId - id, state, time, pending
+// lead) written BEFORE the send:
+//   1. the script cache ('df-sent:<sendId>', best effort, 6 h) is a fast
+//      path for 'sent'; the ledger is the authority (no expiry, no eviction);
+//   2. a ledger row already in 'sent' / 'row_pending' / 'complete' answers
+//      {success:true, duplicate:true}: no email, no row;
+//   3. a ledger row in 'sending' or 'unconfirmed' (or any unknown state)
+//      means an earlier attempt may have reached MailApp with no recorded
+//      outcome: answered delivery_unconfirmed and NEVER sent again;
+//   4. otherwise the 'sending' marker (with the lead row it will write) is
+//      appended and flushed, THEN MailApp runs once. A MailApp exception is
+//      an unknown outcome (Google may already have accepted the message):
+//      'unconfirmed', delivery_unconfirmed, and no plain-text resend;
+//   5. after the send: cache + ledger 'sent', then the lead row; a lead-row
+//      failure leaves the ledger 'row_pending' with the lead kept for
+//      recoverPendingLeads(), never silently lost.
+// A failure to take the lock, read the ledger, check the quota or write the
+// marker happens before any send and answers send_failed: nothing was sent
+// and the same sendId stays retryable. None of these services needs an OAuth
+// scope beyond the two the manifest declares (appsscript.json:
+// script.send_mail for MailApp, spreadsheets.currentonly for the bound Sheet).
 var SEND_ID_PATTERN = /^[A-Za-z0-9_-]{22,40}$/;
 var SEND_DEDUPE_PREFIX = 'df-sent:';
 var SEND_DEDUPE_TTL_SECONDS = 21600;   // CacheService maximum (6 hours)
 var SEND_LOCK_WAIT_MS = 10000;
+var SENDS_SHEET_NAME = 'DreamFinder Sends';
+var SENDS_HEADER = ['Send ID', 'State', 'Updated', 'Pending lead'];
+// Ledger ids carry a text prefix so the Sheet never coerces one (a leading
+// '-', '+' or '=' or an all-digit id) into a number or a formula.
+var SENDS_ID_PREFIX = 'id:';
+var SEND_STATE_SENDING = 'sending';
+var SEND_STATE_UNCONFIRMED = 'unconfirmed';
+var SEND_STATE_SENT = 'sent';
+var SEND_STATE_ROW_PENDING = 'row_pending';
+var SEND_STATE_COMPLETE = 'complete';
 
 // \u2500\u2500 Purchase summary ("Your quote") ceilings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // The quote is rendered VERBATIM from the client's purchase summary (the same
@@ -126,6 +155,86 @@ function _leadsSheet() {
   return sheet;
 }
 
+// The send ledger (see "Send identity" above): a hidden tab, created with
+// its header on first use. Only doPost and recoverPendingLeads write it, both
+// under the script lock.
+function _sendsSheet() {
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = book.getSheetByName(SENDS_SHEET_NAME);
+  if (!sheet) {
+    sheet = book.insertSheet(SENDS_SHEET_NAME);
+    sheet.appendRow(SENDS_HEADER);
+    sheet.setFrozenRows(1);
+    sheet.hideSheet();
+  }
+  return sheet;
+}
+
+// {row, state} for sendId's ledger row (exact, case-sensitive), or null.
+// Reads throw rather than answer "not found": the caller fails closed.
+function _findSend(ledger, sendId) {
+  var last = ledger.getLastRow();
+  if (last < 2) return null;
+  var want = SENDS_ID_PREFIX + sendId;
+  var cells = ledger.getRange(2, 1, last - 1, 2).getValues();
+  for (var i = cells.length - 1; i >= 0; i--) {
+    if (String(cells[i][0]) === want) return { row: i + 2, state: String(cells[i][1]) };
+  }
+  return null;
+}
+
+function _setSendState(ledger, row, state, pendingLead) {
+  ledger.getRange(row, 2, 1, 3).setValues([[state, new Date(), pendingLead]]);
+}
+
+// The lead row as the ledger keeps it until the Leads tab has it: JSON, the
+// timestamp as ISO text (restored to a Date by recoverPendingLeads).
+function _pendingLeadJson(leadRow) {
+  return JSON.stringify(leadRow);
+}
+
+// Operator recovery, run by hand from the Apps Script editor (Run ->
+// recoverPendingLeads). Appends every lead whose email was SENT but whose
+// Leads row was never written ('sent' or 'row_pending' with a kept lead),
+// marks each 'complete' and clears its kept copy. It sends NOTHING. Rows in
+// 'sending' / 'unconfirmed' are only counted: whether that email arrived is
+// for the owner to check (inbox, BCC copy), never guessed here. Counts only
+// are logged, never a lead value.
+function recoverPendingLeads() {
+  var deployment = _loadDeploymentConfig();
+  if (deployment.invalid.indexOf('LEADS_SHEET_NAME') !== -1) {
+    throw new Error('LEADS_SHEET_NAME is invalid; fix the Script Property first');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(SEND_LOCK_WAIT_MS);
+  try {
+    var ledger = _sendsSheet();
+    var leads = _leadsSheet();
+    var report = { recovered: 0, unconfirmed: 0 };
+    var last = ledger.getLastRow();
+    if (last >= 2) {
+      var cells = ledger.getRange(2, 1, last - 1, 4).getValues();
+      for (var i = 0; i < cells.length; i++) {
+        var state = String(cells[i][1]);
+        var kept = String(cells[i][3] || '');
+        if ((state === SEND_STATE_SENT || state === SEND_STATE_ROW_PENDING) && kept) {
+          var row = JSON.parse(kept);
+          row[0] = new Date(row[0]);
+          leads.appendRow(row);
+          _setSendState(ledger, i + 2, SEND_STATE_COMPLETE, '');
+          report.recovered += 1;
+        } else if (state === SEND_STATE_SENDING || state === SEND_STATE_UNCONFIRMED) {
+          report.unconfirmed += 1;
+        }
+      }
+    }
+    Logger.log('recoverPendingLeads: ' + JSON.stringify(report));
+    return report;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // Helper: escape five HTML metacharacters; safe for attribute values and text content.
 function _escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(ch) {
@@ -195,27 +304,64 @@ function _quoteText(v, max) {
 
 // The purchase summary ("Your quote"), projected onto a fresh closed literal.
 // Returns null - the section is then absent from BOTH MIME parts - unless the
-// record is a v:1 USD summary whose every line carries a name, a list figure
-// and a net figure and whose payment block is one of the three closed kinds
-// with its required text. ALL-OR-NOTHING, like the priorities block: a
-// malformed or oversized summary is never rendered partially. Numeric fields
-// the client carries for its own use (merchandiseMinor, discountMinor,
-// paymentMinor) are deliberately not projected: the email shows the screen's
-// formatted figures only, and nothing here computes one.
+// record is a v:2 USD summary in one of two closed forms:
+//   complete: true  - every line priced (a name, a list figure and a net
+//                     figure), the merchandise subtotal, and a payment block
+//                     of one of the three closed kinds with its required text;
+//   complete: false - an incomplete purchase (owner direction 2026-10-16):
+//                     priced lines as above, every other line marked by its
+//                     status text ("Price unavailable") and carrying NO
+//                     figure, the incomplete note, and NO subtotal, savings
+//                     total, financed amount, payment or plan figure - an
+//                     incomplete summary carrying any of those keys is
+//                     refused whole.
+// ALL-OR-NOTHING, like the priorities block: a malformed or oversized summary
+// is never rendered partially. Numeric fields the client carries for its own
+// use (merchandiseMinor, discountMinor, paymentMinor) are deliberately not
+// projected: the email shows the screen's formatted figures only, and nothing
+// here computes one.
+var QUOTE_INCOMPLETE_FORBIDDEN = ['listSubtotalText', 'discountText', 'merchandiseText', 'merchandiseMinor',
+  'discountMinor', 'payment'];
 function _safeQuote(q) {
-  if (!q || typeof q !== 'object' || Array.isArray(q) || q.v !== 1) return null;
+  if (!q || typeof q !== 'object' || Array.isArray(q) || q.v !== 2) return null;
+  if (q.complete !== true && q.complete !== false) return null;
+  var complete = q.complete === true;
+  if (!complete) {
+    for (var f = 0; f < QUOTE_INCOMPLETE_FORBIDDEN.length; f++) {
+      if (Object.prototype.hasOwnProperty.call(q, QUOTE_INCOMPLETE_FORBIDDEN[f])) return null;
+    }
+  }
   if (q.currency !== 'USD') return null;
   if (!Array.isArray(q.lines) || q.lines.length === 0 || q.lines.length > MAX_QUOTE_LINES) return null;
   var rawTerms = q.offerTerms == null ? [] : q.offerTerms;
   if (!Array.isArray(rawTerms) || rawTerms.length > MAX_QUOTE_OFFER_TERMS) return null;
 
   var lines = [];
+  var unpricedCount = 0;
   for (var i = 0; i < q.lines.length; i++) {
     var l = q.lines[i];
     if (!l || typeof l !== 'object' || Array.isArray(l)) return null;
     var qty = l.quantity;
     if (typeof qty !== 'number' || !isFinite(qty) || Math.floor(qty) !== qty
         || qty < 1 || qty > MAX_QUOTE_LINE_QUANTITY) return null;
+    if (l.priced !== true && l.priced !== false) return null;
+    if (l.priced === false) {
+      // An unpriced line: only on an incomplete summary, its status text
+      // required, and no figure of any kind beside it.
+      if (complete) return null;
+      if (l.listText != null || l.netText != null || l.discounts != null) return null;
+      var unpriced = {
+        name: _quoteText(l.name, 200),
+        detail: _quoteText(l.detail, 200),
+        quantity: qty,
+        priced: false,
+        statusText: _quoteText(l.statusText, 120)
+      };
+      if (!unpriced.name || !unpriced.statusText) return null;
+      lines.push(unpriced);
+      unpricedCount++;
+      continue;
+    }
     var rawDiscounts = l.discounts == null ? [] : l.discounts;
     if (!Array.isArray(rawDiscounts) || rawDiscounts.length > MAX_QUOTE_LINE_DISCOUNTS) return null;
     var discounts = [];
@@ -230,6 +376,7 @@ function _safeQuote(q) {
       name: _quoteText(l.name, 200),
       detail: _quoteText(l.detail, 200),
       quantity: qty,
+      priced: true,
       listText: _quoteText(l.listText, 60),
       discounts: discounts,
       netText: _quoteText(l.netText, 60)
@@ -243,6 +390,22 @@ function _safeQuote(q) {
     var term = _quoteText(rawTerms[k], 600);
     if (!term) return null;
     offerTerms.push(term);
+  }
+
+  if (!complete) {
+    // Incomplete: at least one line really is unpriced, and its note says so.
+    if (unpricedCount === 0) return null;
+    var partial = {
+      complete: false,
+      sizeLabel: _quoteText(q.sizeLabel, 60),
+      lines: lines,
+      incompleteText: _quoteText(q.incompleteText, 400),
+      exclusionsText: _quoteText(q.exclusionsText, 400),
+      offerTerms: offerTerms,
+      provenance: _quoteText(q.provenance, 300)
+    };
+    if (!partial.incompleteText) return null;
+    return partial;
   }
 
   var p = q.payment;
@@ -273,6 +436,7 @@ function _safeQuote(q) {
   }
 
   var out = {
+    complete: true,
     sizeLabel: _quoteText(q.sizeLabel, 60),
     lines: lines,
     listSubtotalText: _quoteText(q.listSubtotalText, 60),
@@ -342,10 +506,25 @@ function buildQuotePlain(quote, isEs) {
   quote.lines.forEach(function(l, i) {
     out.push((i + 1) + '. ' + s(l.name) + (l.quantity > 1 ? ' x ' + l.quantity : '')
       + (l.detail ? ' - ' + s(l.detail) : ''));
+    if (!l.priced) {
+      out.push('   ' + s(l.statusText));
+      return;
+    }
     out.push('   ' + Q.list + ': ' + s(l.listText));
     l.discounts.forEach(function(dc) { out.push('   ' + s(dc.label) + ': ' + s(dc.amountText)); });
     out.push('   ' + Q.net + ': ' + s(l.netText));
   });
+  if (quote.complete !== true) {
+    // Incomplete: the note, never a total or a payment.
+    out.push(s(quote.incompleteText));
+    if (quote.exclusionsText) out.push(s(quote.exclusionsText));
+    if (quote.offerTerms.length) {
+      out.push(Q.offerTerms + ':');
+      quote.offerTerms.forEach(function(tm) { out.push('- ' + s(tm)); });
+    }
+    if (quote.provenance) out.push(s(quote.provenance));
+    return out.join('\n');
+  }
   if (quote.listSubtotalText) out.push(Q.listSubtotal + ': ' + s(quote.listSubtotalText));
   if (quote.discountText) out.push(Q.discounts + ': ' + s(quote.discountText));
   out.push(Q.merchandise + ': ' + s(quote.merchandiseText));
@@ -388,21 +567,31 @@ function buildQuoteHtml(quote, isEs, c, sans, serif) {
       + '<td align="right" style="' + fig + 'padding:4px 0;' + (strong ? 'font-weight:700;' : '') + '">' + value + '</td></tr>';
   }
   var linesHtml = quote.lines.map(function(l) {
-    return '<tr><td colspan="2" style="padding:10px 0 2px;border-top:1px solid ' + c.border + ';">'
+    var head = '<tr><td colspan="2" style="padding:10px 0 2px;border-top:1px solid ' + c.border + ';">'
       + '<div style="font-family:' + serif + ';font-size:15px;color:' + c.text + ';line-height:1.25;">' + e(l.name)
       + (l.quantity > 1 ? ' <span style="white-space:nowrap;">&times; ' + l.quantity + '</span>' : '') + '</div>'
       + (l.detail ? '<div style="' + muted + '">' + e(l.detail) + '</div>' : '')
-      + '</td></tr>'
+      + '</td></tr>';
+    if (!l.priced) {
+      return head + '<tr><td colspan="2" style="' + muted + 'padding:4px 0;">' + e(l.statusText) + '</td></tr>';
+    }
+    return head
       + row(Q.list, e(l.listText))
       + l.discounts.map(function(dc) { return row(e(dc.label), e(dc.amountText)); }).join('')
       + row(Q.net, e(l.netText), true);
   }).join('');
-  var totals = (quote.listSubtotalText ? row(Q.listSubtotal, e(quote.listSubtotalText)) : '')
-    + (quote.discountText ? row(Q.discounts, e(quote.discountText)) : '')
-    + row(Q.merchandise, e(quote.merchandiseText), true);
+  var complete = quote.complete === true;
+  // Incomplete: the note stands where the totals and the payment would be.
+  var totals = !complete
+    ? '<tr><td colspan="2" style="' + cell + 'padding:4px 0;font-weight:700;">' + e(quote.incompleteText) + '</td></tr>'
+    : (quote.listSubtotalText ? row(Q.listSubtotal, e(quote.listSubtotalText)) : '')
+      + (quote.discountText ? row(Q.discounts, e(quote.discountText)) : '')
+      + row(Q.merchandise, e(quote.merchandiseText), true);
   var p = quote.payment;
   var payHtml;
-  if (p.kind === 'full') {
+  if (!complete) {
+    payHtml = '';
+  } else if (p.kind === 'full') {
     payHtml = row(Q.payFull + ' &mdash; ' + Q.total, e(p.totalText), true);
   } else if (p.kind === 'plan') {
     payHtml = row(Q.plan, e(p.planLabel), true)
@@ -425,7 +614,7 @@ function buildQuoteHtml(quote, isEs, c, sans, serif) {
     + '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
     + totals
     + (quote.exclusionsText ? '<tr><td colspan="2" style="' + muted + 'padding:2px 0 6px;">' + e(quote.exclusionsText) + '</td></tr>' : '')
-    + '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
+    + (payHtml ? '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>' : '')
     + payHtml
     + (quote.offerTerms.length
         ? '<tr><td colspan="2" style="padding:10px 0 0;">'
@@ -454,6 +643,7 @@ function checkDeployment() {
     bcc: RESULT_EMAIL_BCC ? 'set' : 'none',
     replyTo: REPLY_TO ? 'set' : 'sender',
     leadsTab: _leadsSheet().getName(),
+    sendsTab: _sendsSheet().getName(),
     remainingDailyRecipients: MailApp.getRemainingDailyQuota()
   };
   Logger.log('checkDeployment: ' + JSON.stringify(report));
@@ -463,11 +653,17 @@ function checkDeployment() {
 // Response contract (the client classifies exactly these):
 //   {success:true}                                  sent (email sent, then row appended)
 //   {success:true, duplicate:true}                  this sendId already sent; nothing done
+//   {success:false, error:'delivery_unconfirmed'}   an earlier attempt of this sendId (or this
+//                                                   one: MailApp threw) may have gone out; the
+//                                                   outcome is unknown, so it is never resent
 //   {success:false, error:'invalid_request'}        body not an object, or sendId missing/malformed
 //   {success:false, error:'invalid_email'}          address fails the shape check
 //   {success:false, error:'canspam_not_configured'} a required CAN-SPAM Script Property is
 //                                                   unset, blank, malformed or a sentinel
-//   {success:false, error:'send_failed'}            anything else (detail in the GAS log only)
+//   {success:false, error:'send_failed'}            nothing was sent (lock timeout, ledger or
+//                                                   Sheet unreadable, quota exhausted, a
+//                                                   malformed optional property, anything else
+//                                                   before the send); detail in the GAS log only
 function doPost(e) {
   var sendLock = null;
   try {
@@ -531,17 +727,51 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Duplicate suppression: under the script lock, a sendId that already
-    // produced a successful send is answered success-duplicate with no row and
-    // no email. The lock is held through the send and released in finally.
+    // Duplicate suppression (see "Send identity" at the top): under the
+    // script lock, the cache fast path, then the durable ledger. The lock is
+    // held through the send and the records, and released in finally.
     sendLock = LockService.getScriptLock();
-    sendLock.waitLock(SEND_LOCK_WAIT_MS);
+    try {
+      sendLock.waitLock(SEND_LOCK_WAIT_MS);
+    } catch (lockErr) {
+      sendLock = null;
+      Logger.log('doPost refused: lock_timeout (nothing sent; the sendId stays retryable)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     var sendCache = CacheService.getScriptCache();
     var dedupeKey = SEND_DEDUPE_PREFIX + sendId;
-    if (sendCache.get(dedupeKey)) {
-      Logger.log('doPost duplicate: sendId already sent; no row, no email');
+    var cachedState = null;
+    try {
+      cachedState = sendCache.get(dedupeKey);
+    } catch (cacheReadErr) {
+      Logger.log('doPost: cache read failed; the ledger decides: ' + cacheReadErr.toString());
+    }
+    if (cachedState) {
+      Logger.log('doPost duplicate: sendId already sent (cache); no row, no email');
       return ContentService
         .createTextOutput(JSON.stringify({ success: true, duplicate: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    // The durable ledger decides next. Unreadable means send_failed (the
+    // outer catch), never "not found".
+    var ledger = _sendsSheet();
+    var prior = _findSend(ledger, sendId);
+    if (prior) {
+      if (prior.state === SEND_STATE_SENT || prior.state === SEND_STATE_ROW_PENDING
+          || prior.state === SEND_STATE_COMPLETE) {
+        Logger.log('doPost duplicate: sendId already sent (ledger); no row, no email');
+        try { sendCache.put(dedupeKey, SEND_STATE_SENT, SEND_DEDUPE_TTL_SECONDS); } catch (recacheErr) {}
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, duplicate: true }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      // 'sending', 'unconfirmed' or anything unrecognized: an earlier attempt
+      // may have reached MailApp. Never sent again.
+      Logger.log('doPost refused: delivery_unconfirmed (ledger state ' + _safeText(prior.state, 20) + '; never resent)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'delivery_unconfirmed' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -756,47 +986,100 @@ function doPost(e) {
     // retry below. One construction, two uses: the paths cannot drift.
     var plainBody = buildPlainBody(safeData, isEs, storeName);
 
+    // Always build HTML server-side. Client previously sent data.htmlBody but
+    // that path was deprecated in 5e - kiosk no longer ships pre-built HTML.
+    // A BUILD failure is the one HTML problem known to happen before any
+    // delivery, so it alone falls back to the plain-text-only email. A
+    // MailApp exception never triggers a second send (see below).
+    var htmlBody = null;
     try {
-      // Always build HTML server-side. Client previously sent data.htmlBody but
-      // that path was deprecated in 5e \u2014 kiosk no longer ships pre-built HTML.
-      var htmlBody = buildSimpleHtml(safeData, firstName, isEs, storeName);
-
-      var mailOptions = {
-        htmlBody: htmlBody,
-        name: senderName
-      };
-      if (RESULT_EMAIL_BCC) mailOptions.bcc = RESULT_EMAIL_BCC;
-      if (REPLY_TO) mailOptions.replyTo = REPLY_TO;
-      MailApp.sendEmail(email, subject, plainBody, mailOptions);
-
-    } catch (emailErr) {
-      Logger.log('HTML email failed, trying plain text: ' + emailErr.toString());
-      var fallbackOptions = {
-        name: senderName
-      };
-      if (RESULT_EMAIL_BCC) fallbackOptions.bcc = RESULT_EMAIL_BCC;
-      if (REPLY_TO) fallbackOptions.replyTo = REPLY_TO;
-      MailApp.sendEmail(email, subject, plainBody, fallbackOptions);
+      htmlBody = buildSimpleHtml(safeData, firstName, isEs, storeName);
+    } catch (htmlErr) {
+      Logger.log('HTML email failed to build, sending plain text only: ' + htmlErr.toString());
     }
 
-    // Record the delivered sendId only AFTER a send succeeded, so a failed
-    // attempt stays retryable. A cache write failure is logged, not surfaced:
-    // the email has already gone, and reporting failure would invite a retry
-    // that mails the customer twice.
+    // Quota, checked before the marker: an exhausted account sends nothing
+    // and leaves the sendId retryable. MailApp counts every recipient.
+    var recipientsNeeded = RESULT_EMAIL_BCC ? 2 : 1;
+    if (MailApp.getRemainingDailyQuota() < recipientsNeeded) {
+      Logger.log('doPost refused: quota_exhausted (nothing sent; the sendId stays retryable)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // The durable 'sending' marker, carrying the lead row, written and
+    // flushed BEFORE the send. If this fails nothing has been sent (the outer
+    // catch answers send_failed). From here on this sendId never sends
+    // again, whatever happens to this execution.
+    var pendingLead = _pendingLeadJson(leadRow);
+    ledger.appendRow([SENDS_ID_PREFIX + sendId, SEND_STATE_SENDING, new Date(), pendingLead]);
+    SpreadsheetApp.flush();
+    var ledgerRow = ledger.getLastRow();
+
     try {
-      sendCache.put(dedupeKey, '1', SEND_DEDUPE_TTL_SECONDS);
+      if (htmlBody !== null) {
+        var mailOptions = {
+          htmlBody: htmlBody,
+          name: senderName
+        };
+        if (RESULT_EMAIL_BCC) mailOptions.bcc = RESULT_EMAIL_BCC;
+        if (REPLY_TO) mailOptions.replyTo = REPLY_TO;
+        MailApp.sendEmail(email, subject, plainBody, mailOptions);
+      } else {
+        var fallbackOptions = {
+          name: senderName
+        };
+        if (RESULT_EMAIL_BCC) fallbackOptions.bcc = RESULT_EMAIL_BCC;
+        if (REPLY_TO) fallbackOptions.replyTo = REPLY_TO;
+        MailApp.sendEmail(email, subject, plainBody, fallbackOptions);
+      }
+    } catch (mailErr) {
+      // Unknown outcome: MailApp may have handed the message over before it
+      // threw. No plain-text retry, and this sendId never sends again.
+      Logger.log('doPost: MailApp threw; delivery_unconfirmed, the sendId will not send again: ' + mailErr.toString());
+      try {
+        _setSendState(ledger, ledgerRow, SEND_STATE_UNCONFIRMED, pendingLead);
+      } catch (markErr) {
+        Logger.log('doPost: ledger not marked unconfirmed (stays sending): ' + markErr.toString());
+      }
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'delivery_unconfirmed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Sent. Recorded at once - cache, then ledger - before the lead row. A
+    // failure here is logged, not surfaced: the email has gone, and the
+    // ledger's 'sending' marker already blocks any resend.
+    try {
+      sendCache.put(dedupeKey, SEND_STATE_SENT, SEND_DEDUPE_TTL_SECONDS);
     } catch (cacheErr) {
-      Logger.log('doPost: dedupe record not written: ' + cacheErr.toString());
+      Logger.log('doPost: dedupe cache not written (the ledger still blocks a resend): ' + cacheErr.toString());
+    }
+    try {
+      _setSendState(ledger, ledgerRow, SEND_STATE_SENT, pendingLead);
+    } catch (sentErr) {
+      Logger.log('doPost: ledger not marked sent (stays sending; never resent): ' + sentErr.toString());
     }
 
-    // The lead row, now that the email has gone. A write failure is logged,
-    // not surfaced, for the same reason: reporting failure would invite a
-    // retry that mails the customer twice. The BCC copy (when configured)
-    // still carries the lead.
+    // The lead row, now that the email has gone. A write failure is logged
+    // and the lead is KEPT in the ledger ('row_pending') for
+    // recoverPendingLeads(), never lost; the answer stays success (the email
+    // went, and the ledger refuses any resend anyway).
     try {
       sheet.appendRow(leadRow);
+      try {
+        _setSendState(ledger, ledgerRow, SEND_STATE_COMPLETE, '');
+      } catch (doneErr) {
+        Logger.log('doPost: ledger not marked complete (the lead row was written): ' + doneErr.toString());
+      }
     } catch (rowErr) {
-      Logger.log('doPost: lead row not written (email was sent): ' + rowErr.toString());
+      Logger.log('doPost: lead row not written (email was sent; kept as row_pending): ' + rowErr.toString());
+      try {
+        _setSendState(ledger, ledgerRow, SEND_STATE_ROW_PENDING, pendingLead);
+      } catch (pendErr) {
+        Logger.log('doPost: ledger not marked row_pending: ' + pendErr.toString());
+      }
     }
 
     return ContentService

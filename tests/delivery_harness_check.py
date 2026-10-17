@@ -52,14 +52,19 @@ One operable application (contract 2026-10-15, sections 3-5) adds:
     transport failure (HTTP 500, non-JSON body) is retried exactly once with
     the SAME sendId, a server refusal never; `--respond flaky` (first POST of
     each sendId fails) yields two POSTs with one sendId and a success; the
-    visible retry after a persistent failure reuses the sendId;
+    visible retry after a persistent failure reuses the sendId, even after a
+    language switch and a re-opened take-home screen; `--respond
+    lost_response` (sent, answer lost) ends as a duplicate shown as success;
+    `delivery_unconfirmed` shows its own check-your-inbox copy, never retried;
   * the purchase summary: `quote` is in the closed key set and is null in the
     shipped configuration (pricing is dark);
   * Code.gs fixtures through the real doPost (with LockService/CacheService
     stubs): missing/malformed sendId and non-object bodies -> invalid_request
     with nothing written; duplicate sendId -> {success:true, duplicate:true}
-    with no row and no email; the lock taken and released on every path; a
-    failed or refused send is not recorded (retryable); hand-built EN and ES
+    with no row and no email, from the durable ledger even after the cache
+    evicted; the lock taken and released on every path; a refused send is not
+    recorded (retryable); a MailApp exception is delivery_unconfirmed and
+    never resent (one MailApp call, no plain-text resend); hand-built EN and ES
     v:1 summaries render every figure VERBATIM in both MIME parts (including
     the plain-text fallback), deliberately inconsistent figures prove there
     is no server arithmetic, hostile text is escaped (HTML) or bracket-
@@ -158,7 +163,8 @@ ACCESSORY_REQUIRED = {"name", "category", "quantity", "imageUrl"}
 ACCESSORY_ALLOWED = ACCESSORY_REQUIRED | {"id", "reason"}
 PAYMENT_POSITION = {"payPref", "payExplored", "payOpen", "interest", "monthly", "apr"}
 
-# Copy the page owns (inline in index.html; not dictionary keys).
+# Copy the page owns (inline in index.html; not dictionary keys), plus the
+# dictionary's delivery_unconfirmed line (added below from data/dict-*.json).
 COPY = {
     "en": {
         "saved": "✓ Saved", "sent": "✓ Sent!",
@@ -179,6 +185,9 @@ COPY = {
         "note": "Modo de vista previa: la entrega de correo en vivo aún no está conectada.",
     },
 }
+
+for _lang in ("en", "es"):
+    COPY[_lang]["unconfirmed"] = load(f"data/dict-{_lang}.json")["email.delivery_unconfirmed"]
 
 # ---- the shipped state ----------------------------------------------------------
 print("Shipped state:")
@@ -303,6 +312,7 @@ EXPECT = {
     "invalid_email": (200, {"success": False, "error": "invalid_email"}),
     "canspam_not_configured": (200, {"success": False, "error": "canspam_not_configured"}),
     "send_failed": (200, {"success": False, "error": "send_failed"}),
+    "delivery_unconfirmed": (200, {"success": False, "error": "delivery_unconfirmed"}),
     "http_500": (500, {"success": False, "error": "send_failed"}),
 }
 for mode, (status, doc) in EXPECT.items():
@@ -333,6 +343,19 @@ try:
     st, _, body = get(hm.gas_url, method="POST", data=b'{"email":"x@y.z"}')
     check("stub --respond flaky: a missing sendId is invalid_request (never a 500 to retry)",
           (st, json.loads(body)) == (200, {"success": False, "error": "invalid_request"}))
+finally:
+    hm.stop()
+hm = srv.DeliveryHarness(respond="lost_response").start()
+try:
+    seq = []
+    for sid in ("lostRespSendId-00000000001", "lostRespSendId-00000000001", "lostRespSendId-00000000002"):
+        st, _, body = get(hm.gas_url, method="POST", data=json.dumps({"email": "x@y.z", "sendId": sid}).encode())
+        seq.append((st, json.loads(body)))
+    check("stub --respond lost_response: the first POST of a sendId is sent but answered HTTP 500; its retry is a duplicate",
+          seq == [(500, {"success": False, "error": "send_failed"}), (200, {"success": True, "duplicate": True}),
+                  (500, {"success": False, "error": "send_failed"})], str(seq))
+    check("stub --respond lost_response: recorded outcomes sent_response_lost, duplicate, sent_response_lost",
+          [r.get("outcome") for r in hm.recorder.snapshot()] == ["sent_response_lost", "duplicate", "sent_response_lost"])
 finally:
     hm.stop()
 hm = srv.DeliveryHarness(respond="echo").start()
@@ -448,8 +471,27 @@ async (ARGS) => {
     // same content, so the same sendId.
     out.firstError = err.textContent;
     err.textContent = '';
+    if (ARGS.reopenBeforeRetry) {
+      await switchLanguage(ARGS.lang === 'es' ? 'en' : 'es');
+      await wait(150);
+      window.showSavedPicks();
+      await wait(50);
+      window.showEmailCapture();
+      await wait(50);
+      document.getElementById('emailNameInput').value = ARGS.name + ' Jr';
+      document.getElementById('emailInput').value = ARGS.email;
+      document.getElementById('emailPhoneInput').value = ARGS.phone;
+    }
     window.sendResults();
     await settle();
+    if (ARGS.reopenBeforeRetry) {
+      const kept = emailSendState.sendId;
+      err.textContent = '';
+      document.getElementById('emailInput').value = 'other.' + ARGS.email;
+      window.sendResults();
+      out.otherAddressNewId = typeof emailSendState.sendId === 'string' && emailSendState.sendId !== kept;
+      await settle();
+    }
   }
   out.after = { sendBtn: txt('emailSendBtn'), sent: btn.classList.contains('sent'), error: err.textContent,
                 confirmVisible: document.getElementById('emailConfirmation').classList.contains('visible'),
@@ -640,6 +682,8 @@ def rendered():
             ("canspam_not_configured", "en", "canspam_not_configured", "declined"),
             ("invalid_email", "es", "invalid_email", "declined"),
             ("send_failed", "en", "send_failed", "declined"),
+            ("delivery_unconfirmed", "en", "delivery_unconfirmed", "unconfirmed"),
+            ("delivery_unconfirmed", "es", "delivery_unconfirmed", "unconfirmed"),
             ("invalid_request", "es", "invalid_request", "declined"),
             ("echo", "en", "unclassified", "declined"),
             ("http_500", "en", "http_500", "network"),
@@ -691,6 +735,39 @@ def rendered():
             check(f"{tag}: the page reports success (Sent, live confirmation, no error)",
                   r["after"]["sent"] and r["after"]["confirmVisible"] and not r["after"]["error"]
                   and r["after"]["subtitle"] == COPY["en"]["live_sub"], repr(r["after"]))
+        finally:
+            h_live.stop()
+        # The send went out but its answer was lost (HTTP 500 after the send):
+        # the automatic retry carries the same sendId, the server answers
+        # duplicate, and the page reports success - one email.
+        h_live = srv.DeliveryHarness(respond="lost_response").start()
+        try:
+            r = walk(browser, h_live.app_port, "es", TYPED)
+            rec = h_live.recorder.snapshot()
+            ids = sent_ids(rec)
+            tag = "live es, sent but the answer was lost"
+            common(tag, r, "es", TYPED)
+            check(f"{tag}: two POSTs with the SAME sendId; the stub recorded sent_response_lost then duplicate",
+                  len(ids) == 2 and ids[0] == ids[1] and [x.get("outcome") for x in rec] == ["sent_response_lost", "duplicate"],
+                  str([x.get("outcome") for x in rec]))
+            check(f"{tag}: the duplicate answer renders as success (Sent, live confirmation, no error)",
+                  r["after"]["sent"] and r["after"]["confirmVisible"] and not r["after"]["error"], repr(r["after"]))
+        finally:
+            h_live.stop()
+        # After a persistent failure the customer switches language, leaves
+        # and re-opens the take-home screen, retypes and taps send: still the
+        # SAME sendId (the first attempt may have gone out).
+        h_live = srv.DeliveryHarness(respond="http_500").start()
+        try:
+            r = walk(browser, h_live.app_port, "en", TYPED, retryAfterError=True, reopenBeforeRetry=True)
+            ids = sent_ids(h_live.recorder.snapshot())
+            tag = "live en, HTTP 500, language switch + re-opened screen, then retry"
+            check(f"{tag}: four POSTs before the address changes, every one the SAME sendId",
+                  len(ids) == 6 and len(set(ids[:4])) == 1 and isinstance(ids[0], str) and SEND_ID_RE.match(ids[0]) is not None,
+                  str(ids))
+            check(f"{tag}: a different address afterwards gets a NEW sendId (its own two POSTs)",
+                  r.get("otherAddressNewId") is True and len(ids) == 6 and ids[4] == ids[5] and ids[4] != ids[0],
+                  repr(r.get("otherAddressNewId")))
         finally:
             h_live.stop()
         # Persistent transport failure, then the visible retry: the retry
@@ -746,16 +823,28 @@ import { readFileSync } from "node:fs";
 const [repo, scenariosPath] = process.argv.slice(2);
 const gs = readFileSync(repo + "/Code.gs", "utf8");
 const scenarios = JSON.parse(readFileSync(scenariosPath, "utf8"));
-function build(gmailFailures) {
-  const log = [], rows = [], sent = [], lock = { waits: 0, releases: 0, held: 0 };
+function build(gmailFailures, evict) {
+  const log = [], rows = [], sent = [], calls = [], ledger = [], lock = { waits: 0, releases: 0, held: 0 };
   let failuresLeft = gmailFailures || 0;
   const cache = new Map();
   const Logger = { log: (s) => log.push(String(s)) };
   const ContentService = { MimeType: { JSON: "json" },
     createTextOutput: (s) => ({ setMimeType: () => ({ getContent: () => s }), getContent: () => s }) };
-  const SpreadsheetApp = { getActiveSpreadsheet: () => ({
-    getSheetByName: (n) => (n === "Leads" ? { appendRow: (r) => rows.push(r) } : null) }) };
-  const MailApp = { sendEmail: (to, subject, body, opts) => {
+  // "Leads" exists (no header); the hidden send ledger is created by Code.gs.
+  const tabFor = (n) => (n === "Leads" ? rows : ledger);
+  const sheet = (n) => ({
+    appendRow: (r) => tabFor(n).push(r.slice()), setFrozenRows: () => {}, hideSheet: () => {},
+    getName: () => n, getLastRow: () => tabFor(n).length,
+    getRange: (r, c, nr = 1, nc = 1) => ({
+      getValues: () => tabFor(n).slice(r - 1, r - 1 + nr).map((row) => row.slice(c - 1, c - 1 + nc)),
+      setValues: (v) => v.forEach((vals, i) => vals.forEach((x, j) => { tabFor(n)[r - 1 + i][c - 1 + j] = x; })) }) });
+  let ledgerMade = false;
+  const SpreadsheetApp = { flush: () => {}, getActiveSpreadsheet: () => ({
+    getSheetByName: (n) => (n === "Leads" || (n === "DreamFinder Sends" && ledgerMade) ? sheet(n) : null),
+    insertSheet: (n) => { ledgerMade = true; return sheet(n); } }) };
+  // Every MailApp call is counted; a forced failure throws (outcome unknown).
+  const MailApp = { getRemainingDailyQuota: () => 97, sendEmail: (to, subject, body, opts) => {
+    calls.push(to);
     if (failuresLeft > 0) { failuresLeft -= 1; throw new Error("forced MailApp failure"); }
     sent.push({ to, subject, body, opts: opts || {} }); } };
   const props = {};
@@ -765,27 +854,30 @@ function build(gmailFailures) {
     waitLock: (ms) => { lock.waits += 1; lock.held += 1; lock.lastWait = ms; },
     releaseLock: () => { lock.releases += 1; lock.held -= 1; } }) };
   const CacheService = { getScriptCache: () => ({
-    get: (k) => (cache.has(k) ? cache.get(k).v : null),
+    get: (k) => (evict ? null : (cache.has(k) ? cache.get(k).v : null)),
     put: (k, v, ttl) => { cache.set(k, { v: String(v), ttl }); } }) };
   const api = new Function("Logger", "ContentService", "SpreadsheetApp", "MailApp", "LockService", "CacheService",
     "PropertiesService", gs + `
-    ;return { doPost: function(e) { return doPost(e); } };`)(
+    ;return { doPost: function(e) { return doPost(e); },
+      breakHtmlBuilder: function() { buildSimpleHtml = function() { throw new Error('forced HTML failure'); }; } };`)(
     Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService, PropertiesService);
   api.approveCanSpam = () => Object.assign(props, { UNSUBSCRIBE_URL: "https://example.test/unsubscribe",
     POSTAL_ADDRESS: "1 Test St, Test TX 78501", PRIVACY_CONTACT: "privacy@example.test" });
-  return { api, log, rows, sent, lock, cache, setFailures: (n) => { failuresLeft = n; } };
+  return { api, log, rows, sent, calls, ledger, lock, cache, setFailures: (n) => { failuresLeft = n; } };
 }
 const out = {};
 for (const sc of scenarios) {
-  const g = build(0);
+  const g = build(0, sc.evict);
   if (sc.approve) g.api.approveCanSpam();
+  if (sc.breakHtml) g.api.breakHtmlBuilder();
   const responses = [];
   for (const step of sc.posts) {
     g.setFailures(step.gmailFailures || 0);
     const contents = typeof step.raw === "string" ? step.raw : JSON.stringify(step.body);
     responses.push(JSON.parse(g.api.doPost({ postData: { contents } }).getContent()));
   }
-  out[sc.name] = { responses, rows: g.rows, log: g.log, lock: g.lock,
+  out[sc.name] = { responses, rows: g.rows, log: g.log, lock: g.lock, calls: g.calls.length,
+    ledger: g.ledger.map((r) => [r[0], r[1]]),
     cache: [...g.cache.entries()].map(([k, v]) => ({ k, ttl: v.ttl })),
     sent: g.sent.map((s) => ({ to: s.to, subject: s.subject, body: s.body, html: s.opts.htmlBody || "",
       hasHtml: "htmlBody" in s.opts, bcc: s.opts.bcc || "" })) };
@@ -829,6 +921,7 @@ def replay(scenarios):
 SENT_OK = {"success": True}
 DUPLICATE = {"success": True, "duplicate": True}
 INVALID_REQUEST = {"success": False, "error": "invalid_request"}
+UNCONFIRMED = {"success": False, "error": "delivery_unconfirmed"}
 CANSPAM = {"success": False, "error": "canspam_not_configured"}
 
 # ---- (a) the recorded payload (rendered pass) through doPost ----------------------
@@ -897,15 +990,15 @@ def base_payload(**over):
 # minor-unit numbers disagree with the text) so a server that recomputed
 # anything would be caught: every figure must appear verbatim.
 QUOTE_EN = {
-    "v": 1, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
+    "v": 2, "complete": True, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
     "lines": [
-        {"name": "Fixture Hybrid Plush", "detail": "Queen mattress", "quantity": 1, "listText": "$1,899.00",
+        {"name": "Fixture Hybrid Plush", "detail": "Queen mattress", "quantity": 1, "priced": True, "listText": "$1,899.00",
          "discounts": [{"label": "Fixture 10% off mattresses", "amountText": "−$189.90"},
                        {"label": "Fixture pay-in-full 5%", "amountText": "−$85.46"}],
          "netText": "$1,623.64"},
-        {"name": "Fixture Cloud Pillow", "detail": "Standard", "quantity": 2, "listText": "$198.00",
+        {"name": "Fixture Cloud Pillow", "detail": "Standard", "quantity": 2, "priced": True, "listText": "$198.00",
          "discounts": [{"label": "Fixture $20 off each pillow", "amountText": "−$40.00"}], "netText": "$158.00"},
-        {"name": "Fixture <b>Bold</b> & \"Quoted\" Protector", "detail": "<script>alert(1)</script>", "quantity": 1,
+        {"name": "Fixture <b>Bold</b> & \"Quoted\" Protector", "detail": "<script>alert(1)</script>", "quantity": 1, "priced": True,
          "listText": "$89.99", "discounts": [], "netText": "$89.99"},
     ],
     "listSubtotalText": "$2,186.99", "discountText": "−$315.36", "merchandiseText": "$1,871.63",
@@ -939,6 +1032,22 @@ QUOTE_FULL["payment"] = {"kind": "full", "totalText": "$1,871.63"}
 QUOTE_QUOTE_ONLY = json.loads(json.dumps(QUOTE_EN))
 QUOTE_QUOTE_ONLY["payment"] = {"kind": "quote-only", "planLabel": "Fixture lease-to-own option",
                                "note": "Terms are quoted in store by the provider."}
+# An INCOMPLETE purchase (v2, complete:false; owner direction 2026-10-16): the
+# priced lines with their figures, the unpriced line marked by its status
+# text, the note - and NO subtotal, savings total, financed amount or payment.
+QUOTE_PARTIAL = {
+    "v": 2, "complete": False, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
+    "lines": [
+        dict(QUOTE_EN["lines"][0]),
+        {"name": "Fixture Unpriced Base", "detail": "Queen", "quantity": 1, "priced": False,
+         "statusText": "Fixture price unavailable"},
+    ],
+    "incompleteText": "Fixture: no total yet; confirmed in store.",
+    "exclusionsText": "Before sales tax, delivery and setup",
+    "offerTerms": ["Fixture terms A: valid on qualifying mattresses through Nov 15."],
+    "provenance": "Prices verified Oct 3, 2026 · example.test",
+    "computedAt": "2026-10-15T12:00:00.000Z", "fingerprint": "fx-fingerprint-2",
+}
 
 
 def figures(q):
@@ -967,7 +1076,19 @@ def html_escape(s):
 
 if node:
     bad_quotes = {
-        "v2": dict(QUOTE_EN, v=2),
+        "v1": dict(QUOTE_EN, v=1),
+        "complete-undeclared": {k: v for k, v in QUOTE_EN.items() if k != "complete"},
+        "line-priced-undeclared": dict(QUOTE_EN, lines=[{k: v for k, v in QUOTE_EN["lines"][0].items() if k != "priced"}]),
+        "complete-with-unpriced-line": dict(QUOTE_EN, lines=QUOTE_EN["lines"] + [QUOTE_PARTIAL["lines"][1]]),
+        "partial-with-subtotal": dict(QUOTE_PARTIAL, merchandiseText="$1,623.64"),
+        "partial-with-payment": dict(QUOTE_PARTIAL, payment={"kind": "full", "totalText": "$1,623.64"}),
+        "partial-with-savings": dict(QUOTE_PARTIAL, discountText=""),
+        "partial-unpriced-line-with-figure": dict(QUOTE_PARTIAL, lines=[QUOTE_PARTIAL["lines"][0],
+                                                  dict(QUOTE_PARTIAL["lines"][1], netText="$1.00")]),
+        "partial-without-unpriced-line": dict(QUOTE_PARTIAL, lines=[QUOTE_PARTIAL["lines"][0]]),
+        "partial-without-note": dict(QUOTE_PARTIAL, incompleteText=""),
+        "partial-unpriced-without-status": dict(QUOTE_PARTIAL, lines=[QUOTE_PARTIAL["lines"][0],
+                                                dict(QUOTE_PARTIAL["lines"][1], statusText="")]),
         "eur": dict(QUOTE_EN, currency="EUR"),
         "no-lines": dict(QUOTE_EN, lines=[]),
         "21-lines": dict(QUOTE_EN, lines=[QUOTE_EN["lines"][1]] * 21),
@@ -991,15 +1112,18 @@ if node:
         {"name": "dedupe", "approve": True, "posts": [{"body": base_payload()}, {"body": base_payload()},
                                                        {"body": base_payload(sendId="fixtureSendId-0000000002")}]},
         {"name": "shipped-refusal-not-recorded", "approve": False, "posts": [{"body": base_payload()}]},
-        {"name": "failed-send-retryable", "approve": True, "posts": [{"body": base_payload(), "gmailFailures": 2},
-                                                                      {"body": base_payload()}, {"body": base_payload()}]},
+        {"name": "mail-throw-never-resent", "approve": True, "posts": [{"body": base_payload(), "gmailFailures": 2},
+                                                                        {"body": base_payload()}, {"body": base_payload()}]},
+        {"name": "lost-response-after-eviction", "approve": True, "evict": True, "posts": [
+            {"body": base_payload()}, {"body": base_payload()}]},
         {"name": "invalid-email-not-recorded", "approve": True, "posts": [
             {"body": base_payload(email="nope")}, {"body": base_payload()}]},
         {"name": "quote-en", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_EN)}]},
         {"name": "quote-es", "approve": True, "posts": [{"body": base_payload(lang="es", quote=QUOTE_ES)}]},
-        {"name": "quote-en-fallback", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_EN), "gmailFailures": 1}]},
+        {"name": "quote-en-fallback", "approve": True, "breakHtml": True, "posts": [{"body": base_payload(quote=QUOTE_EN)}]},
         {"name": "quote-full", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_FULL)}]},
         {"name": "quote-only", "approve": True, "posts": [{"body": base_payload(lang="es", quote=QUOTE_QUOTE_ONLY)}]},
+        {"name": "quote-partial", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_PARTIAL)}]},
         {"name": "quote-huge", "approve": True, "posts": [{"body": base_payload(quote=dict(
             QUOTE_EN, lines=[dict(QUOTE_EN["lines"][1], name=huge)], offerTerms=[huge]))}]},
     ] + [{"name": "bad-" + k, "approve": True, "posts": [{"body": base_payload(quote=v)}]} for k, v in bad_quotes.items()]
@@ -1032,13 +1156,16 @@ if node:
         r = out["shipped-refusal-not-recorded"]
         check("the SHIPPED CAN-SPAM refusal still holds with a valid sendId: no row, no email, nothing cached",
               r["responses"] == [CANSPAM] and not r["rows"] and not r["sent"] and not r["cache"])
-        r = out["failed-send-retryable"]
-        check("a send that failed (both MailApp attempts threw) is send_failed and NOT recorded: the same sendId then sends, once",
-              r["responses"] == [{"success": False, "error": "send_failed"}, SENT_OK, DUPLICATE]
-              and len(r["sent"]) == 1 and r["lock"]["held"] == 0, str(r["responses"]))
-        check("the failed send wrote NO lead row: the retry leaves exactly one row, its last cell the sendId",
-              len(r["rows"]) == 1 and len(r["rows"][0]) == 10 and r["rows"][0][-1] == base_payload()["sendId"],
-              str([len(x) for x in r["rows"]]))
+        r = out["mail-throw-never-resent"]
+        check("a MailApp exception is an UNKNOWN outcome: delivery_unconfirmed, and the same sendId is never sent again (ONE MailApp call for three POSTs, no plain-text resend)",
+              r["responses"] == [UNCONFIRMED] * 3 and r["calls"] == 1 and not r["sent"] and r["lock"]["held"] == 0,
+              str(r["responses"]))
+        check("...no lead row; the hidden ledger records the sendId as 'unconfirmed'",
+              not r["rows"] and r["ledger"][1:] == [["id:" + base_payload()["sendId"], "unconfirmed"]], str(r["ledger"]))
+        r = out["lost-response-after-eviction"]
+        check("a lost response retried after the cache evicted: the durable ledger answers duplicate (ONE email, ONE row)",
+              r["responses"] == [SENT_OK, DUPLICATE] and r["calls"] == 1 and len(r["rows"]) == 1
+              and r["ledger"][1:] == [["id:" + base_payload()["sendId"], "complete"]], str(r["responses"]))
         r = out["invalid-email-not-recorded"]
         check("an invalid_email refusal is not recorded: the corrected request with the same sendId sends",
               r["responses"] == [{"success": False, "error": "invalid_email"}, SENT_OK] and len(r["sent"]) == 1)
@@ -1087,7 +1214,7 @@ if node:
                       "<script>" not in plain and "<img" not in plain and "<b>" not in plain
                       and "Fixture bBold/b & \"Quoted\" Protector" in plain and "scriptalert(1)/script" in plain)
         r = out["quote-en-fallback"]
-        check("quote-en, HTML send failed: the plain-text fallback still carries the whole quote",
+        check("quote-en, HTML build failed (before any delivery): the plain-text fallback still carries the whole quote",
               r["responses"] == [SENT_OK] and len(r["sent"]) == 1 and not r["sent"][0]["hasHtml"]
               and all(v in r["sent"][0]["body"] for v in safe_strings(QUOTE_EN)))
         r = out["quote-full"]
@@ -1100,6 +1227,19 @@ if node:
               r["responses"] == [SENT_OK] and all("Fixture lease-to-own option" in x and "Terms are quoted in store by the provider." in x
                                                   for x in (r["sent"][0]["html"], r["sent"][0]["body"]))
               and "Pago mensual" not in r["sent"][0]["html"] and "Monto financiado" not in r["sent"][0]["body"])
+        r = out["quote-partial"]
+        if check("incomplete quote (complete:false): the send succeeds with ONE email", r["responses"] == [SENT_OK]
+                 and len(r["sent"]) == 1, str(r["responses"])):
+            ph, pp = r["sent"][0]["html"], r["sent"][0]["body"]
+            want = ["Your quote", "Fixture Hybrid Plush", "$1,899.00", "−$189.90", "$1,623.64", "Fixture Unpriced Base",
+                    "Fixture price unavailable", "Fixture: no total yet; confirmed in store.",
+                    "Before sales tax, delivery and setup", "Fixture terms A: valid on qualifying mattresses through Nov 15."]
+            check("incomplete quote: the priced line's list/discount/net, the unpriced line's status and the note render in BOTH parts",
+                  all(v in ph and v in pp for v in want), str([v for v in want if v not in ph or v not in pp]))
+            banned = ["Merchandise subtotal", "List subtotal", "Pay in full", "Monthly payment", "Amount financed",
+                      "Total paid", "Interest"]
+            check("incomplete quote: NO subtotal, savings total, payment or plan row in either part",
+                  all(b not in ph and b not in pp for b in banned), str([b for b in banned if b in ph or b in pp]))
         r = out["quote-huge"]
         runs = lambda text: sorted(len(x) for x in re.findall("N{50,}", text))
         check("length caps: a 5000-character line name renders as exactly 200 characters, an offer term as 600 (both parts)",

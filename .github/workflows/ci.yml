@@ -739,6 +739,13 @@ jobs:
       - name: delivery harness (send-nothing live path, rendered)
         run: python tests/delivery_harness_check.py
 
+      # The owner-run controlled real-delivery probe (tools/gas_delivery_probe.py),
+      # checked OFFLINE: its refusals, its payload's key set, its plan against an
+      # in-memory transport and its expectations against the real doPost. No
+      # network; the probe itself refuses to send under CI.
+      - name: gas delivery probe (offline)
+        run: python tests/gas_delivery_probe_check.py
+
       # The sweep's own manifest: every entry's target must have a pristine
       # source, or the sweep would throw a TypeError mid-run instead of
       # reporting (entry 756, 2026-09-25). The sweep validates this before its

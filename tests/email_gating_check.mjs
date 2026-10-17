@@ -799,12 +799,17 @@ check("sendId comes from the take-home send state (crypto-made, reused for retri
       if (!s || typeof s !== 'object') return false; return s[name] === true; }
     ${gateSrc}
     return emailQuoteGate;`)({ pricing })(summary);
-  check("shipped config: quote is null even for a complete v1 summary",
-    shippedCfg.pricing.surfaces.email === false && run(shippedCfg.pricing, { v: 1, lines: [] }) === null);
+  check("shipped config: quote is null even for a complete (or incomplete) v2 summary",
+    shippedCfg.pricing.surfaces.email === false && run(shippedCfg.pricing, { v: 2, complete: true, lines: [] }) === null
+    && run(shippedCfg.pricing, { v: 2, complete: false, lines: [] }) === null);
   const on = Object.assign({}, shippedCfg.pricing, { surfaces: Object.assign({}, shippedCfg.pricing.surfaces, { email: true }) });
-  const sum = { v: 1, lines: [] };
-  check("surfaces.email true: the summary itself is sent (no second computation)", run(on, sum) === sum);
-  check("surfaces.email true but no complete v1 summary: null", run(on, null) === null && run(on, { v: 2 }) === null);
+  const sum = { v: 2, complete: true, lines: [] };
+  const part = { v: 2, complete: false, lines: [] };
+  check("surfaces.email true: the summary itself is sent (no second computation), complete or incomplete",
+    run(on, sum) === sum && run(on, part) === part);
+  check("surfaces.email true but no v2 summary, or an incomplete one carrying a total: null",
+    run(on, null) === null && run(on, { v: 1, lines: [] }) === null && run(on, { v: 2 }) === null
+    && run(on, Object.assign({ merchandiseText: "$1" }, part)) === null);
 }
 
 // ===========================================================================
