@@ -51,7 +51,14 @@ function buildGas() {
   const GmailApp = {
     sendEmail: (to, subject, body, opts) => sent.push({ to, subject, body, opts: opts || {} }),
   };
-  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", gs + `
+  // Script lock + script cache (sendId duplicate suppression). One fresh
+  // cache per harness instance, so each buildGas() is a fresh deployment.
+  const cache = new Map();
+  const LockService = { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) };
+  const CacheService = { getScriptCache: () => ({
+    get: (k) => (cache.has(k) ? cache.get(k) : null),
+    put: (k, v) => { cache.set(k, String(v)); } }) };
+  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", "LockService", "CacheService", gs + `
     ;return {
       doPost: function(e) { return doPost(e); },
       buildSimpleHtml: function(d, f, es, s) { return buildSimpleHtml(d, f, es, s); },
@@ -68,7 +75,7 @@ function buildGas() {
         var orig = buildSimpleHtml;
         buildSimpleHtml = function(d, f, es, s) { sink(d); return orig(d, f, es, s); };
       }
-    };`)(Logger, ContentService, SpreadsheetApp, GmailApp);
+    };`)(Logger, ContentService, SpreadsheetApp, GmailApp, LockService, CacheService);
   return { api, log, rows, sent,
     setSafeDataSink: (fn) => api.captureSafeData(fn) };
 }
@@ -109,8 +116,14 @@ function basePayload(over) {
     priorities: PRIORITIES_EN,
   }, over || {});
 }
+// Every request carries a fresh, well-formed sendId unless the payload names
+// one (Code.gs refuses a request without it: invalid_request).
+let sendSeq = 0;
+function nextSendId() { sendSeq += 1; return "harnessSendId" + String(sendSeq).padStart(12, "0"); }
 function post(api, payload) {
-  return JSON.parse(api.doPost({ postData: { contents: JSON.stringify(payload) } }).getContent());
+  const body = (payload && typeof payload === "object" && !("sendId" in payload))
+    ? Object.assign({ sendId: nextSendId() }, payload) : payload;
+  return JSON.parse(api.doPost({ postData: { contents: JSON.stringify(body) } }).getContent());
 }
 const inOrder = (hay, needles) => {
   let at = -1;
@@ -595,10 +608,10 @@ section("existing doPost behavior untouched");
   const res = post(g.api, basePayload({ priorities: PRIORITIES_EN }));
   check("no new error code was introduced (success carries none)",
     res.success === true && !("error" in res));
-  check("the error codes Code.gs emits are still the classified three",
+  check("the error codes Code.gs emits are the classified four (invalid_request joined with sendId, 2026-10-15)",
     JSON.stringify([...new Set((gs.match(/error: '([a-z_]+)'/g) || [])
       .map((m) => m.match(/'([a-z_]+)'/)[1]))].sort())
-    === JSON.stringify(["canspam_not_configured", "invalid_email", "send_failed"]));
+    === JSON.stringify(["canspam_not_configured", "invalid_email", "invalid_request", "send_failed"]));
 }
 
 // ===========================================================================

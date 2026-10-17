@@ -599,13 +599,20 @@ jobs:
       - name: payment facts (rendered, governed calculation, EN/ES)
         run: python tests/payment_facts_check.py
 
-      # Payment demo (owner demo-first direction 2026-10-05): the harness's
-      # `demo` state - isolation from every production input, the demo build
-      # still refused by the production validator, the device-mode operator
-      # area, and the rendered purchase studio (arithmetic, governed payments,
-      # down payment, monthly effects, incomplete purchases, EN/ES, wipe).
-      - name: payment demo (isolation, data, rendered studio, EN/ES)
-        run: python tests/payment_demo_check.py
+      # One operable application (owner direction 2026-10-15; the separate
+      # payment demo is retired): the harness's `purchase` state through the
+      # NORMAL app, driven only by governed config held in memory. The
+      # rendered purchase studio (itemised arithmetic, governed payments,
+      # voluntary and required down payments, monthly effects as the
+      # difference of two complete quotes, change sheets, split King, size
+      # re-pricing, EN/ES), exact offers (list / savings / your price,
+      # exclusive vs combinable, pay-in-full-only dropped under a plan,
+      # inert windows and minimums, brand exclusion, no double application),
+      # one figure on the Summary, Sleep Plan, Bring It Home, take-home and
+      # the recorded email quote (loopback gas stub), incomplete and stale
+      # data failing closed, the wipe, and nothing under shipped data.
+      - name: purchase flow (one application, offers, rendered studio, EN/ES)
+        run: python tests/purchase_flow_check.py
 
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
@@ -666,6 +673,15 @@ jobs:
       # totality; planted mutants rejected.
       - name: pricing resolver (2.1b dark resolver, five-axis contract)
         run: node tests/pricing_resolver_check.mjs
+
+      # Offers (exact promotions and discounts, integration contract section
+      # 2): the REAL offer functions extracted from index.html under an
+      # injected clock - fail-closed admission, eligibility and exclusions,
+      # the minimum on the pre-discount subtotal, pay-in-full-only, priority
+      # and exclusive-vs-combinable stacking, once per line, the net amount
+      # re-admitted, and the email quote gate.
+      - name: offers engine (exact promotions, fail-closed admission and stacking)
+        run: node tests/offers_engine_check.mjs
 
       # Phase 2.2a: the price presentation gate — the resolver's ONE consumer
       # — executed over the shipped configuration (every surface OFF for the
@@ -801,22 +817,25 @@ jobs:
                   promos == {"schemaVersion": 1, "activeScenario": None,
                              "allowedSourceHosts": ["lacks.com"],
                              "scenarios": {}},
-              # Phase 2.1 pre-activation lock, PERMANENT until Phase 2.2:
-              # the pricing framework ships dark. displayEnabled and every
-              # surface stay false, and no product or formula ships. Flipping
-              # displayEnabled is the 2.2 activation change (Blake + written
-              # business/legal approval recorded on the item); populating
-              # products/formulas is the governed path through
-              # validate_pricing and re-pins tests/pricing_contract_check.py
-              # in the same reviewed diff.
-              "pricing ships dark: displayEnabled false, every surface false, "
-              "no product or formula":
+              # The owner's ACTIVATION SWITCH (one operable application,
+              # 2026-10-15). validate_pricing now admits an activated block
+              # when every governance record is complete, so this lock - not
+              # the validator - is what keeps the SHIPPED block dark: enabled
+              # and displayEnabled false, every surface false (including the
+              # take-home `email` quote surface), and no product, formula or
+              # offer. Lifting any of it is Blake's explicit activation change
+              # (written business/legal approval recorded on the item) and
+              # re-pins tests/pricing_contract_check.py in the same diff.
+              "pricing ships dark: displayEnabled false, every surface false "
+              "(email included), no product, formula or offer":
                   pricing.get("displayEnabled") is False
                   and pricing.get("enabled") is False
                   and isinstance(pricing.get("surfaces"), dict)
                   and all(v is False for v in pricing["surfaces"].values())
+                  and (pricing.get("surfaces") or {}).get("email") is False
                   and pricing.get("products") == []
-                  and pricing.get("formulas") == [],
+                  and pricing.get("formulas") == []
+                  and pricing.get("offers") == [],
           }
           bad = [k for k, ok in checks.items() if not ok]
           for k, ok in checks.items():

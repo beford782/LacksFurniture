@@ -310,20 +310,36 @@ function liveFor(gasUrl, blocks) {
   return new Function("STORE_CONFIG", "getActivePromotionScenario", liveSrc + "\nreturn emailDeliveryLive();")(
     { gasUrl }, () => (blocks ? { disableEmailSubmission: true } : null));
 }
-// The send path's own gate, extracted verbatim and evaluated over the same matrix.
+// The send path's own gate, extracted verbatim and evaluated over the same
+// matrix. Since the one-application integration (2026-10-15) sendResults()
+// no longer restates the two conditions: its preview flag IS
+// !emailDeliveryLive(), and the gasUrl it posts to is blank whenever that
+// flag is set - so the two can never drift apart again.
 const sendGate = norm.match(/const isEmailPreview = ([^;]+);/);
+const sendUrl = norm.match(/const gasUrl = (isEmailPreview \? '' : [^;]+);/);
 function sendPreviewFor(gasUrl, blocks) {
-  return new Function("gasUrl", "scenarioBlocksEmail", `return (${sendGate[1]});`)(gasUrl, blocks);
+  return new Function("STORE_CONFIG", "getActivePromotionScenario",
+    liveSrc + `\nreturn (${sendGate[1]});`)({ gasUrl }, () => (blocks ? { disableEmailSubmission: true } : null));
+}
+function sendUrlFor(gasUrl, blocks) {
+  return new Function("STORE_CONFIG", "isEmailPreview", `return (${sendUrl[1].replace(/^isEmailPreview/, "isEmailPreview")});`)(
+    { gasUrl }, sendPreviewFor(gasUrl, blocks));
 }
 {
+  ok("sendResults()'s preview flag is exactly !emailDeliveryLive() (one gate, never a restated copy)",
+    !!sendGate && sendGate[1].trim() === "!emailDeliveryLive()");
+  ok("sendResults() no longer restates the scenario/gasUrl conditions itself",
+    !/scenarioBlocksEmail/.test(fnSrc("window.sendResults = function()") || "x scenarioBlocksEmail"));
   const matrix = [["", false], ["", true], ["https://script.google.com/macros/s/x/exec", false], ["https://script.google.com/macros/s/x/exec", true]];
-  const agree = matrix.every(([g, b]) => liveFor(g, b) === !sendPreviewFor(g, b));
-  ok("emailDeliveryLive() agrees with sendResults()'s own preview gate over the whole (gasUrl x scenario-block) matrix", !!sendGate && agree);
+  const agree = !!sendGate && matrix.every(([g, b]) => liveFor(g, b) === !sendPreviewFor(g, b));
+  ok("emailDeliveryLive() agrees with sendResults()'s own preview gate over the whole (gasUrl x scenario-block) matrix", agree);
   ok("blank gasUrl -> not live; live gasUrl -> live; a scenario that disables submission -> not live even with a gasUrl",
     liveFor("", false) === false && liveFor("https://x/exec", false) === true && liveFor("https://x/exec", true) === false);
+  ok("the URL sendResults() posts to is blank in every preview cell of the matrix, and the endpoint only when live",
+    !!sendUrl && matrix.every(([g, b]) => sendUrlFor(g, b) === (liveFor(g, b) ? g : "")));
 }
-ok("the POST to gasUrl is still gated on both conditions (the helper mirrors it, it does not replace it)",
-  /if \(gasUrl && !scenarioBlocksEmail\) \{/.test(norm));
+ok("the POST happens only on the live branch of that one gate",
+  /if \(!isEmailPreview\) \{/.test(norm) && !/if \(gasUrl && !scenarioBlocksEmail\) \{/.test(norm));
 
 // C4. The renderer, executed: preview text here, live text under a live endpoint, nothing on a missing variant.
 function renderDataUse({ gasUrl = "", blocks = false, dict = dictEn } = {}) {

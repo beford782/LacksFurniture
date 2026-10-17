@@ -1,5 +1,24 @@
 # DreamFinder rebuild roadmap — Lacks deployment
 
+## Direction change — 2026-10-15: one operable application
+
+Blake directed on 2026-10-15 that there is **no separate payment demo**.
+Pricing, payment calculation, exact promotions and discounts, and email
+delivery of the priced quote are integrated into the normal application,
+driven only by governed configuration. One version is maintained from now on.
+
+- This supersedes the bounded payment demo (PR #138, `5ec523a`,
+  `docs/payment-demo-2026-10-05.md`) and the "no further slice" wording below.
+- The integration branch is `claude/one-app-integration`. Its record, including
+  what was retired, the controls kept and the **exact inputs still required**,
+  is `docs/one-application-2026-10-15.md`.
+- Shipped data stays dark: the CI operating-state lock now also pins
+  `pricing.offers == []` and `surfaces.email == false`.
+- Activation, merge, deployment, customer email and showroom use still need
+  Blake's explicit decision.
+- Business, legal, lender and native-Spanish approvals are unresolved owner
+  inputs. They are not unfinished code.
+
 ## Current status — 2026-10-04 (reconciled with `main` `4637227`, PR #136)
 
 **Read this block first.** It reconciles the roadmap with `main` through
@@ -52,7 +71,9 @@ own authorization:
   and the final review turn up; no further slice is authorized, **except**
   the bounded payment demo Blake directed on 2026-10-05
   (`docs/payment-demo-2026-10-05.md`: illustrative, harness-only, every
-  production gate closed).
+  production gate closed). **Superseded 2026-10-15:** the demo is retired
+  and its behaviour is integrated into the normal application
+  (`docs/one-application-2026-10-15.md`).
 - **Pricing values** — governed real data for products, formulas and the
   accessory prices (#112 built the mechanism only).
 - **Second-computer pricing worktree — reconcile before any pricing

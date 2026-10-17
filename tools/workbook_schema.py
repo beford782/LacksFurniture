@@ -332,6 +332,8 @@ ACCESSORIES = Tab(
         col("Sub-Type", "subType", note="adjustable|foundation|low_profile|bunkie|blank"),
         col("SKU", "sku", note="Phase 2.2 price identity: the exact retailer SKU a governed price resolves for "
                                "-> JSON sku only when populated; blank = none (ships blank; governed data at the final gate)"),
+        col("SKUs by Size", "accessorySkus", note="per-size price identity for an accessory sold in each mattress size "
+                                                 "(queen:SKU|king:SKU) -> JSON accessorySkus only when populated; blank = none"),
         col("Price", "price", required=True, note="number"),
         col("Description", "description.en", required=True, note="-> description.en"),
         col("Description (ES)", "description.es", lang="es", note="-> description.es"),

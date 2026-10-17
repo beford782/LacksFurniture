@@ -201,15 +201,43 @@ async (ARGS) => {
 
 STATE_JS = r"""
 () => {
-  const box = document.getElementById('hf2SystemTotal');
-  const items = Array.from(document.querySelectorAll('#hf2SystemTotal .hf2-system-total__item')).map((li) => {
-    const size = li.querySelector('.hf2-system-total__item-size');
-    const name = li.querySelector('.hf2-system-total__item-name');
-    const amount = li.querySelector('.hf2-system-total__item-amount');
-    return { name: name ? name.textContent : null, size: size ? size.textContent : null,
-             amount: amount ? amount.textContent : null };
-  });
-  const total = document.querySelector('#hf2SystemTotal .hf2-system-total__amount');
+  // Since the one-application integration (2026-10-15) the purchase studio
+  // is the Summary's ONE itemised purchase whenever the handoff surface is
+  // admitted (the hf2 subtotal yields to it). Read the studio when it shows,
+  // the hf2 subtotal otherwise; both expose name, size, count and amount.
+  const studio = document.getElementById('purchaseStudio');
+  const useStudio = !!(studio && !studio.hidden && studio.querySelector('[data-ps="subtotal"]'));
+  const box = useStudio ? studio : document.getElementById('hf2SystemTotal');
+  let items, total, totalState;
+  if (useStudio) {
+    const hero = studio.querySelector('.ps-hero');
+    const heroName = studio.querySelector('.ps-hero__name');
+    const heroNet = studio.querySelector('[data-ps="mattress-price"] .ps-net');
+    items = [{ name: heroName ? heroName.textContent : null,
+               size: hero ? (hero.getAttribute('data-ps-size') || null) : null,
+               amount: heroNet ? heroNet.textContent : null }].concat(
+      Array.from(studio.querySelectorAll('.ps-row[data-ps-line]')).map((li) => {
+        const name = li.querySelector('.ps-row__name');
+        const qty = Number(li.getAttribute('data-ps-qty') || '1');
+        const net = li.querySelector('.ps-row__amount .ps-net');
+        return { name: name ? name.textContent + (qty > 1 ? ' \u00d7 ' + qty : '') : null,
+                 size: li.getAttribute('data-ps-size') || null,
+                 amount: net ? net.textContent : null };
+      }));
+    const sub = studio.querySelector('[data-ps="subtotal"]');
+    total = sub ? sub.querySelector('strong') : null;
+    totalState = sub ? (sub.classList.contains('is-incomplete') ? 'incomplete' : 'complete') : null;
+  } else {
+    items = Array.from(document.querySelectorAll('#hf2SystemTotal .hf2-system-total__item')).map((li) => {
+      const size = li.querySelector('.hf2-system-total__item-size');
+      const name = li.querySelector('.hf2-system-total__item-name');
+      const amount = li.querySelector('.hf2-system-total__item-amount');
+      return { name: name ? name.textContent : null, size: size ? size.textContent : null,
+               amount: amount ? amount.textContent : null };
+    });
+    total = document.querySelector('#hf2SystemTotal .hf2-system-total__amount');
+    totalState = box ? box.getAttribute('data-total-state') : null;
+  }
   const preview = document.getElementById('emailPreview');
   const rows = Array.from(document.querySelectorAll('#emailPreview .email-save-row')).map((row) => ({
     title: (row.querySelector('.email-save-title') || {}).textContent || '',
@@ -222,7 +250,7 @@ STATE_JS = r"""
   return {
     screen: (document.querySelector('.screen.active') || {}).id, lang: currentLang,
     cart: Object.fromEntries(Object.entries(window._accCart || {}).map(([id, e]) => [id, e.quantity])),
-    totalHidden: box ? box.hidden : null, totalState: box ? box.getAttribute('data-total-state') : null,
+    totalHidden: box ? box.hidden : null, totalState: totalState,
     totalHtml: box ? box.innerHTML : null, items, total: total ? total.textContent : null,
     previewHtml: preview ? preview.innerHTML : null, rows,
     bodyText: document.body ? document.body.innerText : '',

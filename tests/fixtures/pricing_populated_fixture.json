@@ -44,7 +44,8 @@
       "results": false,
       "handoff": false,
       "sleepPlan": false,
-      "compare": false
+      "compare": false,
+      "email": false
     },
     "presentation": {
       "status": "approved",
@@ -187,7 +188,8 @@
         "sourceUrl": "https://www.lacks.com/financing",
         "verifiedAt": "2026-08-26T10:00:00-05:00"
       }
-    ]
+    ],
+    "offers": []
   },
   "financing": {
     "enabled": true,

@@ -15,6 +15,33 @@ var MAX_EMAIL_ACCESSORIES = 20;
 // legitimate content, so the cap is a hard bound rather than a display choice.
 var MAX_EMAIL_PRIORITIES = 3;
 
+// \u2500\u2500 Send identity + duplicate suppression \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Every request carries a client-generated `sendId` (crypto.getRandomValues,
+// reused for the client's automatic retry of the same content). A request
+// without a well-formed one is refused `invalid_request` before anything is
+// written or sent. A sendId that already produced a successful send answers
+// {success:true, duplicate:true} with NO sheet row and NO email, so a retry
+// after a lost response can never mail the customer twice. The record lives
+// in the script cache (CacheService; best-effort, 6 h maximum lifetime) and
+// the check-then-send runs under the script lock (LockService) so two
+// concurrent deliveries of one sendId cannot both pass the check. Neither
+// service needs an OAuth scope beyond the Gmail + Sheets ones already granted.
+var SEND_ID_PATTERN = /^[A-Za-z0-9_-]{22,40}$/;
+var SEND_DEDUPE_PREFIX = 'df-sent:';
+var SEND_DEDUPE_TTL_SECONDS = 21600;   // CacheService maximum (6 hours)
+var SEND_LOCK_WAIT_MS = 10000;
+
+// \u2500\u2500 Purchase summary ("Your quote") ceilings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// The quote is rendered VERBATIM from the client's purchase summary (the same
+// formatted strings the kiosk screen shows). The server does no arithmetic on
+// it. A summary past these ceilings is refused WHOLE rather than shortened: a
+// truncated line list under totals that still count the hidden lines would
+// misstate the purchase.
+var MAX_QUOTE_LINES = 20;
+var MAX_QUOTE_OFFER_TERMS = 6;
+var MAX_QUOTE_LINE_DISCOUNTS = 6;
+var MAX_QUOTE_LINE_QUANTITY = 99;
+
 // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET. The active retailer (Lacks
 // Furniture for this deployment) must supply and approve every value below
@@ -98,17 +125,297 @@ function _safeArray(v) {
   return Array.isArray(v) ? v : [];
 }
 
+// Helper: a quote string. STRING-TYPED (a non-string is '', never
+// "[object Object]" or a coerced number), trimmed, bounded.
+function _quoteText(v, max) {
+  var t = typeof v === 'string' ? v.trim() : '';
+  return t ? _safeText(t, max) : '';
+}
+
+// The purchase summary ("Your quote"), projected onto a fresh closed literal.
+// Returns null - the section is then absent from BOTH MIME parts - unless the
+// record is a v:1 USD summary whose every line carries a name, a list figure
+// and a net figure and whose payment block is one of the three closed kinds
+// with its required text. ALL-OR-NOTHING, like the priorities block: a
+// malformed or oversized summary is never rendered partially. Numeric fields
+// the client carries for its own use (merchandiseMinor, discountMinor,
+// paymentMinor) are deliberately not projected: the email shows the screen's
+// formatted figures only, and nothing here computes one.
+function _safeQuote(q) {
+  if (!q || typeof q !== 'object' || Array.isArray(q) || q.v !== 1) return null;
+  if (q.currency !== 'USD') return null;
+  if (!Array.isArray(q.lines) || q.lines.length === 0 || q.lines.length > MAX_QUOTE_LINES) return null;
+  var rawTerms = q.offerTerms == null ? [] : q.offerTerms;
+  if (!Array.isArray(rawTerms) || rawTerms.length > MAX_QUOTE_OFFER_TERMS) return null;
+
+  var lines = [];
+  for (var i = 0; i < q.lines.length; i++) {
+    var l = q.lines[i];
+    if (!l || typeof l !== 'object' || Array.isArray(l)) return null;
+    var qty = l.quantity;
+    if (typeof qty !== 'number' || !isFinite(qty) || Math.floor(qty) !== qty
+        || qty < 1 || qty > MAX_QUOTE_LINE_QUANTITY) return null;
+    var rawDiscounts = l.discounts == null ? [] : l.discounts;
+    if (!Array.isArray(rawDiscounts) || rawDiscounts.length > MAX_QUOTE_LINE_DISCOUNTS) return null;
+    var discounts = [];
+    for (var d = 0; d < rawDiscounts.length; d++) {
+      var rd = rawDiscounts[d];
+      var dLabel = _quoteText(rd && rd.label, 200);
+      var dAmount = _quoteText(rd && rd.amountText, 60);
+      if (!dLabel || !dAmount) return null;
+      discounts.push({ label: dLabel, amountText: dAmount });
+    }
+    var line = {
+      name: _quoteText(l.name, 200),
+      detail: _quoteText(l.detail, 200),
+      quantity: qty,
+      listText: _quoteText(l.listText, 60),
+      discounts: discounts,
+      netText: _quoteText(l.netText, 60)
+    };
+    if (!line.name || !line.listText || !line.netText) return null;
+    lines.push(line);
+  }
+
+  var offerTerms = [];
+  for (var k = 0; k < rawTerms.length; k++) {
+    var term = _quoteText(rawTerms[k], 600);
+    if (!term) return null;
+    offerTerms.push(term);
+  }
+
+  var p = q.payment;
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+  var payment;
+  if (p.kind === 'full') {
+    payment = { kind: 'full', totalText: _quoteText(p.totalText, 60) };
+    if (!payment.totalText) return null;
+  } else if (p.kind === 'plan') {
+    payment = {
+      kind: 'plan',
+      planLabel: _quoteText(p.planLabel, 200),
+      aprText: _quoteText(p.aprText, 60),
+      termText: _quoteText(p.termText, 60),
+      downText: _quoteText(p.downText, 60),
+      financedText: _quoteText(p.financedText, 60),
+      paymentText: _quoteText(p.paymentText, 60),
+      totalPaidText: _quoteText(p.totalPaidText, 60),
+      interestText: _quoteText(p.interestText, 60),
+      disclosure: _quoteText(p.disclosure, 1000)
+    };
+    if (!payment.planLabel || !payment.paymentText || !payment.financedText) return null;
+  } else if (p.kind === 'quote-only') {
+    payment = { kind: 'quote-only', planLabel: _quoteText(p.planLabel, 200), note: _quoteText(p.note, 400) };
+    if (!payment.planLabel) return null;
+  } else {
+    return null;
+  }
+
+  var out = {
+    sizeLabel: _quoteText(q.sizeLabel, 60),
+    lines: lines,
+    listSubtotalText: _quoteText(q.listSubtotalText, 60),
+    discountText: _quoteText(q.discountText, 60),
+    merchandiseText: _quoteText(q.merchandiseText, 60),
+    exclusionsText: _quoteText(q.exclusionsText, 400),
+    offerTerms: offerTerms,
+    payment: payment,
+    provenance: _quoteText(q.provenance, 300)
+  };
+  if (!out.merchandiseText) return null;
+  return out;
+}
+
+// Localized labels for the quote section (both MIME parts read the same set).
+function _quoteLabels(isEs) {
+  return isEs ? {
+    heading: 'Tu cotizaci\u00f3n',
+    size: 'Tama\u00f1o',
+    qty: 'Cant.',
+    list: 'Precio de lista',
+    net: 'Tu precio',
+    listSubtotal: 'Subtotal de lista',
+    discounts: 'Descuentos',
+    merchandise: 'Subtotal de mercanc\u00eda',
+    offerTerms: 'T\u00e9rminos de la oferta',
+    payFull: 'Pago de contado',
+    total: 'Total',
+    plan: 'Plan',
+    apr: 'APR',
+    term: 'Plazo',
+    down: 'Pago inicial',
+    financed: 'Monto financiado',
+    payment: 'Pago mensual',
+    totalPaid: 'Total pagado',
+    charge: 'Inter\u00e9s'
+  } : {
+    heading: 'Your quote',
+    size: 'Size',
+    qty: 'Qty',
+    list: 'List price',
+    net: 'Your price',
+    listSubtotal: 'List subtotal',
+    discounts: 'Discounts',
+    merchandise: 'Merchandise subtotal',
+    offerTerms: 'Offer terms',
+    payFull: 'Pay in full',
+    total: 'Total',
+    plan: 'Plan',
+    apr: 'APR',
+    term: 'Term',
+    down: 'Down payment',
+    financed: 'Amount financed',
+    payment: 'Monthly payment',
+    totalPaid: 'Total paid',
+    charge: 'Interest'
+  };
+}
+
+// The quote's text/plain block. Angle brackets stripped like the priority
+// lines so hostile markup cannot arrive looking like markup.
+function buildQuotePlain(quote, isEs) {
+  if (!quote) return '';
+  var Q = _quoteLabels(isEs);
+  var s = function(v) { return String(v || '').replace(/[<>]/g, ''); };
+  var out = [Q.heading + (quote.sizeLabel ? ' (' + Q.size + ': ' + s(quote.sizeLabel) + ')' : '') + ':'];
+  quote.lines.forEach(function(l, i) {
+    out.push((i + 1) + '. ' + s(l.name) + (l.quantity > 1 ? ' x ' + l.quantity : '')
+      + (l.detail ? ' - ' + s(l.detail) : ''));
+    out.push('   ' + Q.list + ': ' + s(l.listText));
+    l.discounts.forEach(function(dc) { out.push('   ' + s(dc.label) + ': ' + s(dc.amountText)); });
+    out.push('   ' + Q.net + ': ' + s(l.netText));
+  });
+  if (quote.listSubtotalText) out.push(Q.listSubtotal + ': ' + s(quote.listSubtotalText));
+  if (quote.discountText) out.push(Q.discounts + ': ' + s(quote.discountText));
+  out.push(Q.merchandise + ': ' + s(quote.merchandiseText));
+  if (quote.exclusionsText) out.push(s(quote.exclusionsText));
+  var p = quote.payment;
+  if (p.kind === 'full') {
+    out.push(Q.payFull + ' - ' + Q.total + ': ' + s(p.totalText));
+  } else if (p.kind === 'plan') {
+    out.push(Q.plan + ': ' + s(p.planLabel));
+    [[Q.apr, p.aprText], [Q.term, p.termText], [Q.down, p.downText], [Q.financed, p.financedText],
+     [Q.payment, p.paymentText], [Q.totalPaid, p.totalPaidText], [Q.charge, p.interestText]]
+      .forEach(function(r) { if (r[1]) out.push('   ' + r[0] + ': ' + s(r[1])); });
+    if (p.disclosure) out.push(s(p.disclosure));
+  } else {
+    out.push(Q.plan + ': ' + s(p.planLabel));
+    if (p.note) out.push(s(p.note));
+  }
+  if (quote.offerTerms.length) {
+    out.push(Q.offerTerms + ':');
+    quote.offerTerms.forEach(function(tm) { out.push('- ' + s(tm)); });
+  }
+  if (quote.provenance) out.push(s(quote.provenance));
+  return out.join('\n');
+}
+
+// The quote's HTML section: one table row of the outer email table. Simple
+// nested tables with inline styles only (Outlook-safe; no flex, no grid, no
+// classes); every payload-derived value escaped at its interpolation; nothing
+// payload-sourced enters a style attribute. `c`, `sans`, `serif` are the
+// template's palette and font stacks.
+function buildQuoteHtml(quote, isEs, c, sans, serif) {
+  if (!quote) return '';
+  var Q = _quoteLabels(isEs);
+  var e = _escapeHtml;
+  var cell = 'font-family:' + sans + ';font-size:12px;color:' + c.text + ';line-height:1.45;';
+  var muted = 'font-family:' + sans + ';font-size:11px;color:' + c.textMuted + ';line-height:1.45;';
+  var fig = 'font-family:' + sans + ';font-size:12px;color:' + c.text + ';text-align:right;white-space:nowrap;';
+  function row(label, value, strong) {
+    return '<tr><td style="' + cell + 'padding:4px 0;' + (strong ? 'font-weight:700;' : '') + '">' + label + '</td>'
+      + '<td align="right" style="' + fig + 'padding:4px 0;' + (strong ? 'font-weight:700;' : '') + '">' + value + '</td></tr>';
+  }
+  var linesHtml = quote.lines.map(function(l) {
+    return '<tr><td colspan="2" style="padding:10px 0 2px;border-top:1px solid ' + c.border + ';">'
+      + '<div style="font-family:' + serif + ';font-size:15px;color:' + c.text + ';line-height:1.25;">' + e(l.name)
+      + (l.quantity > 1 ? ' <span style="white-space:nowrap;">&times; ' + l.quantity + '</span>' : '') + '</div>'
+      + (l.detail ? '<div style="' + muted + '">' + e(l.detail) + '</div>' : '')
+      + '</td></tr>'
+      + row(Q.list, e(l.listText))
+      + l.discounts.map(function(dc) { return row(e(dc.label), e(dc.amountText)); }).join('')
+      + row(Q.net, e(l.netText), true);
+  }).join('');
+  var totals = (quote.listSubtotalText ? row(Q.listSubtotal, e(quote.listSubtotalText)) : '')
+    + (quote.discountText ? row(Q.discounts, e(quote.discountText)) : '')
+    + row(Q.merchandise, e(quote.merchandiseText), true);
+  var p = quote.payment;
+  var payHtml;
+  if (p.kind === 'full') {
+    payHtml = row(Q.payFull + ' &mdash; ' + Q.total, e(p.totalText), true);
+  } else if (p.kind === 'plan') {
+    payHtml = row(Q.plan, e(p.planLabel), true)
+      + [[Q.apr, p.aprText], [Q.term, p.termText], [Q.down, p.downText], [Q.financed, p.financedText],
+         [Q.payment, p.paymentText], [Q.totalPaid, p.totalPaidText], [Q.charge, p.interestText]]
+        .filter(function(r) { return r[1]; })
+        .map(function(r) { return row(r[0], e(r[1])); }).join('')
+      + (p.disclosure ? '<tr><td colspan="2" style="' + muted + 'padding:6px 0 0;">' + e(p.disclosure) + '</td></tr>' : '');
+  } else {
+    payHtml = row(Q.plan, e(p.planLabel), true)
+      + (p.note ? '<tr><td colspan="2" style="' + muted + 'padding:4px 0 0;">' + e(p.note) + '</td></tr>' : '');
+  }
+  return '<tr><td style="padding:8px 32px 24px;">'
+    + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:10px;">'
+    + Q.heading + (quote.sizeLabel ? ' &middot; ' + e(quote.sizeLabel) : '') + '</div>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background:' + c.surface + ';border:1px solid ' + c.border + ';border-left:4px solid ' + c.red + ';border-radius:3px;">'
+    + '<tr><td style="padding:6px 18px 14px;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">'
+    + linesHtml
+    + '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
+    + totals
+    + (quote.exclusionsText ? '<tr><td colspan="2" style="' + muted + 'padding:2px 0 6px;">' + e(quote.exclusionsText) + '</td></tr>' : '')
+    + '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
+    + payHtml
+    + (quote.offerTerms.length
+        ? '<tr><td colspan="2" style="padding:10px 0 0;">'
+          + '<div style="' + muted + 'font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:10px;">' + Q.offerTerms + '</div>'
+          + quote.offerTerms.map(function(tm) { return '<div style="' + muted + 'margin-top:3px;">' + e(tm) + '</div>'; }).join('')
+          + '</td></tr>'
+        : '')
+    + (quote.provenance ? '<tr><td colspan="2" style="font-family:' + sans + ';font-size:10px;color:' + c.textSubtle + ';padding:8px 0 0;">' + e(quote.provenance) + '</td></tr>' : '')
+    + '</table>'
+    + '</td></tr></table>'
+    + '</td></tr>';
+}
+
+// Response contract (the client classifies exactly these):
+//   {success:true}                                  sent (row appended, email sent)
+//   {success:true, duplicate:true}                  this sendId already sent; nothing done
+//   {success:false, error:'invalid_request'}        body not an object, or sendId missing/malformed
+//   {success:false, error:'invalid_email'}          address fails the shape check
+//   {success:false, error:'canspam_not_configured'} CAN-SPAM sentinels still in place
+//   {success:false, error:'send_failed'}            anything else (detail in the GAS log only)
 function doPost(e) {
+  var sendLock = null;
   try {
     var data = JSON.parse(e.postData.contents);
 
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      Logger.log('doPost rejected: invalid_request (body is not an object)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'invalid_request' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // Shape-only summary; full PII (email/name/phone) shouldn't persist in GAS logs.
+    // The quote is logged by presence and line count only - never a figure.
     Logger.log('doPost received: name_len=' + (data.name ? String(data.name).length : 0)
       + ', email=' + (data.email ? 'set' : 'unset')
       + ', phone=' + (data.phone ? 'set' : 'unset')
       + ', matches=' + ((data.allMatches || []).length)
       + ', accessories=' + ((data.accessories || []).length)
-      + ', lang=' + (data.lang || ''));
+      + ', lang=' + (data.lang || '')
+      + ', sendId=' + (typeof data.sendId === 'string' && SEND_ID_PATTERN.test(data.sendId) ? 'set' : 'invalid')
+      + ', quote=' + (data.quote && typeof data.quote === 'object' ? 'present' : 'absent')
+      + ', quote_lines=' + (data.quote && Array.isArray(data.quote.lines) ? data.quote.lines.length : 0));
+
+    var sendId = typeof data.sendId === 'string' ? data.sendId : '';
+    if (!SEND_ID_PATTERN.test(sendId)) {
+      Logger.log('doPost rejected: invalid_request (sendId missing or malformed)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'invalid_request' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
     var lang = _normalizeLang(data.lang);
     var isEs = lang === 'es';
@@ -127,6 +434,20 @@ function doPost(e) {
       Logger.log('doPost rejected: canspam_not_configured (retailer approval required)');
       return ContentService
         .createTextOutput(JSON.stringify({ success: false, error: 'canspam_not_configured' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Duplicate suppression: under the script lock, a sendId that already
+    // produced a successful send is answered success-duplicate with no row and
+    // no email. The lock is held through the send and released in finally.
+    sendLock = LockService.getScriptLock();
+    sendLock.waitLock(SEND_LOCK_WAIT_MS);
+    var sendCache = CacheService.getScriptCache();
+    var dedupeKey = SEND_DEDUPE_PREFIX + sendId;
+    if (sendCache.get(dedupeKey)) {
+      Logger.log('doPost duplicate: sendId already sent; no row, no email');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, duplicate: true }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -323,7 +644,12 @@ function doPost(e) {
       // the promo header drops any "current offer" claim and the disclosure is
       // surfaced. Both empty for genuine current scenarios -> behavior unchanged.
       promoScenario: _safeText(data.promoScenario, 80),
-      promoDisclosure: _safeText(data.promoDisclosure, 400)
+      promoDisclosure: _safeText(data.promoDisclosure, 400),
+      // The purchase summary ("Your quote"), pre-localized by the client to
+      // data.lang from the same read model the kiosk screen renders. Null
+      // (section absent in both parts) unless it is a complete, well-formed
+      // v:1 summary; never reaches the sheet row.
+      quote: _safeQuote(data.quote)
     };
 
     // The complete localized plain-text body, built ONCE from safeData before
@@ -354,6 +680,16 @@ function doPost(e) {
       GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);
     }
 
+    // Record the delivered sendId only AFTER a send succeeded, so a failed
+    // attempt stays retryable. A cache write failure is logged, not surfaced:
+    // the email has already gone, and reporting failure would invite a retry
+    // that mails the customer twice.
+    try {
+      sendCache.put(dedupeKey, '1', SEND_DEDUPE_TTL_SECONDS);
+    } catch (cacheErr) {
+      Logger.log('doPost: dedupe record not written: ' + cacheErr.toString());
+    }
+
     return ContentService
       .createTextOutput(JSON.stringify({ success: true }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -364,6 +700,10 @@ function doPost(e) {
     return ContentService
       .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
       .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    if (sendLock) {
+      try { sendLock.releaseLock(); } catch (lockErr) { Logger.log('doPost: lock release failed: ' + lockErr.toString()); }
+    }
   }
 }
 
@@ -389,6 +729,9 @@ function buildPlainBody(data, isEs, storeName) {
     || 'Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your sleep specialist.';
   var financing = (data.financing && typeof data.financing === 'object') ? data.financing : null;
   var allMatches = _safeArray(data.allMatches);
+  // The purchase summary ("Your quote"), already projected by _safeQuote.
+  var quoteText = buildQuotePlain(data.quote || null, isEs);
+  var quoteBlock = quoteText ? '\n\n' + quoteText : '';
 
   var accessoryLines = _safeArray(data.accessories).map(function(a, i) {
     var qty = _safeQuantity(a.quantity);
@@ -496,6 +839,7 @@ function buildPlainBody(data, isEs, storeName) {
           return (i+1) + '. ' + m.name + (lineText ? ' - ' + lineText : '');
         }).join('\n')
       + (accessoryLines ? '\n\nTu Sistema de Sue\u00f1o guardado:\n' + accessoryLines : '')
+      + quoteBlock
       + promoBlock
       + finBlock
       + '\n\n----------\n'
@@ -517,6 +861,7 @@ function buildPlainBody(data, isEs, storeName) {
           return (i+1) + '. ' + m.name + (lineText ? ' - ' + lineText : '');
         }).join('\n')
       + (accessoryLines ? '\n\nYour saved Sleep System:\n' + accessoryLines : '')
+      + quoteBlock
       + promoBlock
       + finBlock
       + '\n\n----------\n'
@@ -874,6 +1219,8 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
         : '')
 
     + accSection
+
+    + buildQuoteHtml(data.quote || null, isEs, c, sans, serif)
 
     + '<tr><td style="padding:24px 32px 14px;text-align:center;border-top:1px solid ' + c.border + ';">'
     + '<div style="font-family:' + sans + ';font-size:13px;color:' + c.text + ';margin-bottom:8px;line-height:1.5;">' + L.ctaMain + '</div>'

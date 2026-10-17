@@ -9,8 +9,21 @@ orientations. It proves:
 
   * every drill state's DARK form validates clean under the production
     validators with the shifted clock, and every OPENED form is REFUSED by
-    validate_pricing (displayEnabled true) — a served document can never
-    ship; exactPromotionsEnabled stays false in every state;
+    validate_pricing for its FIXTURE / placeholder / pending signatures (the
+    non-attestation marker - since 2026-10-15 a COMPLETE activation
+    validates, so the marker is what keeps a served document unshippable);
+    exactPromotionsEnabled stays false outside the payment and purchase
+    states;
+  * the `purchase` drill (one operable application, 2026-10-15): every size
+    of every mattress and sized accessory priced, both promotional plans
+    calculable with qualifyingBasis 'merchandise-subtotal', every surface on
+    including email, the fixture offer set, and - rendered - the offer
+    arithmetic of the shared purchase summary computed independently here,
+    plus a take-home send recorded by the --gas-stub loopback recorder;
+  * the --gas-stub contract: loopback only, every mode answers like Code.gs
+    (tools/serve_delivery_preview.py's stub), POSTs recorded in memory, the
+    served config differs from the drill only by gasUrl, refused with
+    --device;
   * the injected catalog carries a queen SKU for every shipped mattress, and
     every pricing entry names a catalog id with a matching SKU;
   * the loopback-only bind policy, the two narrow interceptions (query
@@ -171,8 +184,8 @@ built = {}
 # The payment states switch exact terms and the governed calculation on in
 # memory; they are pinned below and walked by tests/payment_facts_check.py.
 print("Payment states (exact terms + governed calculation, in memory only):")
-# The payment demo (`demo`) is pinned by tests/payment_demo_check.py; the
-# drill expectations below are for the pricing drills only.
+# The payment demo was retired on 2026-10-15 (one operable application); the
+# `purchase` drill is pinned in its own section below.
 for state in srv.PAYMENT_STATES:
     cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
     fin = cfg["financing"]
@@ -188,8 +201,8 @@ for state in srv.PAYMENT_STATES:
     check(f"{state}: the factor ships only on that plan",
           [p["id"] for p in fin["plans"] if "publishedPaymentFactor" in p] == ["synchrony-9-99-72"])
     check(f"{state}: gasUrl stays blank (nothing can send)", not (cfg.get("gasUrl") or "").strip())
-    check(f"{state}: served pricing is refused by validate_pricing (displayEnabled true can never ship)",
-          v["served_refused"])
+    check(f"{state}: served pricing is refused by validate_pricing for its non-attestation markers (never shippable)",
+          v["served_refused"] and v["served_marker_refused"])
     check(f"{state}: the dark form is acceptable for its state", srv.dark_form_acceptable(state, v),
           "; ".join(v["dark_errors"][:2]))
 review_fin = srv.review_financing()
@@ -197,7 +210,7 @@ src_fin = json.load(open(os.path.join(REPO, "incoming", "lacks_financing.json"),
 check("review: financing is the canonical source on its OWN stamps (never shifted)",
       review_fin["verifiedAt"] == src_fin["verifiedAt"]
       and [p.get("verifiedAt") for p in review_fin["plans"]] == [p.get("verifiedAt") for p in src_fin["plans"]])
-for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.DEMO_STATES]:
+for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.PURCHASE_STATES]:
     cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
     built[state] = (cfg, cat, v, acc)
     mattress_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "mattress"]
@@ -235,8 +248,8 @@ for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.DEMO
               cfg["pricing"]["displayEnabled"] is False
               and all(x is False for x in cfg["pricing"]["surfaces"].values()))
     else:
-        check(f"{state}: served form is REFUSED by validate_pricing (displayEnabled true can never ship)",
-              v["served_refused"] and any("displayEnabled" in e for e in v["served_errors"]),
+        check(f"{state}: served form is REFUSED by validate_pricing, by its FIXTURE/pending signatures (non-attestation marker)",
+              v["served_refused"] and v["served_marker_refused"],
               "; ".join(v["served_errors"][:2]))
         check(f"{state}: served form has displayEnabled true and every surface true",
               cfg["pricing"]["displayEnabled"] is True
@@ -367,6 +380,222 @@ try:
     check("an unknown state is refused (raises)", False)
 except ValueError:
     check("an unknown state is refused (raises)", True)
+
+# ---- the one-operable-application drill (`purchase`) ------------------------
+print("Purchase drill (every size, offers, both plans calculable, every surface incl. email):")
+PCFG, PCAT, PV, PACC = srv.build_injected("purchase", START)
+built["purchase"] = (PCFG, PCAT, PV, PACC)
+ppr, pfin = PCFG["pricing"], PCFG["financing"]
+SIZES = list(srv.MATTRESS_SIZES)
+check("purchase: financing validates clean with exactPromotionsEnabled TRUE",
+      PV["financing_ok"] and pfin["exactPromotionsEnabled"] is True, "; ".join(PV["financing_errors"][:2]))
+_syn = {p["id"]: p for p in pfin["plans"] if p["id"] in ("synchrony-9-99-72", "synchrony-0-48")}
+check("purchase: both Synchrony plans calculate, each declaring qualifyingBasis 'merchandise-subtotal'",
+      len(_syn) == 2 and all(p.get("paymentCalculationEnabled") is True
+                             and p.get("qualifyingBasis") == "merchandise-subtotal" for p in _syn.values()),
+      str({k: (p.get("paymentCalculationEnabled"), p.get("qualifyingBasis")) for k, p in _syn.items()}))
+check("purchase: one formula artifact per calculable plan",
+      sorted(f["planId"] for f in ppr["formulas"]) == sorted(_syn))
+check("purchase: the DARK form validates with no errors (the expired offer's inert-window warning is expected)",
+      PV["dark_ok"] and srv.dark_form_acceptable("purchase", PV)
+      and all("fx-expired" in w or "offers[4]" in w for w in PV["dark_warnings"]),
+      "; ".join(PV["dark_errors"][:2] + PV["dark_warnings"][:2]))
+check("purchase: judged once per customer size (sized accessory variants share a catalog id)",
+      PV["sizeProjections"] == SIZES, str(PV["sizeProjections"]))
+check("purchase: the served form is refused ONLY for its non-attestation markers (activation otherwise complete)",
+      PV["served_refused"] and PV["served_marker_refused"]
+      and all("non-attestation marker" in e for e in PV["served_errors"]),
+      "; ".join(e for e in PV["served_errors"] if "non-attestation marker" not in e)[:240])
+check("purchase: displayEnabled true and EVERY surface true, email included",
+      ppr["displayEnabled"] is True and set(ppr["surfaces"]) == set(srv.validation.PRICING_SURFACES)
+      and all(v_ is True for v_ in ppr["surfaces"].values()) and ppr["surfaces"].get("email") is True)
+check("purchase: gasUrl stays blank in the built document (only --gas-stub sets one, in memory)",
+      not (PCFG.get("gasUrl") or "").strip())
+_m_entries = [e for e in ppr["products"] if e["productKind"] == "mattress"]
+check("purchase: every mattress is priced in every size with the purchase sku scheme and amounts",
+      [(e["productId"], e["size"]) for e in _m_entries] == [(m, z) for m in ALL_IDS for z in SIZES]
+      and all(e["sku"] == srv.purchase_sku(e["productId"], e["size"])
+              and e["price"]["amountMinor"] == srv.purchase_mattress_amount(ALL_IDS.index(e["productId"]), e["size"])
+              and e["clearance"]["scope"]["sku"] == e["sku"] and e["clearance"]["scope"]["size"] == e["size"]
+              and e["clearance"]["scope"]["amountMinor"] == e["price"]["amountMinor"] for e in _m_entries))
+SIZED_ACC = [a["id"] for a in ACCESSORIES if srv.accessory_is_sized(a)]
+FREE_ACC = [a["id"] for a in ACCESSORIES if not srv.accessory_is_sized(a)]
+_a_entries = [e for e in ppr["products"] if e["productKind"] == "accessory"]
+check("purchase: every sized accessory priced per size, every pillow once (entries sizeless by contract)",
+      sorted(e["sku"] for e in _a_entries)
+      == sorted([srv.purchase_sku(a, z) for a in SIZED_ACC for z in SIZES] + [srv.purchase_sku(a) for a in FREE_ACC])
+      and all(e["size"] is None for e in _a_entries)
+      and FREE_ACC and all(a.startswith("pillow") for a in FREE_ACC))
+check("purchase: catalog carries every size's sku; sized accessories an accessorySkus map, pillows one sku",
+      all(m["skus"] == {z: srv.purchase_sku(m["id"], z) for z in SIZES} for t in srv.TIER_ORDER for m in PCAT[t])
+      and all(a.get("accessorySkus") == {z: srv.purchase_sku(a["id"], z) for z in SIZES} and "sku" not in a
+              for a in PACC if a["id"] in SIZED_ACC)
+      and all(a.get("sku") == srv.purchase_sku(a["id"]) and "accessorySkus" not in a for a in PACC if a["id"] in FREE_ACC))
+_offers = {o["id"]: o for o in ppr["offers"]}
+check("purchase: the fixture offer set is exactly the eight contract offers",
+      sorted(_offers) == sorted(["fx-mattress-10", "fx-pillow-20", "fx-exclusive-15", "fx-cash-5", "fx-expired",
+                                 "fx-future", "fx-excluded-brand", "fx-min-big"]))
+_brands = {m["id"]: m.get("brand") for t in srv.TIER_ORDER for m in CATALOG[t]}
+check("purchase: fx-exclusive-15 is exclusive, priority 0, 15% off exactly one catalog mattress",
+      _offers["fx-exclusive-15"]["stacking"] == "exclusive" and _offers["fx-exclusive-15"]["priority"] == 0
+      and _offers["fx-exclusive-15"]["effect"] == {"type": "percent-off", "basisPoints": 1500}
+      and _offers["fx-exclusive-15"]["eligibility"]["productIds"] == [srv.PURCHASE_EXCLUSIVE_ID]
+      and srv.PURCHASE_EXCLUSIVE_ID in _brands)
+check("purchase: fx-excluded-brand excludes one catalog brand that the exclusive target does not carry",
+      _offers["fx-excluded-brand"]["exclusions"] == {"brands": [srv.PURCHASE_EXCLUDED_BRAND]}
+      and srv.PURCHASE_EXCLUDED_BRAND in set(_brands.values())
+      and _brands[srv.PURCHASE_EXCLUSIVE_ID] != srv.PURCHASE_EXCLUDED_BRAND)
+check("purchase: fx-pillow-20 is $20 off per unit on exactly the pillow ids",
+      _offers["fx-pillow-20"]["effect"] == {"type": "amount-off", "amountMinor": 2000}
+      and sorted(_offers["fx-pillow-20"]["eligibility"]["productIds"]) == sorted(FREE_ACC))
+check("purchase: fx-cash-5 is pay-in-full-only; fx-min-big's minimum is unreachable",
+      _offers["fx-cash-5"]["payment"] == "pay-in-full-only"
+      and _offers["fx-min-big"]["minimumMerchandiseMinor"] == 999999999)
+_inst = lambda x: datetime.fromisoformat(x)  # noqa: E731
+check("purchase: fx-expired ended before START, fx-future starts after START, every other offer is live at START",
+      _inst(_offers["fx-expired"]["endsAt"]) < START < _inst(_offers["fx-future"]["startsAt"])
+      and all(_inst(o["startsAt"]) <= START < _inst(o["endsAt"]) for k, o in _offers.items()
+              if k not in ("fx-expired", "fx-future")))
+check("purchase: every offer's evidence and approval are FIXTURE placeholders on the fixture source",
+      all("FIXTURE" in o["evidence"]["verifiedBy"] and "FIXTURE" in o["approval"]["by"]
+          and o["evidence"]["sourceUrl"] == srv.PURCHASE_OFFER_SOURCE
+          and o["evidence"]["status"] == "retailer-promotion-current" for o in _offers.values()))
+check("purchase: every non-pricing, non-financing key deep-equals production (no review-only blocks)",
+      {k: v_ for k, v_ in PCFG.items() if k not in ("pricing", "financing")}
+      == {k: v_ for k, v_ in PROD.items() if k not in ("pricing", "financing")})
+
+
+def expected_purchase(lines, payment="full"):
+    """The contract-section-2 arithmetic, independently: `lines` is a list of
+    (productId, kind, index, size, quantity); returns (list, discount, net,
+    {line index: [offer ids applied]})."""
+    now = START
+    admitted = [o for o in ppr["offers"] if _inst(o["startsAt"]) <= now < _inst(o["endsAt"])]
+    exts = []
+    for pid, kind, idx, size, qty in lines:
+        unit = (srv.purchase_mattress_amount(idx, size) if kind == "mattress"
+                else srv.purchase_accessory_amount(idx, size if pid in SIZED_ACC else None))
+        exts.append(unit * qty)
+    list_total = sum(exts)
+    disc_total, applied = 0, {}
+    for i, (pid, kind, idx, size, qty) in enumerate(lines):
+        cands = []
+        for o in admitted:
+            el, ex = o["eligibility"], o.get("exclusions") or {}
+            if kind not in el["productKinds"]:
+                continue
+            if "productIds" in el and pid not in el["productIds"]:
+                continue
+            brand = _brands.get(pid)
+            if "brands" in el and brand not in el["brands"]:
+                continue
+            if "sizes" in el and size not in el["sizes"]:
+                continue
+            if pid in ex.get("productIds", []) or (brand is not None and brand in ex.get("brands", [])):
+                continue
+            if o["minimumMerchandiseMinor"] is not None and list_total < o["minimumMerchandiseMinor"]:
+                continue
+            if o["payment"] == "pay-in-full-only" and payment != "full":
+                continue
+            cands.append(o)
+        cands.sort(key=lambda o: (o["priority"], o["id"]))
+        chosen = cands[:1] if cands and cands[0]["stacking"] == "exclusive" else \
+            [o for o in cands if o["stacking"] == "combinable"]
+        remaining = exts[i]
+        for o in chosen:
+            eff = o["effect"]
+            d = (remaining * eff["basisPoints"]) // 10000 if eff["type"] == "percent-off" \
+                else min(eff["amountMinor"] * qty, remaining)
+            remaining -= d
+            disc_total += d
+            applied.setdefault(i, []).append(o["id"])
+    return list_total, disc_total, list_total - disc_total, applied
+
+
+_ex = expected_purchase([(srv.PURCHASE_EXCLUSIVE_ID, "mattress", ALL_IDS.index(srv.PURCHASE_EXCLUSIVE_ID), "queen", 1),
+                         ("pillow-gel-memory", "accessory", ACC_IDS.index("pillow-gel-memory"), "queen", 2)])
+check("purchase: the independent arithmetic applies ONLY the exclusive offer to its mattress and $20/unit to pillows",
+      _ex[3] == {0: ["fx-exclusive-15"], 1: ["fx-pillow-20"]}, str(_ex[3]))
+_other = next(m for m in ALL_IDS if _brands[m] == srv.PURCHASE_EXCLUDED_BRAND)
+_ex2 = expected_purchase([(_other, "mattress", ALL_IDS.index(_other), "king", 1)])
+check("purchase: on an excluded-brand mattress the combinables apply in priority order, minus the brand offer",
+      _ex2[3] == {0: ["fx-mattress-10", "fx-cash-5"]}, str(_ex2[3]))
+_ex3 = expected_purchase([(_other, "mattress", ALL_IDS.index(_other), "king", 1)], payment="financed")
+check("purchase: a financed quote drops the pay-in-full-only offer",
+      _ex3[3] == {0: ["fx-mattress-10"]} and _ex3[2] > _ex2[2], str(_ex3[3]))
+
+# ---- --gas-stub ----------------------------------------------------------------
+print("--gas-stub (loopback recorder from tools/serve_delivery_preview.py):")
+check("--gas-stub modes are exactly the contract's six",
+      srv.GAS_STUB_MODES == ("success", "invalid_email", "send_failed", "http_500", "malformed", "unreachable"))
+for bad_args, why in ((("bogus",), {}), (("success",), {"bind": "192.168.1.10"}), (("success",), {"bind": "0.0.0.0"})):
+    try:
+        srv.GasStub(*bad_args, **why)
+        check(f"GasStub{bad_args} {why} is refused", False)
+    except ValueError:
+        check(f"GasStub{bad_args} {why} is refused (unknown mode / non-loopback bind)", True)
+check("--gas-stub with --device is refused (exit 2: loopback only)",
+      srv.main(["--state", "purchase", "--gas-stub", "success", "--device", "10.0.0.1", "--port", "0"]) == 2)
+try:
+    srv.main(["--state", "purchase", "--gas-stub", "nope", "--port", "0"])
+    check("an unknown --gas-stub mode is refused by the command line", False)
+except SystemExit as exc:
+    check("an unknown --gas-stub mode is refused by the command line", exc.code == 2)
+_gcfg = srv.with_gas_url(PCFG, "http://127.0.0.1:1/exec")
+check("with_gas_url changes ONLY gasUrl and never mutates the drill document",
+      {k: v_ for k, v_ in _gcfg.items() if k != "gasUrl"} == {k: v_ for k, v_ in PCFG.items() if k != "gasUrl"}
+      and _gcfg["gasUrl"] == "http://127.0.0.1:1/exec" and not PCFG.get("gasUrl"))
+_SID = "fixture_send_id_0123456789"
+
+
+def _post(url, payload):
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read()
+
+
+EXPECT_STUB = {"success": (200, {"success": True}), "invalid_email": (200, {"success": False, "error": "invalid_email"}),
+               "send_failed": (200, {"success": False, "error": "send_failed"}),
+               "http_500": (500, {"success": False, "error": "send_failed"}), "malformed": (200, None)}
+for mode, (want_status, want_body) in EXPECT_STUB.items():
+    stub = srv.GasStub(mode).start()
+    try:
+        check(f"gas stub {mode}: the served gasUrl is loopback /exec",
+              urllib.parse.urlparse(stub.gas_url).hostname == "127.0.0.1" and stub.gas_url.endswith("/exec"))
+        st_, body_ = _post(stub.gas_url, {"sendId": _SID, "email": "a@example.com", "quote": None})
+        parsed = None
+        try:
+            parsed = json.loads(body_.decode("utf-8"))
+        except ValueError:
+            pass
+        check(f"gas stub {mode}: answers like Code.gs ({want_status}, {want_body})",
+              st_ == want_status and parsed == want_body, f"{st_} {body_[:80]!r}")
+        with urllib.request.urlopen(stub.recorded_url, timeout=10) as resp:
+            rec = json.loads(resp.read().decode("utf-8"))
+        check(f"gas stub {mode}: the POST is recorded (in memory) at /__delivery/recorded",
+              len(rec) == 1 and rec[0]["method"] == "POST" and rec[0]["json"]["sendId"] == _SID)
+        if mode == "success":
+            st2_, body2_ = _post(stub.gas_url, {"sendId": _SID})
+            check("gas stub success: a repeated sendId answers {success:true, duplicate:true}",
+                  json.loads(body2_.decode("utf-8")) == {"success": True, "duplicate": True})
+            st3_, body3_ = _post(stub.gas_url, {"sendId": "short"})
+            check("gas stub success: a malformed sendId answers invalid_request",
+                  json.loads(body3_.decode("utf-8")) == {"success": False, "error": "invalid_request"})
+    finally:
+        stub.stop()
+_unr = srv.GasStub("unreachable").start()
+try:
+    try:
+        _post(_unr.gas_url, {"sendId": _SID})
+        check("gas stub unreachable: nothing listens on the named loopback port (the fetch rejects)", False)
+    except urllib.error.URLError:
+        check("gas stub unreachable: nothing listens on the named loopback port (the fetch rejects)",
+              _unr.server is None and urllib.parse.urlparse(_unr.gas_url).hostname == "127.0.0.1")
+finally:
+    _unr.stop()
 
 # ---- bind policy --------------------------------------------------------------
 print("Bind policy:")
@@ -1083,7 +1312,7 @@ def rendered():
         # Drill states. The payment states (exact terms and the governed
         # calculation on) are walked by tests/payment_facts_check.py; this
         # harness pins the pricing drills, whose financing stays orientation-only.
-        for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.DEMO_STATES]:
+        for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.PURCHASE_STATES]:
             s, port = serve(state)
             try:
                 for name, w, h in VIEWPORTS:
@@ -1372,6 +1601,120 @@ def rendered():
 
 
 rendered()
+
+PURCHASE_JS = r"""
+async (ARGS) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = { errors: [] };
+  const ANS = ARGS.answers;
+  for (const k of Object.keys(ANS)) answers[k] = ANS[k];
+  if (ARGS.lang === 'es') { await switchLanguage('es'); await wait(200); }
+  showProfileScreen();
+  window.showResults();
+  await wait(250);
+  const ids = Object.keys(window._drawerData || {});
+  out.pick = ids.indexOf(ARGS.mattress) >= 0 ? ARGS.mattress : ids[0];
+  window.chooseFinalist(out.pick);
+  setSleepSystemItem(ARGS.pillow, true);
+  setSleepSystemItemQuantity(ARGS.pillow, 2);
+  await wait(150);
+  out.hasSummaryFn = typeof purchaseSummaryFor === 'function';
+  out.summary = out.hasSummaryFn ? purchaseSummaryFor(ARGS.lang) : null;
+  out.live = (typeof emailDeliveryLive === 'function') ? emailDeliveryLive() : null;
+  if (typeof window.showEmailCapture === 'function') {
+    window.showEmailCapture();
+    await wait(250);
+    document.getElementById('emailNameInput').value = 'Fixture';
+    document.getElementById('emailInput').value = 'fixture@example.com';
+    window.sendResults();
+    await wait(2500);
+  }
+  return out;
+}
+"""
+
+
+# Two consultations: EN a firm-leaning solo sleeper, ES a plush-leaning side
+# sleeper, so the walk meets both an ordinary finalist and (when the engine
+# ranks it) the exclusive offer's own mattress. The finalist the app picked is
+# reported in every check name and the expectation is computed for it.
+PURCHASE_ANSWERS = {
+    "en": {"sleep_position": "back", "sleep_issues": ["back_pain"], "health_conditions": [],
+           "temperature": "comfortable", "firmness": 5, "partner_sleep": "solo",
+           "partner_disturbance": "not_applicable", "body_type": "average", "mattress_size": "queen"},
+    "es": {"sleep_position": "side", "sleep_issues": ["hip_pain"], "health_conditions": [],
+           "temperature": "comfortable", "firmness": 2, "partner_sleep": "solo",
+           "partner_disturbance": "not_applicable", "body_type": "petite", "mattress_size": "queen"},
+}
+
+
+def rendered_purchase():
+    """The one-application drill, rendered: the shared purchase summary's
+    offer arithmetic against the independent computation, and a take-home
+    send recorded by the --gas-stub loopback recorder (the email quote equals
+    the screen's)."""
+    print("Rendered purchase drill (summary offer arithmetic + take-home send through the gas stub):")
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        check("rendered purchase pass: playwright is installed", False)
+        return
+    stub = srv.GasStub("success").start()
+    cfg = srv.with_gas_url(PCFG, stub.gas_url)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), srv.make_handler(srv.encode(cfg), srv.encode(PCAT), srv.encode(PACC)))
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    def want_for(pick):
+        return expected_purchase([(pick, "mattress", ALL_IDS.index(pick), "queen", 1),
+                                  ("pillow-gel-memory", "accessory", ACC_IDS.index("pillow-gel-memory"), "queen", 2)])
+    wants = []
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            for lang in ("en", "es"):
+                page, errors, boot = open_page(browser, f"http://127.0.0.1:{server.server_address[1]}/")
+                r = page.evaluate(PURCHASE_JS, {"lang": lang, "mattress": srv.PURCHASE_EXCLUSIVE_ID,
+                                                "pillow": "pillow-gel-memory", "answers": PURCHASE_ANSWERS[lang]})
+                page.close()
+                tag = f"purchase {lang} (finalist {r.get('pick')})"
+                want = want_for(r.get("pick") or srv.PURCHASE_EXCLUSIVE_ID)
+                wants.append(want)
+                check(f"{tag}: no page errors", not errors, "; ".join(errors[:2]))
+                check(f"{tag}: the app exposes purchaseSummaryFor (contract section 3)", r.get("hasSummaryFn") is True)
+                sm = r.get("summary") or {}
+                check(f"{tag}: the shared purchase summary is present (v 1, USD)",
+                      sm.get("v") == 1 and sm.get("currency") == "USD", json.dumps(sm)[:200])
+                check(f"{tag}: summary merchandise is the NET of the independent offer arithmetic",
+                      sm.get("merchandiseMinor") == want[2] and sm.get("discountMinor") == want[1],
+                      f"got merch={sm.get('merchandiseMinor')} disc={sm.get('discountMinor')} want {want[2]}/{want[1]}")
+                check(f"{tag}: each line carries exactly the offers the independent arithmetic applies",
+                      [len(ln.get("discounts") or []) for ln in sm.get("lines") or []]
+                      == [len(want[3].get(0, [])), len(want[3].get(1, []))],
+                      str([ln.get("discounts") for ln in sm.get("lines") or []])[:200])
+                check(f"{tag}: the applied offers' terms travel with the summary",
+                      len(sm.get("offerTerms") or []) == len({o for ids_ in want[3].values() for o in ids_}))
+                check(f"{tag}: email delivery is live against the in-memory loopback gasUrl", r.get("live") is True)
+            browser.close()
+        with urllib.request.urlopen(stub.recorded_url, timeout=10) as resp:
+            rec = [x for x in json.loads(resp.read().decode("utf-8")) if x["method"] == "POST"]
+        check("purchase: each language's take-home send reached the stub exactly once (no duplicate sends)",
+              len(rec) == 2 and len({x["json"].get("sendId") for x in rec if isinstance(x.get("json"), dict)}) == 2,
+              f"{len(rec)} POST(s); payload keys: {sorted((rec[0].get('json') or {}).keys()) if rec else []}")
+        quotes = [x["json"].get("quote") for x in rec if isinstance(x.get("json"), dict)]
+        check("purchase: every recorded payload carries a valid sendId and the quote (email surface on)",
+              rec and all(isinstance(x.get("json"), dict) and srv.delivery.valid_send_id(x["json"].get("sendId")) for x in rec)
+              and all(isinstance(q, dict) and q.get("v") == 1 for q in quotes))
+        check("purchase: the emailed quote's figures equal the independent arithmetic (no second computation)",
+              len(quotes) == len(wants) and all((q or {}).get("merchandiseMinor") == w[2] and (q or {}).get("discountMinor") == w[1]
+                                                for q, w in zip(quotes, wants)),
+              str([(q or {}).get("merchandiseMinor") for q in quotes]))
+        check("purchase: no preflight was sent (the page's POST stays a simple request)",
+              not any(x["method"] == "OPTIONS" for x in json.loads(urllib.request.urlopen(stub.recorded_url, timeout=10).read().decode("utf-8"))))
+    finally:
+        server.shutdown(); server.server_close()
+        stub.stop()
+
+
+rendered_purchase()
 
 # ---- committed files untouched ------------------------------------------------
 print("Committed files:")

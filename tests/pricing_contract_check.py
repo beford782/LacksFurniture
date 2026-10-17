@@ -37,9 +37,15 @@ Owns the DARK framework's production/test separation:
   * every mutation-sweep find string this slice adds matches its target
     EXACTLY ONCE (the sweep itself does not check uniqueness).
 
-This lock is a PRE-ACTIVATION lock, permanent until Phase 2.2: relaxing the
-displayEnabled / surfaces assertions is the 2.2 activation change and arrives
-only with Blake's plus written business/legal approval recorded on the item.
+This lock pins the SHIPPED block dark. Since the one-app integration
+(2026-10-15) activation is a configuration decision: validate_pricing admits
+displayEnabled / an enabled surface only when every governance record is
+complete and genuinely signed (fixture, placeholder, review-build and
+pending-verification signatures are refused at activation), so this lock and
+CI's "Shipped operating state unchanged" step - not the validator - are the
+owner's activation switch. Relaxing the displayEnabled / surfaces / offers
+assertions is that activation change and arrives only with Blake's plus
+written business/legal approval recorded on the item.
 Populating products/formulas or approving a policy is NOT a lock relaxation —
 it is the ordinary governed path (validate_pricing admits or refuses it) — but
 the assertions below that pin the empty/unapproved state must then be
@@ -105,7 +111,8 @@ DARK = {
     "purchaseAssessment": {"policy": "runtime-transaction-amount"},
     "sizes": SIZES,
     "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
-                 "handoff": False, "sleepPlan": False, "compare": False},
+                 "handoff": False, "sleepPlan": False, "compare": False,
+                 "email": False},
     "presentation": {
         "status": "unapproved",
         "approvals": {"business": dict(UNAPPROVED), "legal": dict(UNAPPROVED),
@@ -114,6 +121,7 @@ DARK = {
     },
     "products": [],
     "formulas": [],
+    "offers": [],
 }
 # Strings that would betray a shipped price, payment or transaction figure.
 # Deliberately the FIELD names the contract itself uses, so populated data
@@ -156,8 +164,10 @@ raw_cfg = _read("data/store-config.json")
 for s in NO_SHIP_STRINGS:
     check(f"no shipped price/payment/transaction figure: {s!r} absent from store-config", s not in raw_cfg)
 pr = cfg.get("pricing", {})
-check("shipped pricing products and formulas are empty",
-      pr.get("products") == [] and pr.get("formulas") == [])
+check("shipped pricing products, formulas and offers are empty",
+      pr.get("products") == [] and pr.get("formulas") == [] and pr.get("offers") == [])
+check("shipped email quote surface is declared and off",
+      (pr.get("surfaces") or {}).get("email") is False)
 check("shipped pricing is disabled AND display-disabled AND every surface off",
       pr.get("enabled") is False and pr.get("displayEnabled") is False
       and all(v is False for v in pr.get("surfaces", {}).values())
@@ -257,8 +267,9 @@ check("shipped pricing validates clean under the real clock (no errors, no warni
 
 # ---- the operating-state lock names the switch --------------------------------
 ci = _lf(_read(".github/workflows/ci.yml"))
-check("CI operating-state lock names pricing.displayEnabled",
-      "pricing ships dark" in ci and "displayEnabled" in ci)
+check("CI operating-state lock names pricing.displayEnabled, the email surface and offers",
+      "pricing ships dark" in ci and "displayEnabled" in ci
+      and 'pricing.get("offers") == []' in ci and '.get("email") is False' in ci)
 check("CI runs the 2.2a presentation suite (the gate's behavioural observer)",
       "tests/pricing_presentation_check.mjs" in _read(".github/workflows/ci.yml")
       and "tests/pricing_presentation_check.mjs" in _read("tools/run_full_suite.ps1"))
@@ -349,7 +360,12 @@ try:
         return doc
 
     CASES = [
-        ("displayEnabled flipped true", ("pricing", "displayEnabled"), True, "Phase 2.2"),
+        # Activation is a configuration decision now: the fixture's FIXTURE
+        # signatures are what refuse its activated form (never shippable).
+        ("displayEnabled flipped true on FIXTURE signatures", ("pricing", "displayEnabled"), True,
+         "non-attestation marker"),
+        ("email surface on while display is off", ("pricing", "surfaces", "email"), True,
+         "surfaces.email must be false while displayEnabled is false"),
         ("product size removed (never inferred)", ("pricing", "products", 0, "size"), KeyError,
          "never inferred from another size"),
         ("amountMinor as a float (scope matched, so only the money rule can fire)",
@@ -449,17 +465,68 @@ try:
     check("gate split — ENABLED dark with every activation approval absent -> ADMITTED (case (a) config)",
           ua_rep.ok, "; ".join(ua_rep.errors[:3]))
     # The SAME document at activation -> every re-bound approval error fires
-    # alongside the permanent display lock, so the approvals were MOVED to the
+    # and the document is refused, so the approvals were MOVED to the
     # activation set, never dropped.
     ua_doc["pricing"]["displayEnabled"] = True
     act_rep = validation.validate_pricing(ua_doc, now=CLOCK, **KW)
-    act_needles = ("Phase 2.2", "authority.owner",
+    act_needles = ("missing governance record", "authority.owner",
                    "clearance.status must be 'cleared' or an attested",
                    "presentation.status must be 'approved' at activation",
                    "disclosures must be non-empty at activation")
     for needle in act_needles:
         check(f"gate split — same document at activation -> refused, names {needle[:44]!r}",
               any(needle in e for e in act_rep.errors), "; ".join(act_rep.errors[:3]))
+
+    # ---- offers (one-app integration, 2026-10-15) through the real pipeline --
+    # A governed offer rides the Pricing envelope unchanged and is admitted
+    # dark under the fixture clock; single-field corruptions are refused.
+    offer = {
+        "id": "fx-contract-10", "label": {"en": "FIXTURE offer", "es": "Oferta FIXTURE"},
+        "terms": {"en": "FIXTURE terms.", "es": "Términos FIXTURE."},
+        "effect": {"type": "percent-off", "basisPoints": 1000},
+        "eligibility": {"productKinds": ["mattress"], "productIds": ["g6"]},
+        "startsAt": "2026-08-20T00:00:00-05:00", "endsAt": "2026-09-20T00:00:00-05:00",
+        "stacking": "combinable", "priority": 10, "minimumMerchandiseMinor": None,
+        "payment": "any",
+        "evidence": {"status": "retailer-promotion-current",
+                     "sourceUrl": "https://www.lacks.com/fixture-promotion",
+                     "verifiedAt": "2026-08-26T10:00:00-05:00",
+                     "verifiedBy": "FIXTURE — placeholder attestation (not a real verification)"},
+        "approval": {"by": "FIXTURE — placeholder approval", "at": "2026-08-26T11:00:00-05:00"},
+    }
+    fx_offers = json.loads(json.dumps(fx_pricing)); fx_offers["offers"] = [offer]
+    owb = os.path.join(tmp, "offers.xlsx")
+    _fixture_workbook(owb, fx_offers, fx_fin)
+    twb = openpyxl.load_workbook(owb, read_only=True, data_only=True)
+    try:
+        oconfig = converter.build_store_config(twb)
+    finally:
+        twb.close()
+    check("converter carries pricing.offers through the Pricing envelope unchanged",
+          oconfig.get("pricing", {}).get("offers") == [offer])
+    orep = validation.validate_pricing(oconfig, now=CLOCK, **KW)
+    check("validate_pricing ADMITS a governed dark offer under the fixture clock",
+          orep.ok and not orep.warnings, "; ".join(orep.errors[:3] + orep.warnings[:2]))
+    for label, mut, needle in (
+            ("historical evidence status", lambda o: o["evidence"].update(status="historical-snapshot"),
+             "retailer-promotion-current"),
+            ("evidence on a lender host", lambda o: o["evidence"].update(sourceUrl="https://www.synchrony.com/x"),
+             "not allowed by"),
+            ("an unknown catalog product", lambda o: o["eligibility"].update(productIds=["zzz"]),
+             "is not a catalog id"),
+            ("end before start", lambda o: o.update(endsAt="2026-08-01T00:00:00-05:00"),
+             "endsAt must be after startsAt"),
+            ("a fractional percentage", lambda o: o["effect"].update(basisPoints=12.5),
+             "basisPoints")):
+        d = json.loads(json.dumps(oconfig)); mut(d["pricing"]["offers"][0])
+        brep = validation.validate_pricing(d, now=CLOCK, **KW)
+        check(f"offer corrupted — {label} -> REFUSED",
+              not brep.ok and any(needle in e for e in brep.errors), "; ".join(brep.errors[:2]))
+    act = json.loads(json.dumps(oconfig)); act["pricing"]["displayEnabled"] = True
+    arep = validation.validate_pricing(act, now=CLOCK, **KW)
+    check("the activated offer document is REFUSED by its FIXTURE signatures (never shippable)",
+          not arep.ok and any("offers[0].approval.by" in e and "non-attestation marker" in e
+                              for e in arep.errors))
 
     # The real converter subprocess refuses a hostile Pricing payload without a
     # traceback (its freshness verdict depends on the wall clock, so only the
@@ -479,8 +546,11 @@ finally:
 # ---- mutation-sweep find strings match exactly once ---------------------------
 print("Mutation-sweep find-string uniqueness (the sweep does not check this):")
 SWEEP_FINDS = [
+    # Re-anchored 2026-10-15 (one-app integration): the outright display
+    # refusal is gone; the sweep entry targets the activation-requires-enabled
+    # rule instead (tests/mutation_sweep.mjs is re-anchored with it).
     ("tools/validation.py",
-     "    if display is True:\n        r.add_error(\"pricing.displayEnabled must be false"),
+     "    if display is True and not enabled:\n        r.add_error(\"pricing.displayEnabled requires pricing.enabled"),
     ("tools/validation.py",
      "                elif type(size) is not str or size not in size_set:"),
     ("tools/validation.py",

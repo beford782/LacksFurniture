@@ -263,9 +263,11 @@ const classifiersSrc = grab(
   /var EMAIL_FAILURE_CODES = \[[\s\S]*?function transportFailureCode\(err\) \{[\s\S]*?\n    \}/,
   "the send-failure classifiers");
 const showSuccessSrc = grab(/      function showSuccess\(\) \{[\s\S]*?\n      \}/, "showSuccess()");
-const showErrorSrc = grab(/      function showError\(msg\) \{[\s\S]*?\n      \}/, "showError()");
+const showErrorSrc = grab(/      function showError\(msg, retry\) \{[\s\S]*?\n      \}/, "showError()");
 // index.html is CRLF, so the terminator must tolerate the \r before each \n.
-const sendBlockSrc = grab(/      if \(gasUrl && !scenarioBlocksEmail\) \{[\s\S]*?\r?\n      \}\r?\n    \};/,
+// Since the one-application integration (2026-10-15) the live branch is
+// gated on the single isEmailPreview flag (!emailDeliveryLive()).
+const sendBlockSrc = grab(/      if \(!isEmailPreview\) \{[\s\S]*?\r?\n      \}\r?\n    \};/,
   "the send-completion block (live fetch + preview)");
 
 function makeEl(id) {
@@ -329,11 +331,18 @@ function buildSendHarness(opts) {
     name: SENTINEL_NAME, email: SENTINEL_EMAIL, phone: SENTINEL_PHONE,
     sleepProfile: "The Back Saver", allMatches: [{ name: "m1" }, { name: "m2" }],
     accessories: [{ id: "a1" }], lang: "en",
+    sendId: opts.sendId === undefined ? "AbCdEfGhIjKlMnOpQrStUvWx" : opts.sendId,
   };
+  const emailSendState = { inFlight: true, sendId: payload.sendId, contentKey: "k", previewFingerprint: null };
+  const bodies = [];
+  const baseFetch = opts.fetch || deferredFetch;
+  const recFetch = (url, init) => { bodies.push(init && init.body); return baseFetch(url, init); };
+  const t = (k) => ({ "email.retry": "Try again \u2192", "email.retrying": "Trying again\u2026" })[k] || k;
   const fn = new Function(
     "document", "console", "setTimeout", "clearTimeout", "requestAnimationFrame",
     "cancelAnimationFrame", "fetch", "gasUrl", "scenarioBlocksEmail", "isEmailPreview",
     "currentLang", "payload", "sendBtn", "errorEl", "confirmation", "out",
+    "t", "emailSendState",
     `
     ${guardsSrc}
     ${classifiersSrc}
@@ -352,9 +361,10 @@ function buildSendHarness(opts) {
   );
   const out = {};
   fn(doc, fakeConsole, clock.setTimeout, clock.clearTimeout, clock.requestAnimationFrame,
-    clock.cancelAnimationFrame, opts.fetch || deferredFetch, opts.gasUrl || "", false,
-    !opts.gasUrl, "en", payload, els.emailSendBtn, els.emailError, els.emailConfirmation, out);
-  return { out, els };
+    clock.cancelAnimationFrame, recFetch, opts.gasUrl || "", false,
+    !opts.gasUrl, "en", payload, els.emailSendBtn, els.emailError, els.emailConfirmation, out,
+    t, emailSendState);
+  return { out, els, bodies, state: emailSendState };
 }
 
 function sendState(els) {
@@ -438,6 +448,15 @@ const liveCases = [
   { name: "non-ok HTTP", settle: (d) => d.resolve({ ok: false, status: 503, json: async () => ({}) }) },
   { name: "network rejection", settle: (d) => d.reject(new Error("network down")) },
 ];
+// Transport faults (malformed, non-ok HTTP 5xx, network) retry ONCE after
+// ~1.5 s with the same payload; a test that wants the final outcome settles
+// both attempts. After a wipe nothing is retried (the catch is sessionBound).
+async function flush(n = 3) { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); }
+async function settleWithRetry(settle) {
+  settle(deferred);
+  await flush();
+  if (clock.pending() > 0) { const first = deferred; clock.advance(1600); await flush(); if (deferred !== first) { settle(deferred); await flush(); } }
+}
 for (const c of liveCases) {
   const { out, els } = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
   out.run();
@@ -504,10 +523,7 @@ section("error diagnostics carry no server- or exception-supplied text");
     const { out, els } = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
     consoleLines.length = 0;
     out.run();
-    c.settle(deferred);
-    await new Promise((r) => setTimeout(r, 0));
-    await new Promise((r) => setTimeout(r, 0));
-    await new Promise((r) => setTimeout(r, 0));
+    await settleWithRetry(c.settle);
     const printed = JSON.stringify(consoleLines);
     const leaked = [SENTINEL_EMAIL, SENTINEL_NAME, SENTINEL_PHONE].filter((s) => printed.includes(s));
     check(`REGRESSION: ${c.name} — no sentinel in console${leaked.length ? " — LEAKED " + leaked.join(",") : ""}`,
@@ -543,6 +559,105 @@ section("error diagnostics carry no server- or exception-supplied text");
     check("a classified server failure code survives as signal",
       JSON.stringify(consoleLines).includes("send_failed"));
   }
+}
+
+section("transport retry: once, automatically, with the SAME payload and sendId");
+{
+  const transport = [
+    ["network rejection", (d) => d.reject(Object.assign(new Error("x"), { name: "TypeError" }))],
+    ["HTTP 500", (d) => d.resolve({ ok: false, status: 500, json: async () => ({}) })],
+    ["malformed body", (d) => d.resolve({ ok: true, json: async () => null })],
+    ["unparseable body", (d) => d.resolve({ ok: true, json: async () => { throw Object.assign(new SyntaxError("x"), { name: "SyntaxError" }); } })],
+  ];
+  for (const [name, fail] of transport) {
+    const h = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    h.out.run();
+    fail(deferred);
+    await flush();
+    check(`${name}: no error shown yet, one retry scheduled`, h.els.emailError.textContent === "" && clock.pending() > 0);
+    check(`${name}: the button says it is trying again`, h.els.emailSendBtn.textContent === "Trying again\u2026");
+    clock.advance(1600);
+    await flush();
+    check(`${name}: exactly one automatic retry was POSTed`, h.bodies.length === 2);
+    check(`${name}: the retry carries the identical payload (same sendId)`,
+      h.bodies[0] === h.bodies[1] && JSON.parse(h.bodies[1]).sendId === "AbCdEfGhIjKlMnOpQrStUvWx");
+    fail(deferred);
+    await flush();
+    clock.advance(5000);
+    await flush();
+    check(`${name}: no third attempt - after the retry fails, the customer gets the error and a retry action`,
+      h.bodies.length === 2 && h.els.emailError.textContent.length > 0
+      && h.els.emailSendBtn.textContent === "Try again \u2192");
+    check(`${name}: the send is no longer in flight and the button is usable again`,
+      h.state.inFlight === false && h.els.emailSendBtn.disabled === false);
+  }
+  {
+    const h = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    h.els.emailSendBtn.disabled = true;   // as sendResults() sets it before the send block
+    h.out.run();
+    deferred.reject(Object.assign(new Error("x"), { name: "TypeError" }));
+    await flush();
+    clock.advance(1600);
+    await flush();
+    deferred.resolve({ ok: true, json: async () => ({ success: true }) });
+    await flush();
+    check("a retry that succeeds completes the send (done stays done: disabled, not in flight)",
+      sendState(h.els).sent && sendState(h.els).confirmVisible && h.state.inFlight === false
+      && h.els.emailSendBtn.disabled === true);
+  }
+  {
+    const h = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    h.out.run();
+    deferred.resolve({ ok: false, status: 404, json: async () => ({}) });
+    await flush();
+    check("an HTTP 4xx is not a transient fault: no retry", clock.pending() === 0 && h.bodies.length === 1
+      && h.els.emailError.textContent.length > 0);
+  }
+  for (const code of ["invalid_email", "canspam_not_configured", "invalid_request", "send_failed"]) {
+    const h = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    h.out.run();
+    deferred.resolve({ ok: true, json: async () => ({ success: false, error: code }) });
+    await flush();
+    clock.advance(5000);
+    await flush();
+    check(`server refusal "${code}" is never retried and shows the refusal copy (not the retry action)`,
+      h.bodies.length === 1 && /couldn't send/.test(h.els.emailError.textContent)
+      && h.els.emailSendBtn.textContent !== "Try again \u2192");
+  }
+  {
+    const h = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch, sendId: null });
+    h.out.run();
+    await flush();
+    check("no well-formed sendId -> nothing is POSTed (the server would refuse it as invalid_request)",
+      h.bodies.length === 0 && h.els.emailError.textContent.length > 0);
+  }
+  check("retry is sessionBound: the wipe-before-settle cases above scheduled nothing",
+    /sessionTimeout\(function\(\) \{ sendAttempt\(1\); \}, 1500\)/.test(sendBlockSrc));
+}
+
+section("in-flight guard and sendId lifecycle (static, on the real sendResults)");
+{
+  const src = (html.match(/window\.sendResults = function\(\) \{[\s\S]*?\n    \};/) || [""])[0];
+  check("re-entry while a send is in flight is a no-op (first statement)",
+    /window\.sendResults = function\(\) \{[\s\S]{0,400}?if \(emailSendState\.inFlight\) return;/.test(src));
+  check("a finished send stays done (a tap on a sent button does nothing)",
+    /if \(sendBtn\.classList\.contains\('sent'\)\) return;/.test(src));
+  check("the button is disabled and aria-busy while in flight",
+    /emailSendState\.inFlight = true;\s*sendBtn\.disabled = true;\s*sendBtn\.setAttribute\('aria-busy', 'true'\);/.test(src));
+  check("the stale guard refuses to send when the figures changed since the preview",
+    /if \(_fingerprintNow !== emailSendState\.previewFingerprint\) \{\s*emailRefreshPreview\(\);\s*errorEl\.textContent = t\('email\.figures_changed'\);\s*return;/.test(src));
+  check("a change of contact fields or figures makes a new sendId; the same content reuses it",
+    /emailSendState\.contentKey !== null && emailSendState\.contentKey !== _contentKey\)\) \{\s*emailSendState\.sendId = emailNewSendId\(\);/.test(src));
+  check("the session wipe clears the send state",
+    /emailSendState\.inFlight = false;\s*emailSendState\.sendId = null;\s*emailSendState\.contentKey = null;\s*emailSendState\.previewFingerprint = null;/.test(html));
+  const idSrc = (html.match(/function emailNewSendId\(\) \{[\s\S]*?\n    \}/) || [""])[0];
+  const mk = new Function("crypto", idSrc + "\nreturn emailNewSendId;");
+  const gen = mk(globalThis.crypto);
+  const ids = new Set(Array.from({ length: 200 }, () => gen()));
+  check("emailNewSendId() makes 24-char [A-Za-z0-9_-] ids from crypto.getRandomValues, all distinct",
+    ids.size === 200 && [...ids].every((x) => /^[A-Za-z0-9_-]{24}$/.test(x)));
+  check("no crypto -> no id (never a Math.random fallback)",
+    mk(undefined)() === null && !/Math\.random/.test(idSrc));
 }
 
 section("error diagnostics: every code Code.gs emits is classified");

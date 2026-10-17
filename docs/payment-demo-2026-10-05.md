@@ -1,5 +1,13 @@
 # Payment demo: owner demo-first direction (2026-10-05, closeout 2026-10-06)
 
+> **Historical — superseded 2026-10-15.** Blake directed one operable
+> application. The demo adapter, `--state demo`, `__DF_DEMO_CONTEXT`,
+> `illustrativeDemo`, `demo/payment-demo/` and `tests/payment_demo_check.py`
+> are retired. The purchase studio described here now runs in the normal
+> application under governed configuration only. See
+> `docs/one-application-2026-10-15.md`. The run instructions below no longer
+> work.
+
 ## The direction (Blake, confirmed in session)
 
 Build a complete, visually impressive **pricing and payment demonstration**

@@ -478,7 +478,14 @@ function buildGas() {
   const GmailApp = {
     sendEmail: (to, subject, body, opts) => sent.push({ to, subject, body, opts: opts || {} }),
   };
-  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", gs + `
+  // Script lock + script cache (sendId duplicate suppression). One fresh
+  // cache per harness instance, so each buildGas() is a fresh deployment.
+  const cache = new Map();
+  const LockService = { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) };
+  const CacheService = { getScriptCache: () => ({
+    get: (k) => (cache.has(k) ? cache.get(k) : null),
+    put: (k, v) => { cache.set(k, String(v)); } }) };
+  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", "LockService", "CacheService", gs + `
     ;return {
       doPost: function(e) { return doPost(e); },
       approveCanSpam: function() {
@@ -493,11 +500,17 @@ function buildGas() {
         var orig = buildSimpleHtml;
         buildSimpleHtml = function(d, f, es, s) { sink(d); return orig(d, f, es, s); };
       }
-    };`)(Logger, ContentService, SpreadsheetApp, GmailApp);
+    };`)(Logger, ContentService, SpreadsheetApp, GmailApp, LockService, CacheService);
   return { api, log, rows, sent };
 }
+// Every request carries a fresh, well-formed sendId unless the payload names
+// one (Code.gs refuses a request without it: invalid_request).
+let sendSeq = 0;
+function nextSendId() { sendSeq += 1; return "harnessSendId" + String(sendSeq).padStart(12, "0"); }
 function post(api, payload) {
-  return JSON.parse(api.doPost({ postData: { contents: JSON.stringify(payload) } }).getContent());
+  const body = (payload && typeof payload === "object" && !("sendId" in payload))
+    ? Object.assign({ sendId: nextSendId() }, payload) : payload;
+  return JSON.parse(api.doPost({ postData: { contents: JSON.stringify(body) } }).getContent());
 }
 function gasPayload(over) {
   return Object.assign({

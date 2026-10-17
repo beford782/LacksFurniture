@@ -76,9 +76,27 @@ HOSTS = SH["priceSourceHosts"]
 FIN_HOSTS = SH["financingSourceHosts"]
 MIDS = {m["id"] for tier in load("data/mattresses.json").values() for m in tier}
 AIDS = {a["id"] for a in load("data/accessories.json")}
-BASE = {"pricing": FX["pricing"], "financing": FX["financing"]}
+# One governed offer rides on the BASE (one-app integration, 2026-10-15) so
+# every offer field and leaf is probed from an admitted document too.
+OFFER = {
+    "id": "fx-totality-10", "label": {"en": "Offer", "es": "Oferta"},
+    "terms": {"en": "Terms.", "es": "Términos."},
+    "effect": {"type": "percent-off", "basisPoints": 1000},
+    "eligibility": {"productKinds": ["mattress"], "productIds": ["g6"],
+                    "brands": ["Restonic"], "sizes": ["queen"]},
+    "exclusions": {"productIds": ["g7"], "brands": ["Genesis"]},
+    "startsAt": "2026-08-20T00:00:00-05:00", "endsAt": "2026-09-20T00:00:00-05:00",
+    "stacking": "combinable", "priority": 10, "minimumMerchandiseMinor": 50000,
+    "payment": "any",
+    "evidence": {"status": "retailer-promotion-current",
+                 "sourceUrl": "https://www.lacks.com/fixture-promotion",
+                 "verifiedAt": "2026-08-26T10:00:00-05:00", "verifiedBy": "Totality probe"},
+    "approval": {"by": "Totality probe", "at": "2026-08-26T11:00:00-05:00"},
+}
+BRANDS = {m["brand"] for tier in load("data/mattresses.json").values() for m in tier}
+BASE = {"pricing": dict(FX["pricing"], offers=[OFFER]), "financing": FX["financing"]}
 KW = dict(allowed_source_hosts=HOSTS, financing_source_hosts=FIN_HOSTS,
-          mattress_ids=MIDS, accessory_ids=AIDS, now=CLOCK)
+          mattress_ids=MIDS, accessory_ids=AIDS, now=CLOCK, mattress_brands=BRANDS)
 
 
 def _fingerprint(o):
@@ -218,6 +236,32 @@ def main():
     for lbl, val in JSON_VALUES:
         probe(f"formulas[0].inputs[0] = {lbl}", cfg_with(("pricing", "formulas", 0, "inputs"), [val]))
 
+    print("offers and their leaves:")
+    for lbl, val in JSON_VALUES:
+        probe(f"offers = {lbl}", cfg_with(("pricing", "offers"), val),
+              None if val is None or val == [] else "pricing.offers")
+        probe(f"offers[0] = {lbl}", cfg_with(("pricing", "offers"), [val]),
+              None if isinstance(val, dict) else "pricing.offers[0]")
+    sweep_fields("offers[0]", ("pricing", "offers", 0), validation.PRICING_OFFER_KEYS)
+    for block, keys in (("effect", ("type", "basisPoints", "amountMinor")),
+                        ("eligibility", validation.PRICING_OFFER_ELIGIBILITY_KEYS),
+                        ("exclusions", validation.PRICING_OFFER_EXCLUSION_KEYS),
+                        ("evidence", validation.PRICING_OFFER_EVIDENCE_KEYS),
+                        ("approval", validation.PRICING_OFFER_APPROVAL_KEYS)):
+        sweep_fields(f"offers[0].{block}", ("pricing", "offers", 0, block), keys)
+    for lst in ("productKinds", "productIds", "brands", "sizes"):
+        for lbl, val in JSON_VALUES:
+            probe(f"offers[0].eligibility.{lst}[0] = {lbl}",
+                  cfg_with(("pricing", "offers", 0, "eligibility", lst), [val]))
+    for lbl, val in JSON_VALUES:
+        probe(f"offers[0].label.es = {lbl}",
+              cfg_with(("pricing", "offers", 0, "label"), {"en": "ok", "es": val}))
+    a = validation.validate_pricing(dict(json.loads(json.dumps(BASE)),
+                                         pricing=dict(BASE["pricing"], displayEnabled=True)), **KW)
+    check("the activated BASE is refused only for its FIXTURE signatures",
+          not a.ok and all("non-attestation marker" in e for e in a.errors),
+          "; ".join(e[:80] for e in a.errors if "non-attestation marker" not in e)[:240])
+
     print("the financing subtree the formula cross-gate reads:")
     for lbl, val in JSON_VALUES:
         probe(f"financing = {lbl}", cfg_with(("financing",), val))
@@ -272,6 +316,7 @@ def main():
         probe(f"mattress_ids = {lbl}", json.loads(json.dumps(BASE)), mattress_ids=val)
         probe(f"accessory_ids = {lbl}", json.loads(json.dumps(BASE)), accessory_ids=val)
         probe(f"now = {lbl}", json.loads(json.dumps(BASE)), now=val)
+        probe(f"mattress_brands = {lbl}", json.loads(json.dumps(BASE)), mattress_brands=val)
     for name in ("allowed_source_hosts", "financing_source_hosts"):
         errs = validation.validate_pricing(json.loads(json.dumps(BASE)), **dict(KW, **{name: 5})).errors
         check(f"a malformed {name} fails CLOSED", any("source-host allowlist" in e for e in errs))
