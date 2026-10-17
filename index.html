@@ -13556,8 +13556,16 @@
             if (!isStr(q.size) || e.size !== q.size) continue;
             if (isStr(e.size) && SIZE_WILDCARDS.indexOf(e.size.replace(/\s+/g, '').toLowerCase()) !== -1) continue;
           } else if (e.productKind === 'accessory') {
-            if (e.size !== null && e.size !== undefined) continue;
-            if (q.size !== null && q.size !== undefined) continue;
+            // An accessory sold per mattress size (catalog accessorySkus) is
+            // queried AT a size and resolves only the entry for exactly that
+            // size; a size-independent accessory is queried sizeless and
+            // resolves only the sizeless entry. Never inferred across sizes.
+            if (e.size === null || e.size === undefined) {
+              if (q.size !== null && q.size !== undefined) continue;
+            } else {
+              if (!isStr(e.size) || !isStr(q.size) || e.size !== q.size) continue;
+              if (SIZE_WILDCARDS.indexOf(e.size.replace(/\s+/g, '').toLowerCase()) !== -1) continue;
+            }
           } else {
             continue;
           }
@@ -13813,16 +13821,22 @@
     // shipped catalog collapsed all five into a single ungoverned "From $"
     // figure, which was in fact the Queen price shown to every customer.
     //
-    // The pricing CONTRACT is unchanged and must be: validate_pricing
-    // requires `size: null` on every `productKind: "accessory"` entry. So the
-    // size is resolved on the CATALOG side, by choosing WHICH accessory sku
-    // to ask about, and the resolver query stays sizeless. `accessorySkus`
-    // is deliberately a different key from the mattress `skus` map so the
-    // two can never be confused by shape.
+    // The pricing CONTRACT (owner direction 2026-10-15, one operable
+    // application): an accessory WITH `accessorySkus` is priced per size -
+    // each pricing.products entry names one of its sizes and exactly that
+    // size's sku (validate_pricing, given the catalog) - and the gate queries
+    // it AT the customer's size (a split King base at twin_xl), so only that
+    // size's entry resolves. An accessory with a single `sku` keeps one
+    // sizeless entry and is queried sizeless whatever the customer's size.
+    // `accessorySkus` is deliberately a different key from the mattress
+    // `skus` map so the two can never be confused by shape.
     function pricingIsAccessory(rec) {
       if (!rec || (rec.skus && typeof rec.skus === 'object')) return false;
       return typeof rec.sku === 'string'
         || !!(rec.accessorySkus && typeof rec.accessorySkus === 'object');
+    }
+    function pricingAccessorySized(rec) {
+      return !!(rec && rec.accessorySkus && typeof rec.accessorySkus === 'object');
     }
     function pricingCleanSku(sku) {
       return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0
@@ -13916,12 +13930,14 @@
       // No applicable catalog record / SKU for this product-size: nothing to
       // ask the resolver about, and nothing to show.
       if (!sku) return off;
-      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
+      var rec = pricingCatalogRecord(m);
+      var accessory = pricingIsAccessory(rec);
+      var sizedAccessory = accessory && pricingAccessorySized(rec);
       var r = resolveDarkPricing(p, getFinancingConfig(), {
         nowMs: Date.now(),
         productId: m.id,
         sku: sku,
-        size: accessory ? undefined : size,
+        size: accessory ? (sizedAccessory ? size : null) : size,
         planId: (typeof o.planId === 'string') ? o.planId : null,
         transactionAmountMinor: o.transactionAmountMinor
       });
@@ -14106,9 +14122,8 @@
       if (q < 1 || q > maxForItem) return null;
       return q;
     }
-    // The size a line is FOR. Presentation metadata only: it never reaches
-    // the resolver, whose accessory query stays sizeless
-    // (pricePresentationFor). A mattress is priced at the customer's size.
+    // The size a line is FOR - the same size the gate queries the resolver
+    // at (pricePresentationFor). A mattress is priced at the customer's size.
     // An accessory sold per mattress size (an `accessorySkus` map) is that
     // size's OWN product at its own price, so its line says which one
     // (PR #132 review repair, 2026-09-27: the size was discarded, and a

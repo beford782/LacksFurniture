@@ -348,10 +348,10 @@ def run_priced(browser):
     config, catalog, verdicts, accessories = build_priced_state()
     check("the website preview builds and is ACCEPTED with a Queen and a King variant of one family",
           pricing.dark_form_acceptable("website", verdicts) and verdicts["served_refused"]
-          and verdicts["sizeProjections"] == ["queen", "king"], str(verdicts["dark_errors"])[:240])
+          and "sizeProjections" not in verdicts, str(verdicts["dark_errors"])[:240])
     served = [e for e in config["pricing"]["products"] if e["productId"] == PROTECTOR["id"]]
-    check("...and it serves both variants as sizeless accessory entries",
-          sorted(e["sku"] for e in served) == ["T-prot-king", "T-prot-queen"] and all(e["size"] is None for e in served))
+    check("...and it serves both variants as per-size accessory entries (size = the variant's own size)",
+          sorted((e["sku"], e["size"]) for e in served) == [("T-prot-king", "king"), ("T-prot-queen", "queen")])
     check("...and pricing in the COMMITTED store-config is still disabled",
           load("data", "store-config.json").get("pricing", {}).get("displayEnabled") is not True)
     if not pricing.dark_form_acceptable("website", verdicts):

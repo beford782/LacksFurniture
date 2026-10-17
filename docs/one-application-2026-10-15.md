@@ -92,8 +92,11 @@ Client behaviour:
 - It requires a valid `sendId` (`invalid_request` otherwise).
 - It deduplicates under `LockService` + `CacheService`: a repeated `sendId` gets `{success:true, duplicate:true}` with no row and no email.
 - It renders the quote verbatim, escaped, with no server arithmetic.
-- Credentials and recipients stay server-side.
-- The CAN-SPAM hard block is unchanged.
+- Credentials and recipients stay server-side. Every deployment value (unsubscribe URL, postal address, privacy contact, BCC, reply-to, leads tab) lives in Script Properties, so the repo file deploys unchanged and holds no deployment data.
+- The CAN-SPAM hard block stays: a missing or sentinel required property refuses `canspam_not_configured`.
+- It sends through `MailApp`, which needs only the `script.send_mail` scope. The lead row (with `sendId`) is written to a named tab only after a successful send, so a retried failure never adds a second row.
+- `checkDeployment()`, run by hand in the script editor, triggers the OAuth consent and reports readiness without sending.
+- `appsscript.json` and `.claspignore` are in the repo; `.clasp.json` (the per-deployment script id) is git-ignored.
 
 Preview mode (blank `gasUrl`) still sends nothing. See `docs/gas-activation-runbook.md`.
 
@@ -121,7 +124,7 @@ Preview mode (blank `gasUrl`) still sends nothing. See `docs/gas-activation-runb
 | Validator refusal of governance signatures marked fixture / placeholder / review build / pending verification / illustrative | Harness data can never validate as production |
 | `exactPromotionsEnabled`, plan freshness and the formula artifact | No stale or unpublished payment terms |
 | CI "Shipped operating state unchanged" lock | The owner's activation switch. Shipped data stays dark until Blake changes it. It now also pins `pricing.offers == []` and `surfaces.email == false` |
-| Blank `gasUrl` preview mode, and the `Code.gs` CAN-SPAM block | No accidental email |
+| Blank `gasUrl` preview mode, and the `Code.gs` CAN-SPAM block (now driven by Script Properties) | No accidental email |
 | Domain lock | Unchanged |
 
 Activation is now a **configuration decision**. A pricing block with `displayEnabled` and its surfaces on validates once every governance record is complete, and is refused, naming the missing record, otherwise. No code change is needed to go live.
@@ -133,16 +136,34 @@ None of these exist in approved form. Each feature stays fail-closed until its i
 |---|---|---|
 | Pricing authority (owner, role); freshness approval with `maxAgeDays`; source-policy approval with allowed hosts | Every price, and so everything below | `incoming/lacks_pricing.json` → `pricing.authority`, `.freshness`, `.sourcePolicy` |
 | Presentation approvals: business, legal, native Spanish review | Every price and payment display, including payment figures outside the workspace | `pricing.presentation.approvals` |
-| A verified price per product and size (SKU, amount, evidence, `verifiedBy`), a catalog SKU map, and per-product MAP/advertising clearance | Prices, totals, quotes | `pricing.products[]`; catalog identity: the mattress `skus` column and the accessory `sku` (size-independent) or `accessorySkus` (`SKUs by Size`, added in this change) in `incoming/lacks_mattresses.json` / `incoming/lacks_accessories.json` |
+| A verified price per product and size (SKU, amount, evidence, `verifiedBy`), a catalog SKU map, and per-product MAP/advertising clearance | Prices, totals, quotes | `pricing.products[]`; catalog identity: the mattress `skus` column and the accessory `sku` (size-independent) or `accessorySkus` (`SKUs by Size`, added in this change; such an accessory takes one `pricing.products[]` entry per size, `sku` = that size's) in `incoming/lacks_mattresses.json` / `incoming/lacks_accessories.json` |
 | Surfaces to turn on (results, drawer, compare, sleepSystem, sleepPlan, handoff, email) | Where figures appear; `email` puts the quote in the email | `pricing.surfaces` |
-| Fresh financing re-verification (the current `verifiedAt` of 2026-10-03 is past its 7-day `maxAgeDays`) and `exactPromotionsEnabled: true` | Exact plan terms and every payment | `incoming/lacks_financing.json` |
-| `publishedPaymentFactor` for Synchrony 9.99% / 72 months (not published in the current evidence) | That plan's payment | the plan in `incoming/lacks_financing.json` |
-| `qualifyingBasis` for each plan with a minimum (Synchrony $500, 0%/48 $4,200) | Payments under those plans (otherwise "Minimum purchase basis to confirm") | the plans |
+| Fresh financing re-verification (the current `verifiedAt` of 2026-10-03 is past its 7-day `maxAgeDays`) and `exactPromotionsEnabled: true`. An automated re-check on 2026-10-16 could not reach lacks.com/financing (HTTP 403 bot protection), so it needs a real browser session (`tools/reverify_financing.py --mark-verified`) | Exact plan terms and every payment | `incoming/lacks_financing.json` |
+| Already configured from the July (real-browser) and 2026-10-03 evidence: Synchrony 9.99%/72 `published-fixed-factor`, factor 1.8521%, rounded up to the whole dollar; Synchrony 0%/48 `published-equal-division` (true 0% APR, not deferred interest), down payment required | — (usable once the rows above and below are met) | the plans |
+| A word-for-word capture of the 0%/48 sentence "divided by the number of months … rounded up to the next whole dollar". The validator cites it, but no tracked record contains it, and the `_meta` reference to `docs/financing-verification-2026-10-03.md` points to a file that does not exist | 0%/48 payments (rounding evidence) | `incoming/lacks_financing.json` evidence / a verification doc |
+| `qualifyingBasis` for each plan with a minimum (Synchrony $500, 0%/48 $4,200). lacks.com says only "one receipt" and that discounts may cause the minimum to be missed; it never says what the minimum is measured on | Payments under those plans (otherwise "Minimum purchase basis to confirm") | the plans |
 | `paymentCalculationEnabled: true` per plan, plus an approved formula artifact (mode, cadence, approver, verified source) | Payments | plans; `pricing.formulas[]` |
 | Lacks in-house terms (open conflict: "up to 24" vs "6–36 months"), lease-to-own and Build My Credit methods | These stay "To confirm" | `incoming/lacks_financing.json` |
 | Any current promotion or discount: effect, eligibility, exclusions, dates, stacking, evidence, approval | Offers | `pricing.offers[]` |
-| A deployed Apps Script `/exec` URL | Live email | `gasUrl` (store values) |
-| CAN-SPAM unsubscribe URL, postal address, privacy contact; BCC destination; privacy and consent copy (EN/ES) | Any real send (`Code.gs` refuses until set) | `Code.gs` constants; `store-config` text |
+| The sending Google account (it owns the mailbox, the leads Sheet and the daily quota: about 100 recipients a day on consumer Gmail, BCC included) and a one-time deployment under it: a bound Sheet, `appsscript.json` scopes `script.send_mail` and `spreadsheets.currentonly`, OAuth consent, deploy as "Execute as me / Anyone". No clasp or gcloud login exists on this machine, and the Chrome extension is disconnected, so this step needs Blake (or a `clasp login` by Blake, after which `clasp push` / `clasp deploy` can be scripted) | Live email | `docs/gas-activation-runbook.md` |
+| The deployed `/exec` URL, set together with lifting the CI `gasUrl` lock in one owner-authorized PR | Live email | `incoming/build_lacks_workbook.py` `"GAS URL"` → workbook → `data/store-config.json` |
+| CAN-SPAM unsubscribe URL (https), postal address and privacy contact from Lacks; optional BCC, reply-to and leads tab name | Any real send (`Code.gs` refuses `canspam_not_configured` until set) | Apps Script **Script Properties** (never in the repo) |
+| Privacy and consent copy for a live send (EN/ES) | Live email (the validator refuses preview wording once `gasUrl` is set) | `incoming/lacks_store_values.json` `text` / `text_es` |
+
+### Captured website prices (assessed 2026-10-16)
+`demo/price-snapshot/` (2026-09-20/21) and `demo/price-review/2026-10-03/` were captured automatically from lacks.com. They are **not suitable as production prices as they stand**:
+- No row is owner-verified.
+- They are 13–26 days old.
+- Most matched mattress prices (44 of 50) are sale prices with no published end date.
+- 71 rows link to a parent page or another size's page.
+- Only 50 of 156 mattress/size pairs and 9 of 10 accessories match the catalog.
+- The catalog has no SKU map yet.
+
+They are a useful worklist. To become production prices, they need four things:
+1. A fresh recapture (`tools/fetch_lacks_prices.py`, then `tools/map_app_to_website.py`).
+2. A ruling on how sale prices are classed.
+3. A per-row check by a named person.
+4. MAP clearance.
 
 **Unresolved approvals (business, legal and owner), as distinct from code:**
 - business and legal approval of the price and payment presentation, and of payment figures outside the workspace;

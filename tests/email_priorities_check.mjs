@@ -4,17 +4,18 @@
 //
 // This is the FIRST suite in the repo to EXECUTE Code.gs rather than grep it.
 // The file is plain ES5 (top-level vars + function declarations, no modules),
-// so the whole file compiles as a `new Function` body with four recorder
-// stubs — Logger, ContentService, SpreadsheetApp, GmailApp — and every
-// declaration is in scope. Extracting doPost by regex instead would swallow to
+// so the whole file compiles as a `new Function` body with recorder stubs —
+// Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService,
+// PropertiesService — and every declaration is in scope. Extracting doPost by regex instead would swallow to
 // EOF (measured), which is why the whole-file load is the pattern.
 //
-// THE VACUITY TRAP THIS SUITE IS BUILT AROUND: the shipped CAN-SPAM constants
-// are RETAILER_APPROVAL_REQUIRED sentinels, so doPost returns
-// canspam_not_configured and sends NOTHING. A naive harness asserts on an
-// email that never existed and passes. Two rules, everywhere below:
-//   - approveCanSpam() is a HARNESS-SCOPE rebind (never a source edit), and
-//     the shipped refusal is itself asserted first;
+// THE VACUITY TRAP THIS SUITE IS BUILT AROUND: Code.gs reads its CAN-SPAM
+// values from Script Properties and holds none itself, so a deployment
+// without them answers canspam_not_configured and sends NOTHING. A naive
+// harness asserts on an email that never existed and passes. Two rules,
+// everywhere below:
+//   - approveCanSpam() sets the harness's STUB Script Properties (never a
+//     source edit), and the unconfigured refusal is itself asserted first;
 //   - every body assertion is preceded by "an email was actually sent", and
 //     every plain-text assertion by "fell back to plain text".
 //
@@ -35,21 +36,46 @@ function check(label, cond, detail = "") {
 function section(name) { console.log(`\n-- ${name} --`); }
 
 // ---------- the harness ------------------------------------------------------
-function buildGas() {
+// The retailer-approved values a configured deployment carries, as Script
+// Properties. Test-only values; the repository file names none of them.
+const APPROVED_PROPS = {
+  UNSUBSCRIBE_URL: "https://example.test/unsubscribe",
+  POSTAL_ADDRESS: "1 Test St, Test TX 78501",
+  PRIVACY_CONTACT: "privacy@example.test",
+};
+function buildGas(opts = {}) {
   const log = [];
-  const rows = [];
   const sent = [];
-  let safeDataSeen = null;
+  let mailFailuresLeft = 0;
   const Logger = { log: (s) => log.push(String(s)) };
   const ContentService = {
     MimeType: { JSON: "json" },
     createTextOutput: (s) => ({ setMimeType: () => ({ getContent: () => s }), getContent: () => s }),
   };
-  const SpreadsheetApp = {
-    getActiveSpreadsheet: () => ({ getActiveSheet: () => ({ appendRow: (r) => rows.push(r) }) }),
-  };
-  const GmailApp = {
-    sendEmail: (to, subject, body, opts) => sent.push({ to, subject, body, opts: opts || {} }),
+  // The bound Spreadsheet as named tabs. "Leads" exists unless
+  // opts.noLeadsTab; `rows` is that tab's rows (a pre-existing tab, no header).
+  const tabs = new Map();
+  const inserted = [];
+  const frozen = {};
+  const rows = [];
+  if (!opts.noLeadsTab) tabs.set("Leads", rows);
+  const sheetFor = (n) => ({
+    appendRow: (r) => { if (opts.rowThrows) throw new Error("forced Sheet failure"); tabs.get(n).push(r); },
+    setFrozenRows: (k) => { frozen[n] = k; },
+    getName: () => n,
+  });
+  const SpreadsheetApp = { getActiveSpreadsheet: () => ({
+    getSheetByName: (n) => (tabs.has(n) ? sheetFor(n) : null),
+    insertSheet: (n) => { tabs.set(n, n === "Leads" ? rows : []); inserted.push(n); return sheetFor(n); },
+    // Whichever tab is active is never the target.
+    getActiveSheet: () => { throw new Error("getActiveSheet must not be used"); },
+  }) };
+  const MailApp = {
+    sendEmail: (to, subject, body, o) => {
+      if (mailFailuresLeft > 0) { mailFailuresLeft -= 1; throw new Error("forced MailApp failure"); }
+      sent.push({ to, subject, body, opts: o || {} });
+    },
+    getRemainingDailyQuota: () => 97,
   };
   // Script lock + script cache (sendId duplicate suppression). One fresh
   // cache per harness instance, so each buildGas() is a fresh deployment.
@@ -58,16 +84,18 @@ function buildGas() {
   const CacheService = { getScriptCache: () => ({
     get: (k) => (cache.has(k) ? cache.get(k) : null),
     put: (k, v) => { cache.set(k, String(v)); } }) };
-  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", "LockService", "CacheService", gs + `
+  // Script Properties: empty (an unconfigured deployment) unless set.
+  const props = Object.assign({}, opts.props || {});
+  const PropertiesService = { getScriptProperties: () => ({
+    getProperty: (k) => (Object.prototype.hasOwnProperty.call(props, k) ? props[k] : null) }) };
+  // GmailApp would need the full https://mail.google.com/ scope: any use throws.
+  const GmailApp = { sendEmail: () => { throw new Error("GmailApp must not be used (MailApp only)"); } };
+  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "MailApp", "LockService", "CacheService",
+    "PropertiesService", "GmailApp", gs + `
     ;return {
       doPost: function(e) { return doPost(e); },
+      checkDeployment: function() { return checkDeployment(); },
       buildSimpleHtml: function(d, f, es, s) { return buildSimpleHtml(d, f, es, s); },
-      // Harness-scope rebinds — the SOURCE stays shipped and is asserted so.
-      approveCanSpam: function() {
-        UNSUBSCRIBE_URL = 'https://example.test/unsubscribe';
-        POSTAL_ADDRESS = '1 Test St, Test TX 78501';
-        PRIVACY_CONTACT = 'privacy@example.test';
-      },
       breakHtmlBuilder: function() {
         buildSimpleHtml = function() { throw new Error('forced HTML failure'); };
       },
@@ -75,8 +103,11 @@ function buildGas() {
         var orig = buildSimpleHtml;
         buildSimpleHtml = function(d, f, es, s) { sink(d); return orig(d, f, es, s); };
       }
-    };`)(Logger, ContentService, SpreadsheetApp, GmailApp, LockService, CacheService);
-  return { api, log, rows, sent,
+    };`)(Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService, PropertiesService, GmailApp);
+  // Sets the stub Script Properties - never a source edit.
+  api.approveCanSpam = () => Object.assign(props, APPROVED_PROPS);
+  return { api, log, rows, sent, tabs, inserted, frozen, props, cache,
+    setMailFailures: (n) => { mailFailuresLeft = n; },
     setSafeDataSink: (fn) => api.captureSafeData(fn) };
 }
 
@@ -134,23 +165,152 @@ const inOrder = (hay, needles) => {
 // -1. HARNESS PRECONDITIONS — a rename in Code.gs becomes a NAMED failure
 // here, instead of a bare ReferenceError sixty assertions in.
 // ===========================================================================
-section("Code.gs still declares what the harness rebinds");
-check("doPost, buildSimpleHtml and the CAN-SPAM constants exist by name",
+section("Code.gs still declares what the harness drives");
+check("doPost, buildSimpleHtml, the CAN-SPAM values and the Script Properties loader exist by name",
   /function doPost\(/.test(gs) && /function buildSimpleHtml\(/.test(gs)
   && /var UNSUBSCRIBE_URL/.test(gs) && /var POSTAL_ADDRESS/.test(gs)
-  && /var PRIVACY_CONTACT/.test(gs));
+  && /var PRIVACY_CONTACT/.test(gs) && /function _loadDeploymentConfig\(/.test(gs)
+  && /PropertiesService\.getScriptProperties\(\)/.test(gs));
 
 // ===========================================================================
 // 0. THE SHIPPED REFUSAL — asserted first, so nothing below is vacuous
 // ===========================================================================
-section("shipped state refuses to send (CAN-SPAM sentinels)");
+section("an unconfigured deployment refuses to send (no Script Properties)");
 {
   const g = buildGas();
   const res = post(g.api, basePayload());
   check("doPost refuses with canspam_not_configured", res.error === "canspam_not_configured");
   check("NO email was sent and NO sheet row written", g.sent.length === 0 && g.rows.length === 0);
-  check("the source still carries the sentinels (the rebind never edits it)",
-    /RETAILER_APPROVAL_REQUIRED/.test(gs));
+  check("the refusal log names the unset properties, never a value",
+    g.log.some((l) => l.includes("UNSUBSCRIBE_URL, POSTAL_ADDRESS, PRIVACY_CONTACT")));
+}
+
+section("the repository Code.gs holds NO deployment-specific value");
+{
+  const assigned = (name) => (gs.match(new RegExp("var " + name + "\\s*=\\s*'([^']*)'")) || [null, null])[1];
+  for (const name of ["UNSUBSCRIBE_URL", "POSTAL_ADDRESS", "PRIVACY_CONTACT", "RESULT_EMAIL_BCC", "REPLY_TO"]) {
+    check(`${name} is declared blank in source (its value is a Script Property)`, assigned(name) === "");
+  }
+  check("no email address literal anywhere in Code.gs (the old central BCC is gone)",
+    !/['"][^'"\s]+@[^'"\s]+\.[a-z]{2,}['"]/i.test(gs) && !/dreamfinderleads/.test(gs));
+  check("every deployment value is read from Script Properties by name",
+    ["UNSUBSCRIBE_URL", "POSTAL_ADDRESS", "PRIVACY_CONTACT", "RESULT_EMAIL_BCC", "REPLY_TO", "LEADS_SHEET_NAME"]
+      .every((k) => gs.includes("read('" + k + "')")));
+  check("the sentinel meaning is kept: a RETAILER_APPROVAL_REQUIRED value still refuses",
+    /var CANSPAM_SENTINEL = 'RETAILER_APPROVAL_REQUIRED';/.test(gs));
+  check("mail goes through MailApp (script.send_mail), never GmailApp",
+    /MailApp\.sendEmail\(/.test(gs) && !/GmailApp/.test(gs));
+  check("the leads tab is resolved by name, never getActiveSheet()", !/getActiveSheet/.test(gs));
+}
+
+section("each required Script Property refuses when unset, blank, malformed or a sentinel");
+{
+  const BAD = {
+    UNSUBSCRIBE_URL: ["", "   ", "http://example.test/unsub", "example.test/unsub",
+      "RETAILER_APPROVAL_REQUIRED_UNSUBSCRIBE_URL", "https://"],
+    POSTAL_ADDRESS: ["", "  ", "RETAILER_APPROVAL_REQUIRED_POSTAL_ADDRESS", "x".repeat(301)],
+    PRIVACY_CONTACT: ["", "privacy", "RETAILER_APPROVAL_REQUIRED_PRIVACY_CONTACT", "https://example.test/privacy"],
+  };
+  for (const [key, values] of Object.entries(BAD)) {
+    for (const v of [undefined].concat(values)) {
+      const props = Object.assign({}, APPROVED_PROPS);
+      if (v === undefined) delete props[key]; else props[key] = v;
+      const g = buildGas({ props });
+      const res = post(g.api, basePayload());
+      check(`${key}=${v === undefined ? "(unset)" : JSON.stringify(v).slice(0, 40)}: canspam_not_configured, nothing sent or written`,
+        res.error === "canspam_not_configured" && g.sent.length === 0 && g.rows.length === 0
+        && g.log.some((l) => l.endsWith("Script Properties: " + key)), JSON.stringify(res));
+    }
+  }
+  const g = buildGas({ props: APPROVED_PROPS });
+  const res = post(g.api, basePayload());
+  check("all three set and well-formed: the send goes", res.success === true && g.sent.length === 1);
+  check("the footer carries the Script Property values (HTML and plain)",
+    g.sent.length === 1 && g.sent[0].opts.htmlBody.includes("1 Test St, Test TX 78501")
+    && g.sent[0].opts.htmlBody.includes("https://example.test/unsubscribe")
+    && g.sent[0].body.includes("privacy@example.test") && g.sent[0].body.includes("1 Test St, Test TX 78501"));
+  check("no Script Property value ever reaches the log",
+    g.log.every((l) => !l.includes("1 Test St") && !l.includes("privacy@example.test") && !l.includes("example.test/unsubscribe")));
+}
+
+section("optional Script Properties: BCC, reply-to, leads tab name");
+{
+  let g = buildGas({ props: APPROVED_PROPS });
+  post(g.api, basePayload());
+  check("no RESULT_EMAIL_BCC / REPLY_TO set: the send carries neither option",
+    g.sent.length === 1 && !("bcc" in g.sent[0].opts) && !("replyTo" in g.sent[0].opts));
+  const OPTIONAL = Object.assign({ RESULT_EMAIL_BCC: "leads@example.test", REPLY_TO: "store@example.test" }, APPROVED_PROPS);
+  g = buildGas({ props: OPTIONAL });
+  post(g.api, basePayload());
+  check("BCC and reply-to come from Script Properties on the HTML send",
+    g.sent.length === 1 && "htmlBody" in g.sent[0].opts
+    && g.sent[0].opts.bcc === "leads@example.test" && g.sent[0].opts.replyTo === "store@example.test");
+  g = buildGas({ props: OPTIONAL });
+  g.setMailFailures(1);
+  post(g.api, basePayload());
+  check("...and on the plain-text fallback send",
+    g.sent.length === 1 && !("htmlBody" in g.sent[0].opts)
+    && g.sent[0].opts.bcc === "leads@example.test" && g.sent[0].opts.replyTo === "store@example.test");
+  for (const [k, v] of [["RESULT_EMAIL_BCC", "not-an-address"], ["REPLY_TO", "nope"], ["LEADS_SHEET_NAME", "L".repeat(101)]]) {
+    const g2 = buildGas({ props: Object.assign({ [k]: v }, APPROVED_PROPS) });
+    const r2 = post(g2.api, basePayload());
+    check(`a malformed optional ${k} refuses (send_failed) before anything is sent or written`,
+      r2.error === "send_failed" && g2.sent.length === 0 && g2.rows.length === 0
+      && g2.log.some((l) => l.includes("deployment_config_invalid (" + k + ")")));
+  }
+  g = buildGas({ props: APPROVED_PROPS, noLeadsTab: true });
+  post(g.api, basePayload());
+  const leads = g.tabs.get("Leads") || [];
+  check("a missing Leads tab is created once, header row frozen, then the lead row",
+    JSON.stringify(g.inserted) === JSON.stringify(["Leads"]) && g.frozen.Leads === 1 && leads.length === 2
+    && JSON.stringify(leads[0]) === JSON.stringify(["Timestamp", "Name", "Email", "Phone", "Dream Code", "Lang",
+      "Matches", "Accessories", "RSA", "Send ID"]) && leads[1].length === 10, JSON.stringify(leads[0]));
+  post(g.api, basePayload());
+  check("the next lead reuses the tab (no second insert, no second header)",
+    g.inserted.length === 1 && leads.length === 3);
+  g = buildGas({ props: Object.assign({ LEADS_SHEET_NAME: "Lacks Leads" }, APPROVED_PROPS) });
+  post(g.api, basePayload());
+  check("LEADS_SHEET_NAME names the tab the row goes to",
+    g.rows.length === 0 && (g.tabs.get("Lacks Leads") || []).length === 2 && g.inserted[0] === "Lacks Leads");
+}
+
+section("checkDeployment(): the operator's editor check sends nothing and reports names only");
+{
+  let g = buildGas({ noLeadsTab: true });
+  let r = g.api.checkDeployment();
+  check("unconfigured: not ready, the three required names listed, nothing sent, no lead row",
+    r.ready === false && JSON.stringify(r.refusingRequired) === JSON.stringify(["UNSUBSCRIBE_URL", "POSTAL_ADDRESS", "PRIVACY_CONTACT"])
+    && g.sent.length === 0 && (g.tabs.get("Leads") || []).length === 1, JSON.stringify(r));
+  g = buildGas({ props: Object.assign({ RESULT_EMAIL_BCC: "leads@example.test" }, APPROVED_PROPS) });
+  r = g.api.checkDeployment();
+  check("configured: ready, BCC 'set' (never the address), leads tab and remaining quota reported",
+    r.ready === true && r.bcc === "set" && r.replyTo === "sender" && r.leadsTab === "Leads"
+    && r.remainingDailyRecipients === 97 && g.sent.length === 0 && g.rows.length === 0, JSON.stringify(r));
+  check("its log line carries no property value",
+    g.log.every((l) => !l.includes("leads@example.test") && !l.includes("1 Test St") && !l.includes("privacy@example.test")));
+}
+
+section("the lead row: written only after a successful send, carrying the sendId");
+{
+  const g = buildGas({ props: APPROVED_PROPS });
+  g.setMailFailures(2);
+  const body = basePayload({ sendId: "rowOrderSendId-000000000001" });
+  const r1 = post(g.api, body);
+  check("both MailApp attempts fail: send_failed, NO row, nothing cached",
+    r1.error === "send_failed" && g.rows.length === 0 && g.sent.length === 0 && g.cache.size === 0);
+  const r2 = post(g.api, body);
+  check("the client's retry of the same sendId sends once and writes exactly ONE row",
+    r2.success === true && !r2.duplicate && g.sent.length === 1 && g.rows.length === 1);
+  check("the row's right-most (10th) cell is the sendId",
+    g.rows.length === 1 && g.rows[0].length === 10 && g.rows[0][9] === "rowOrderSendId-000000000001");
+  const r3 = post(g.api, body);
+  check("a third POST of that sendId is {success:true, duplicate:true}: no row, no email",
+    r3.success === true && r3.duplicate === true && g.sent.length === 1 && g.rows.length === 1);
+  const gf = buildGas({ props: APPROVED_PROPS, rowThrows: true });
+  const rf = post(gf.api, basePayload({ sendId: "rowOrderSendId-000000000002" }));
+  check("a Sheet write failure AFTER the send still answers success (no retry, no second email) and records the sendId",
+    rf.success === true && gf.sent.length === 1 && gf.cache.has("df-sent:rowOrderSendId-000000000002")
+    && gf.log.some((l) => l.includes("lead row not written")));
 }
 
 // ===========================================================================
@@ -206,7 +366,7 @@ section("HTML email renders the priorities in order, localized");
     === JSON.stringify(PRIORITIES_EN.map((p) => p.name)));
 
   // The sheet row is untouched by priorities: 9 cells, none carrying them.
-  check("the sheet row still has exactly 9 cells", g.rows.length === 1 && g.rows[0].length === 9);
+  check("the sheet row has exactly 10 cells (sendId last)", g.rows.length === 1 && g.rows[0].length === 10);
   check("no priority content reaches the sheet",
     !g.rows[0].join("|").includes(PRIORITIES_EN[0].reason));
 }
@@ -647,8 +807,8 @@ section("accessory quantities: carried, bounded, and stated beside each product"
     check(`[${lang}] plain text: "1. Pillow Alpha x 3 - Pillows", and the single units carry no multiplier`,
       p.includes("1. Pillow Alpha x 3 - Pillows") && p.includes("2. Pillow Beta - Pillows") && p.includes("3. Protector Gamma - Protection"),
       p.slice(p.indexOf("1. Pillow"), p.indexOf("1. Pillow") + 120));
-    check(`[${lang}] the sheet row names the count beside the product and still has 9 cells`,
-      g.rows.length === 1 && g.rows[0].length === 9
+    check(`[${lang}] the sheet row names the count beside the product and has 10 cells`,
+      g.rows.length === 1 && g.rows[0].length === 10
       && g.rows[0].includes("Pillow Alpha x3, Pillow Beta, Protector Gamma"), JSON.stringify(g.rows[0]).slice(0, 300));
   }
   // Hostile counts are never repeated to the customer.

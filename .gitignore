@@ -46,3 +46,8 @@ __pycache__/
 outputs/manual-gates/
 demo/price-snapshot/.cache/
 demo/price-snapshot/snapshot.partial.json
+
+# Apps Script (clasp) per-machine state: the script ID binding and OAuth
+# credentials are never committed (docs/gas-activation-runbook.md)
+.clasp.json
+.clasprc.json

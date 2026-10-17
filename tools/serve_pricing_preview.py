@@ -55,10 +55,10 @@ Guarantees:
   * the committed store-config, catalog, workbook and every incoming/ source
     are never written; every injected document exists in memory only;
   * the DARK form of every state validates clean under the production
-    validators with the shifted clock (validate_financing, validate_pricing;
-    a website or purchase drill carrying per-size accessory variants is
-    judged once per customer size - see size_projections - with duplicate
-    detection intact)
+    validators with the shifted clock (validate_financing, validate_pricing
+    given the in-memory catalog's accessory identities, exactly as the build
+    passes them: a per-size accessory is priced by one entry PER SIZE, each
+    naming its size and that size's own sku - the production lookup)
     — except the stale drill, refused for exactly its staleness, and the
     unavailable drill, refused for exactly its currency (the build-time
     halves of the two rules the runtime gate executes);
@@ -539,48 +539,15 @@ def build_website(start, snapshot=None, mapping=None):
                     {"appId": appid, "sizes": shared, "reason": "sku-shared-across-sizes"})
                 continue
             for size, v in sized.items():
-                # The pricing ENTRY stays sizeless (the accessory contract);
-                # `variantSize` is the drill's own note of which customer size
-                # this variant answers, and never enters the served document.
-                products.append({"kind": "accessory", "appId": appid, "size": None,
-                                 "variantSize": size, "variant": v})
+                # One pricing entry PER SIZE (the per-size accessory
+                # contract, 2026-10-15): the entry names its size and the
+                # catalog's accessorySkus[size] names its sku.
+                products.append({"kind": "accessory", "appId": appid, "size": size,
+                                 "variant": v})
                 accessory_skus.setdefault(appid, {"bySize": {}})["bySize"][size] = v["sku"]
         coverage["accessories"].append(
             {"appId": appid, "sizes": sorted(free or sized), "familyKey": row.get("familyKey")})
     return products, mattress_skus, accessory_skus, coverage
-
-
-def size_projections(products, variant_sizes):
-    """The pricing documents ONE customer can resolve, one per customer size.
-
-    An accessory family sold per mattress size is several purchasable
-    products - one sku and one price per size - behind ONE catalog id, and
-    every accessory pricing entry is sizeless by contract. validate_pricing
-    therefore treats (productId, null) as the accessory identity and refuses a
-    second entry as a duplicate. That rule is right and is NOT relaxed here:
-    no customer has two sizes, so no customer can resolve two variants of one
-    family. The served document is judged the way it is consumed - once per
-    customer size, each projection holding every mattress entry, every
-    size-independent accessory and ONLY that size's variant of each sized
-    family - and each projection must satisfy the unchanged validator,
-    duplicate detection included (PR #132 review repair, 2026-09-27).
-
-    `variant_sizes[i]` is the customer size products[i] answers, or None for
-    an entry every customer can resolve. Returns [(label, [entry, ...])]:
-    a single (None, products) when no entry is size-scoped. Every entry is in
-    at least one projection, so nothing is served unvalidated.
-    """
-    if len(variant_sizes) != len(products):
-        raise ValueError("variant_sizes must name one size (or None) per product entry")
-    stray = sorted({z for z in variant_sizes if z is not None and z not in MATTRESS_SIZES})
-    if stray:
-        raise ValueError(f"variant size {stray[0]!r} is not a mattress size")
-    present = set(variant_sizes)
-    sizes = [z for z in MATTRESS_SIZES if z in present]
-    if not sizes:
-        return [(None, list(products))]
-    return [(z, [e for e, vz in zip(products, variant_sizes) if vz is None or vz == z])
-            for z in sizes]
 
 
 def review_sales_policies():
@@ -912,14 +879,12 @@ def build_injected(state: str, start: datetime):
         products.append(e)
     pr["products"] = products
     pr.setdefault("offers", [])
-    purchase_variant_sizes = None
     if state == "purchase":
         # EVERY size of every mattress and every sized accessory, one fixture
-        # sku and price each (sized accessory entries stay sizeless by
-        # contract and are judged once per customer size, as the website
-        # drill's are - see size_projections).
+        # sku and price each. A sized accessory's entries carry their size,
+        # exactly the production per-size contract (validate_pricing with the
+        # catalog's accessorySkus; the runtime queries at the customer's size).
         products = []
-        purchase_variant_sizes = []
         stamp = _shift(template["evidence"]["verifiedAt"], delta)
         attest = _shift(template["clearance"]["attestedAt"], delta)
 
@@ -938,18 +903,15 @@ def build_injected(state: str, start: datetime):
             for z in MATTRESS_SIZES:
                 products.append(_entry(mid, "mattress", purchase_sku(mid, z), z,
                                        purchase_mattress_amount(i, z)))
-                purchase_variant_sizes.append(None)
         for j, acc_rec in enumerate(_load(os.path.join(REPO, "data", "accessories.json"))):
             aid = acc_rec["id"]
             if accessory_is_sized(acc_rec):
                 for z in MATTRESS_SIZES:
-                    products.append(_entry(aid, "accessory", purchase_sku(aid, z), None,
+                    products.append(_entry(aid, "accessory", purchase_sku(aid, z), z,
                                            purchase_accessory_amount(j, z)))
-                    purchase_variant_sizes.append(z)
             else:
                 products.append(_entry(aid, "accessory", purchase_sku(aid), None,
                                        purchase_accessory_amount(j, None)))
-                purchase_variant_sizes.append(None)
         pr["products"] = products
         pr["offers"] = purchase_offers(start, stamp,
                                        _load(os.path.join(REPO, "data", "accessories.json")))
@@ -994,10 +956,8 @@ def build_injected(state: str, start: datetime):
     catalog = copy.deepcopy(cat)
     accessories = _load(os.path.join(REPO, "data", "accessories.json"))
     coverage = None
-    variant_sizes = None
 
     if state in PURCHASE_STATES:
-        variant_sizes = purchase_variant_sizes
         for tier in TIER_ORDER:
             for m in catalog.get(tier, []):
                 m["skus"] = {z: purchase_sku(m["id"], z) for z in MATTRESS_SIZES}
@@ -1022,7 +982,6 @@ def build_injected(state: str, start: datetime):
 
         template = dark["products"][0]
         entries = []
-        variant_sizes = [rec.get("variantSize") for rec in wp]
         for rec in wp:
             v = rec["variant"]
             e = copy.deepcopy(template)
@@ -1145,39 +1104,15 @@ def build_injected(state: str, start: datetime):
     dark_cfg = copy.deepcopy(config)
     dark_cfg["pricing"] = dark
     fin_rep = validation.validate_financing(dark_cfg, allowed_source_hosts=hosts["financingSourceHosts"])
-    # Judged once per customer size (see size_projections). Every state but a
-    # website drill carrying per-size accessory variants has ONE projection:
-    # the whole document, exactly as before.
-    if variant_sizes is None:
-        variant_sizes = [None] * len(dark["products"])
-    dark_errors, dark_warnings, served_errors, projected = [], [], [], []
-    served_refused = True
-    # One sku identifies one product-size across the WHOLE served document,
-    # not merely inside each projection.
-    seen = {}
-    for i, e in enumerate(dark["products"]):
-        if e["sku"] in seen:
-            dark_errors.append(f"pricing.products[{i}].sku {e['sku']!r} duplicates "
-                               f"products[{seen[e['sku']]}] across the served document "
-                               f"- one SKU identifies one product-size")
-        else:
-            seen[e["sku"]] = i
-    dark_views = size_projections(dark["products"], variant_sizes)
-    served_views = size_projections(config["pricing"]["products"], variant_sizes)
-    for (label, dark_products), (_, served_products) in zip(dark_views, served_views):
-        projected.append(label)
-        tag = "" if label is None else f"[customer size {label}] "
-        d_cfg = copy.deepcopy(dark_cfg)
-        d_cfg["pricing"]["products"] = copy.deepcopy(dark_products)
-        s_cfg = copy.deepcopy(config)
-        s_cfg["pricing"]["products"] = copy.deepcopy(served_products)
-        d_rep = validation.validate_pricing(d_cfg, now=start, **kw)
-        s_rep = validation.validate_pricing(s_cfg, now=start, **kw)
-        dark_errors.extend(tag + e for e in d_rep.errors)
-        dark_warnings.extend(tag + w for w in d_rep.warnings)
-        served_errors.extend(tag + e for e in s_rep.errors)
-        # EVERY projection's opened form must be refused, not merely one.
-        served_refused = served_refused and not s_rep.ok
+    # ONE judgement of the whole document, with the in-memory catalog's
+    # accessory identities - the same arguments the build passes.
+    kw["accessory_skus"] = validation.accessory_skus_from_catalog(accessories)
+    d_rep = validation.validate_pricing(dark_cfg, now=start, **kw)
+    s_rep = validation.validate_pricing(config, now=start, **kw)
+    dark_errors = list(d_rep.errors)
+    dark_warnings = list(d_rep.warnings)
+    served_errors = list(s_rep.errors)
+    served_refused = not s_rep.ok
     dark_ok = not dark_errors
     verdicts = {
         "financing_ok": fin_rep.ok,
@@ -1185,7 +1120,6 @@ def build_injected(state: str, start: datetime):
         "dark_ok": dark_ok,
         "dark_errors": dark_errors,
         "dark_warnings": dark_warnings,
-        "sizeProjections": projected,
         # The stale drill is refused at BUILD time too — the validator names
         # the aged evidence — which is the other half of the same fail-closed
         # rule the runtime gate executes. Every other state's dark form is

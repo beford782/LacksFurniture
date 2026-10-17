@@ -1030,7 +1030,9 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
 // pricingSkuFor chose the customer's size of a per-size accessory, and
 // quoteLineFor then discarded that size, so a Queen and a King protector -
 // different products at different prices - read identically on the itemised
-// quote. The size is presentation metadata: the resolver query stays sizeless.
+// quote. Since the one-application contract (2026-10-15) the size is also
+// the resolver's: a per-size accessory is queried AT the customer's size and
+// each pricing entry carries the size it prices.
 {
   const S_ID = "protector-dritec", Q_SKU = "FIXTURE-DRITEC-Q", K_SKU = "FIXTURE-DRITEC-K";
   const Q_MINOR = 8900, K_MINOR = 10900;
@@ -1038,11 +1040,11 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
   const CHOSE = { kind: "chosen", item: M() };
   const SP = (over = {}) => {
     const p = ACTIVE(Object.assign({ surfaces: { handoff: true, results: true } }, over));
-    for (const [id, sku, minor] of [[S_ID, Q_SKU, Q_MINOR], [S_ID, K_SKU, K_MINOR], [P_ID, P_SKU, P_MINOR]]) {
+    for (const [id, sku, minor, size] of [[S_ID, Q_SKU, Q_MINOR, "queen"], [S_ID, K_SKU, K_MINOR, "king"], [P_ID, P_SKU, P_MINOR, null]]) {
       const e = JSON.parse(JSON.stringify(p.products[0]));
-      e.productId = id; e.productKind = "accessory"; e.sku = sku; e.size = null;
+      e.productId = id; e.productKind = "accessory"; e.sku = sku; e.size = size;
       e.price.amountMinor = minor;
-      Object.assign(e.clearance.scope, { productId: id, productKind: "accessory", sku: sku, size: null, amountMinor: minor });
+      Object.assign(e.clearance.scope, { productId: id, productKind: "accessory", sku: sku, size: size, amountMinor: minor });
       p.products.push(e);
     }
     return p;
@@ -1086,9 +1088,9 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
       return !!ln && ln.size === null && ln.reason === "no-catalog-record"; })());
   check("the mattress line is unchanged: it carries the customer's size",
     env().api.quote("handoff", "queen").lines[0].kind === "mattress" && env().api.quote("handoff", "queen").lines[0].size === "queen");
-  // The accessory resolver's size contract is untouched: the query is sizeless.
-  check("the resolver query for an accessory still carries NO size (the contract the validator pins)",
-    /size: accessory \? undefined : size,/.test(gateBlock));
+  // The accessory query carries the size ONLY for a per-size accessory.
+  check("the resolver query carries the customer's size for a per-size accessory, none for a size-independent one",
+    /size: accessory \? \(sizedAccessory \? size : null\) : size,/.test(gateBlock));
   check("the gate itself is unchanged for a sized accessory: available at the customer's size, off at any other",
     env().api.gate("handoff", CAT[0], "king", null).state === "available"
     && env().api.gate("handoff", CAT[0], "king", null).amountMinor === K_MINOR
@@ -1126,6 +1128,52 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
   }
   check("LANGUAGE: the quote record (size included) is byte-identical in EN and ES",
     JSON.stringify(env({ lang: "en" }).api.quote("handoff", "queen")) === JSON.stringify(env({ lang: "es" }).api.quote("handoff", "queen")));
+
+  // --- per-size accessory entries (one-application contract, 2026-10-15) ---
+  {
+    const only = (entries) => { const p = SP(); p.products = p.products.filter((e) => e.productKind === "mattress").concat(entries); return p; };
+    const accE = (id, sku, size, minor) => { const p = SP(); const e = JSON.parse(JSON.stringify(p.products.find((x) => x.productId === id && x.sku === sku)));
+      e.size = size; e.clearance.scope.size = size; if (minor) { e.price.amountMinor = minor; e.clearance.scope.amountMinor = minor; } return e; };
+    const ln = (pricing, size) => lineOf(env({ pricing }).api.quote("handoff", size), S_ID);
+    check("per-size accessory: a King customer resolves ONLY the king entry (the queen entry is never borrowed)",
+      (() => { const l = ln(only([accE(S_ID, Q_SKU, "queen"), accE(P_ID, P_SKU, null)]), "king");
+        return !!l && l.resolved === false && l.unitAmountMinor === null; })());
+    check("per-size accessory: a SIZELESS entry carrying that size's sku resolves nothing (sized query)",
+      (() => { const l = ln(only([accE(S_ID, Q_SKU, null), accE(P_ID, P_SKU, null)]), "queen");
+        return !!l && l.resolved === false; })());
+    check("per-size accessory: an entry at ANOTHER size with this size's sku resolves nothing",
+      (() => { const l = ln(only([accE(S_ID, Q_SKU, "king"), accE(P_ID, P_SKU, null)]), "queen");
+        return !!l && l.resolved === false; })());
+    check("per-size accessory: a wildcard-size entry resolves nothing",
+      ["*", "all", "any", "default", " ALL "].every((w) => { const l = ln(only([accE(S_ID, Q_SKU, w), accE(P_ID, P_SKU, null)]), "queen");
+        return !!l && l.resolved === false; }));
+    check("size-independent accessory: a SIZED entry resolves nothing (its query is sizeless)",
+      (() => { const q = env({ pricing: only([accE(S_ID, Q_SKU, "queen"), accE(P_ID, P_SKU, "queen")]) }).api.quote("handoff", "queen");
+        const l = lineOf(q, P_ID); return !!l && l.resolved === false; })());
+    check("size-independent accessory: the sizeless entry resolves for EVERY customer size",
+      SIZES.every((z) => { const l = lineOf(env().api.quote("handoff", z), P_ID); return !!l && l.resolved === true && l.unitAmountMinor === P_MINOR; }));
+  }
+  // --- split King base: two Twin XL units, resolved at twin_xl -------------
+  {
+    const B_ID = "base-split", B_TXL = "FIXTURE-BASE-TXL", B_K = "FIXTURE-BASE-K", TXL_MINOR = 79900, K_MINOR_B = 149900;
+    const BCAT = [{ id: B_ID, name: "Split Base", subType: "adjustable", accessorySkus: { twin_xl: B_TXL, king: B_K } }];
+    const BP = (entries) => { const p = ACTIVE({ surfaces: { handoff: true, results: true } });
+      for (const [sku, minor, size] of entries) { const e = JSON.parse(JSON.stringify(p.products[0]));
+        Object.assign(e, { productId: B_ID, productKind: "accessory", sku, size }); e.price.amountMinor = minor;
+        Object.assign(e.clearance.scope, { productId: B_ID, productKind: "accessory", sku, size, amountMinor: minor }); p.products.push(e); }
+      return p; };
+    const splitWin = { _accCart: { [B_ID]: { id: B_ID, quantity: 2, split: true } } };
+    const bl = (pricing, win) => lineOf(makeEnv({ pricing, financing: F(), finalist: CHOSE, accessories: BCAT, win }).api.quote("handoff", "king"), B_ID);
+    check("split King base: resolves the twin_xl entry, two units, and states twin_xl",
+      (() => { const l = bl(BP([[B_TXL, TXL_MINOR, "twin_xl"], [B_K, K_MINOR_B, "king"]]), splitWin);
+        return !!l && l.resolved === true && l.split === true && l.sku === B_TXL && l.size === "twin_xl"
+          && l.unitAmountMinor === TXL_MINOR && l.extendedAmountMinor === 2 * TXL_MINOR; })());
+    check("split King base: without a twin_xl entry it is unresolved (never priced at King)",
+      (() => { const l = bl(BP([[B_K, K_MINOR_B, "king"]]), splitWin); return !!l && l.resolved === false && l.unitAmountMinor === null; })());
+    check("one King base (not split): resolves the king entry",
+      (() => { const l = bl(BP([[B_TXL, TXL_MINOR, "twin_xl"], [B_K, K_MINOR_B, "king"]]), { _accCart: { [B_ID]: { id: B_ID } } });
+        return !!l && l.resolved === true && l.split === false && l.sku === B_K && l.unitAmountMinor === K_MINOR_B; })());
+  }
 }
 
 section("Plan status copy beside Payment Choice (slice 2.2d): status only, never a figure");
@@ -1402,7 +1450,7 @@ function mutate(find, replace) {
   {
     const { withAccessory, ACC } = globalThis.__ACC;
     const e = makeEnv({ pricing: withAccessory(), financing: F(),
-      mutate: withLf(mutate("        size: accessory ? undefined : size,", "        size: size,")) });
+      mutate: withLf(mutate("        size: accessory ? (sizedAccessory ? size : null) : size,", "        size: size,")) });
     check("MA1 accessory query carries the mattress size -> the accessory-available probe FAILS on the mutant",
       e.api.slot("sleepSystem", ACC(), "x").indexOf('data-price-state="available"') === -1);
   }

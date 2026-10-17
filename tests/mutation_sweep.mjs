@@ -601,16 +601,16 @@ const MUTATIONS = [
   // survive. The third proves the fallback observers still bite now that the
   // catch reuses the shared body instead of building its own.
   ["Code.gs: the successful send's text part reverts to the stub",
-    "GmailApp.sendEmail(email, subject, plainBody, mailOptions);",
-    "GmailApp.sendEmail(email, subject, isEs ? 'Por favor visualiza este correo en un cliente de correo HTML.' : 'Please view in an HTML email client.', mailOptions);",
+    "MailApp.sendEmail(email, subject, plainBody, mailOptions);",
+    "MailApp.sendEmail(email, subject, isEs ? 'Por favor visualiza este correo en un cliente de correo HTML.' : 'Please view in an HTML email client.', mailOptions);",
     EMAIL_PRIORITIES, "Code.gs"],
   ["Code.gs: the successful send's text part is emptied",
-    "GmailApp.sendEmail(email, subject, plainBody, mailOptions);",
-    "GmailApp.sendEmail(email, subject, '', mailOptions);",
+    "MailApp.sendEmail(email, subject, plainBody, mailOptions);",
+    "MailApp.sendEmail(email, subject, '', mailOptions);",
     EMAIL_PRIORITIES, "Code.gs"],
   ["Code.gs: the fallback stops reusing the shared plain body",
-    "GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);",
-    "GmailApp.sendEmail(email, subject, 'Please view in an HTML email client.', fallbackOptions);",
+    "MailApp.sendEmail(email, subject, plainBody, fallbackOptions);",
+    "MailApp.sendEmail(email, subject, 'Please view in an HTML email client.', fallbackOptions);",
     EMAIL_PRIORITIES, "Code.gs"],
   // Found by the adversarial review of the fix above: the three entries
   // before this one are each caught by MANY assertions, so the suite's
@@ -620,8 +620,8 @@ const MUTATIONS = [
   // but not identical, so every content assertion passes and the equality
   // is the sole observer.
   ["Code.gs: the two sends' plain bodies drift apart",
-    "GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);",
-    "GmailApp.sendEmail(email, subject, buildPlainBody(safeData, isEs, storeName + '.'), fallbackOptions);",
+    "MailApp.sendEmail(email, subject, plainBody, fallbackOptions);",
+    "MailApp.sendEmail(email, subject, buildPlainBody(safeData, isEs, storeName + '.'), fallbackOptions);",
     EMAIL_PRIORITIES, "Code.gs"],
 
   // --- the Sleep Brief pin ---------------------------------------------------
@@ -746,8 +746,8 @@ const MUTATIONS = [
     ".map(function(s) { return String(s || ''); })",
     CONSULT, "Code.gs"],
   ["Code.gs: the sheet row grows the consultation content",
-    "      rsa\n    ]);",
-    "      rsa,\n      JSON.stringify(data.consultation || '')\n    ]);",
+    "      rsa,\n      sendId\n    ];",
+    "      rsa,\n      sendId,\n      JSON.stringify(data.consultation || '')\n    ];",
     CONSULT, "Code.gs"],
   // --- compare-modal dialog semantics (the alignment prerequisite) ---------
   // Every anchor is compare-specific so none can alias onto the financing
@@ -2401,7 +2401,7 @@ const MUTATIONS = [
     PRICING_VALIDATOR, "tools/validation.py"],
   // Clearance-integrity correction (Codex, 2026-08-27): the scope binds size.
   ["2.1a review: a clearance survives a size change (the size scope comparison is gone)",
-    "                            \"size\": size if kind == \"mattress\" else None,",
+    "                            \"size\": size if kind in (\"mattress\", \"accessory\") else None,",
     "                            \"size\": scope.get(\"size\"),",
     PRICING_VALIDATOR, "tools/validation.py"],
 
@@ -2634,7 +2634,7 @@ const MUTATIONS = [
     PRICING_GATE, "index.html"],
   // --- Accessory-price provenance (index.html) --------------------------------
   ["provenance: the accessory query carries the mattress size (a sized accessory entry never resolves)",
-    "        size: accessory ? undefined : size,",
+    "        size: accessory ? (sizedAccessory ? size : null) : size,",
     "        size: size,",
     PRICING_GATE, "index.html"],
   ["provenance: the accessory sku grammar is dropped (an untrimmed sku resolves)",
@@ -3100,7 +3100,7 @@ const MUTATIONS = [
     "const isEmailPreview = !emailDeliveryLive();",
     "const isEmailPreview = true;", DELIVERY],
   ["Code.gs sends while the CAN-SPAM values are still sentinels",
-    "if (!_canSpamConfigured()) {",
+    "if (deployment.required.length) {",
     "if (false) {", DELIVERY, "Code.gs"],
   ["the stub endpoint stops answering with the CORS header a web app deployed \"Anyone\" carries",
     "            self.send_header(\"Cache-Control\", \"no-store\")\n            self.send_header(\"Access-Control-Allow-Origin\", \"*\")",
@@ -3670,6 +3670,20 @@ const MUTATIONS = [
   ["email: the quote enters the payload while pricing.surfaces.email is false",
     "      if (!pricingSurfaceEnabled('email')) return null;\n",
     "", PURCHASE],
+  // --- Per-size accessory pricing (one operable application, 2026-10-15) ---
+  ["per-size accessory: the resolver matches a sized accessory entry at ANY size (another size's price borrowed)",
+    "              if (!isStr(e.size) || !isStr(q.size) || e.size !== q.size) continue;",
+    "              if (!isStr(e.size) || !isStr(q.size)) continue;", PRICING_RESOLVER],
+  ["per-size accessory: the gate queries a per-size accessory sizeless (its per-size entries never resolve)",
+    "        size: accessory ? (sizedAccessory ? size : null) : size,",
+    "        size: accessory ? null : size,", PRICING_GATE],
+  ["per-size accessory: the validator admits a sizeless entry for an accessory sold per size",
+    "                    if size is None:\n                        r.add_error(f\"{tag}.size must name one of accessory \"",
+    "                    if False:\n                        r.add_error(f\"{tag}.size must name one of accessory \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["per-size accessory: the validator stops binding a per-size entry's sku to accessorySkus[size]",
+    "                    elif sku and sku != ident_cat[size]:",
+    "                    elif False:", PRICING_VALIDATOR, "tools/validation.py"],
 ];
 
 // ---------------------------------------------------------------------------

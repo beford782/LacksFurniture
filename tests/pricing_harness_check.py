@@ -400,8 +400,8 @@ check("purchase: the DARK form validates with no errors (the expired offer's ine
       PV["dark_ok"] and srv.dark_form_acceptable("purchase", PV)
       and all("fx-expired" in w or "offers[4]" in w for w in PV["dark_warnings"]),
       "; ".join(PV["dark_errors"][:2] + PV["dark_warnings"][:2]))
-check("purchase: judged once per customer size (sized accessory variants share a catalog id)",
-      PV["sizeProjections"] == SIZES, str(PV["sizeProjections"]))
+check("purchase: judged as ONE document through the production per-size lookup (no size projections)",
+      "sizeProjections" not in PV and not hasattr(srv, "size_projections"))
 check("purchase: the served form is refused ONLY for its non-attestation markers (activation otherwise complete)",
       PV["served_refused"] and PV["served_marker_refused"]
       and all("non-attestation marker" in e for e in PV["served_errors"]),
@@ -421,10 +421,10 @@ check("purchase: every mattress is priced in every size with the purchase sku sc
 SIZED_ACC = [a["id"] for a in ACCESSORIES if srv.accessory_is_sized(a)]
 FREE_ACC = [a["id"] for a in ACCESSORIES if not srv.accessory_is_sized(a)]
 _a_entries = [e for e in ppr["products"] if e["productKind"] == "accessory"]
-check("purchase: every sized accessory priced per size, every pillow once (entries sizeless by contract)",
-      sorted(e["sku"] for e in _a_entries)
-      == sorted([srv.purchase_sku(a, z) for a in SIZED_ACC for z in SIZES] + [srv.purchase_sku(a) for a in FREE_ACC])
-      and all(e["size"] is None for e in _a_entries)
+check("purchase: every sized accessory priced per size (entry size = its size), every pillow once (sizeless)",
+      sorted((e["sku"], e["size"]) for e in _a_entries)
+      == sorted([(srv.purchase_sku(a, z), z) for a in SIZED_ACC for z in SIZES] + [(srv.purchase_sku(a), None) for a in FREE_ACC])
+      and all(e["clearance"]["scope"]["size"] == e["size"] for e in _a_entries)
       and FREE_ACC and all(a.startswith("pillow") for a in FREE_ACC))
 check("purchase: catalog carries every size's sku; sized accessories an accessorySkus map, pillows one sku",
       all(m["skus"] == {z: srv.purchase_sku(m["id"], z) for z in SIZES} for t in srv.TIER_ORDER for m in PCAT[t])

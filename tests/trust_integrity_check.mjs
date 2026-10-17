@@ -489,8 +489,9 @@ ok("analytics.getSummary() (which returns raw answers) has no call site",
 // rests on the session suites' redaction pins and on review.
 ok("the analytics sink is in-memory plus a redacted console line — no transport (pinned by session_async_check too)",
   /analytics\.log = function|log: function|function log\(/.test(norm) && !/analytics[\s\S]{0,400}sendBeacon|fetch\(analytics/.test(norm));
-ok("Code.gs is reached only through that POST and its CAN-SPAM refusal sentinels still stand (no live send is possible yet)",
-  /UNSUBSCRIBE_URL/.test(CODE_GS) && /dreamfinderleads@gmail\.com|RESULT_EMAIL_BCC/.test(CODE_GS));
+ok("Code.gs is reached only through that POST and refuses without its CAN-SPAM Script Properties (no live send is possible yet)",
+  /UNSUBSCRIBE_URL/.test(CODE_GS) && /RESULT_EMAIL_BCC/.test(CODE_GS)
+  && /PropertiesService\.getScriptProperties\(\)/.test(CODE_GS) && /canspam_not_configured/.test(CODE_GS));
 
 // C7. The build-time gate exists and is self-tested.
 ok("tools/validation.py rejects preview-mode privacy prose under a live gasUrl (rule + phrase list + self-test)",

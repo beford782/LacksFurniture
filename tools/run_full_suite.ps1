@@ -323,6 +323,7 @@ if ($ListOnly) {
 $protectedFiles = @(
     'index.html',
     'Code.gs',
+    'appsscript.json',
     'manifest.json',
     'data/store-config.json',
     'data/quiz.json',

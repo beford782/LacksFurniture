@@ -1,161 +1,174 @@
 # Lacks lead-capture activation runbook (Apps Script + Sheet)
 
-How to turn the **preview-mode** Save-your-Sleep-Brief flow into **live** lead
-capture. The app is built for **single-field activation**: the only repo change
-to go live is setting `STORE_CONFIG.gasUrl` in `data/store-config.json`.
-Everything else in the UI already branches off that value.
+How to turn the **preview-mode** Save-your-Sleep-Brief flow into **live**
+email delivery and lead capture. The repository is deployment-ready: `Code.gs`
+and `appsscript.json` deploy **unchanged**, and every deployment value lives in
+the Apps Script project's **Script Properties**, never in the repo.
 
-> Preflight truth (current state): `gasUrl=""` ⇒ no POST, no email, nothing
-> stored. `Code.gs` is committed but **not deployed**.
+> Current state: `gasUrl` is blank, so the kiosk makes no request, sends no
+> email and stores nothing. `Code.gs` is committed but **not deployed**. Every
+> step below that creates a Google project, consents to scopes, sends a test
+> email, sets `gasUrl` or merges needs Blake's explicit authorization in the
+> task at hand.
 
----
+## Decisions to make first (Blake)
 
-## Phase B — Google Sheet + Apps Script (outside the repo)
-1. Create the **leads Google Sheet**. Add the header row per
-   `docs/gas-rsa-field-addition.md` (9 columns; `RSA` last).
-2. **Extensions → Apps Script** from that Sheet (container-bound, so
-   `getActiveSpreadsheet()` resolves correctly).
-3. Paste the repo's `Code.gs`.
-4. Set `RESULT_EMAIL_BCC` (top of `Code.gs`) to the retailer's (Lacks') lead-intake inbox
-   (or `''` to disable BCC). Default today is the shared `dreamfinderleads@gmail.com`.
-5. **Deploy → New deployment → Web app**: *Execute as: Me*, *Who has access:
-   Anyone*. Authorize the Gmail + Sheets scopes when prompted.
-6. Copy the **`/exec` Web App URL**.
+1. **Sending account.** The script runs as the account that deploys it
+   (`executeAs: USER_DEPLOYING`). That mailbox is the email's From address,
+   and its quota is the ceiling. MailApp quota counts every **recipient**,
+   BCC included: a consumer Gmail account allows about **100 recipients/day**
+   (about 50 leads with a BCC), and Google Workspace about **1,500/day**.
+   Check the live figure with `checkDeployment()` (below). For showroom
+   volume, use a Workspace account the retailer controls.
+2. **Retailer-approved values** (Lacks supplies, nobody invents): physical
+   postal address, a working and monitored unsubscribe destination (`https://`),
+   a privacy contact address, and the approved EN/ES privacy copy for
+   `store-config` (`text.privacyBody`, `text.privacyPolicyContact`, consent
+   wording).
+3. **Lead copy (BCC)** destination, if any, and an optional reply-to address.
 
-## What `Code.gs` does with each request (2026-10-15, one operable application)
+## Script Properties (Project Settings → Script Properties)
 
-**Response contract** (the kiosk classifies exactly these; `EMAIL_FAILURE_CODES`):
+| Property | Required | Value |
+|---|---|---|
+| `UNSUBSCRIBE_URL` | yes | `https://` unsubscribe page (honored within 10 business days, live ≥30 days) |
+| `POSTAL_ADDRESS` | yes | the retailer's physical postal address (≤300 chars) |
+| `PRIVACY_CONTACT` | yes | privacy / data-request email address |
+| `RESULT_EMAIL_BCC` | no | lead-intake copy address; blank or unset = no BCC |
+| `REPLY_TO` | no | reply-to address; blank = the sending account |
+| `LEADS_SHEET_NAME` | no | leads tab name; blank = `Leads` |
+
+A required value that is unset, blank, malformed or still contains
+`RETAILER_APPROVAL_REQUIRED` makes `doPost` refuse every request with
+`canspam_not_configured` and send nothing (the log names the property, never
+its value). A set-but-malformed optional value refuses with `send_failed`
+(log: `deployment_config_invalid`).
+
+## Scopes (`appsscript.json`)
+
+Exactly two, so the consent screen is reviewable:
+`https://www.googleapis.com/auth/script.send_mail` (MailApp) and
+`https://www.googleapis.com/auth/spreadsheets.currentonly` (the bound leads
+Sheet). LockService, CacheService and PropertiesService need none. The
+consent screen must list only these two; anything else means the deployed
+files are not the repo's. Web app: execute as the deploying user, access
+"Anyone" (anonymous), which the kiosk's plain POST requires.
+(`appsscript.json` sits at the repo root, so GitHub Pages also serves it
+publicly; it holds no secret.)
+
+## Phase B — Create and deploy (outside the repo)
+
+**Path 1: clasp (scriptable).** Once per machine:
+`npm i -g @google/clasp`, `clasp login` (browser OAuth as the sending
+account), and enable the Apps Script API at
+<https://script.google.com/home/usersettings>. Then, from the repo root:
+
+```
+clasp create --type sheets --title "Lacks DreamFinder Leads" --rootDir .
+git status            # if clasp rewrote appsscript.json: git checkout -- appsscript.json
+clasp push            # .claspignore pushes only Code.gs + appsscript.json
+clasp deploy --description "DreamFinder <commit>"
+```
+
+`clasp create` makes the Sheet, binds a script to it and writes `.clasp.json`
+(the script ID; git-ignored with `.clasprc.json`, never committed).
+
+**Path 2: script editor (manual).** Create the Sheet as the sending account →
+Extensions → Apps Script → paste `Code.gs` → Project Settings → tick "Show
+appsscript.json" and paste the repo's manifest → Deploy → New deployment →
+Web app (Execute as: Me; Who has access: Anyone).
+
+**Both paths, then:**
+1. Set the Script Properties above.
+2. Run `checkDeployment` from the editor (Run menu). Its first run prompts
+   the owner's consent for the two scopes. It sends nothing and writes no
+   lead; it creates the leads tab with its 10-column header
+   (`docs/gas-rsa-field-addition.md`) and logs `ready`, the refusing
+   property names, the leads tab and the remaining daily recipient quota.
+   Continue only when `ready` is true.
+3. Copy the deployment's **`/exec` URL** and its deployment ID.
+
+**Updating the code later:** keep the same `/exec` URL by deploying a **new
+version of the same deployment**: editor: Deploy → Manage deployments →
+pencil → Version: New version; clasp: `clasp push` then
+`clasp deploy -i <deploymentId> --description "..."`. A plain
+`clasp deploy` or "New deployment" creates a **different** URL that the kiosk
+does not use.
+
+## Response contract
 
 | Answer | Meaning |
 |---|---|
-| `{success:true}` | one Sheet row appended, one email sent |
+| `{success:true}` | email sent, then one Sheet row appended |
 | `{success:true, duplicate:true}` | this `sendId` already sent; **no row, no email** |
 | `{success:false, error:'invalid_request'}` | body not a JSON object, or `sendId` missing/malformed |
 | `{success:false, error:'invalid_email'}` | address fails the shape check |
-| `{success:false, error:'canspam_not_configured'}` | the CAN-SPAM sentinels are still in place (shipped state) |
-| `{success:false, error:'send_failed'}` | anything else, including a lock timeout; detail in the GAS log only |
+| `{success:false, error:'canspam_not_configured'}` | a required Script Property is unset, blank, malformed or a sentinel |
+| `{success:false, error:'send_failed'}` | anything else (malformed optional property, lock timeout, mail failure); detail in the GAS log only |
 
-**Send identity and duplicate suppression.** Every request must carry a
-client-generated `sendId` matching `^[A-Za-z0-9_-]{22,40}$` (created with
-`crypto.getRandomValues` when the take-home screen opens, reused for the
-client's one automatic retry and for a visible retry of the same content).
-After the address and CAN-SPAM checks, `doPost` takes the **script lock**
-(`LockService.getScriptLock().waitLock(10000)`, released in `finally`) and
-looks up `df-sent:<sendId>` in the **script cache**
-(`CacheService.getScriptCache()`). A hit answers `duplicate` with nothing
-written or sent. The key is written (TTL 21600 s, the CacheService maximum)
-only **after** a successful send, so a failed or refused request stays
-retryable. Limits to know: the cache is best-effort (Google may evict entries
-early), so dedupe protects the retry window (seconds to hours), not forever;
-a request whose Sheet row was appended but whose email then failed is not
-recorded, so its retry can append a second row (never a second email for a
-success). Neither LockService nor CacheService has an authorization section
-in Google's reference (checked 2026-10-15), so **no OAuth scope beyond the
-Gmail + Sheets scopes is requested** for them; confirm the consent screen at
-deployment lists only those.
+**Duplicates.** Each request carries a client `sendId`
+(`^[A-Za-z0-9_-]{22,40}$`, reused for the client's retry). Under the script
+lock, a `sendId` recorded in the script cache (`df-sent:<sendId>`, 6 h, best
+effort) answers `duplicate`. The record and the lead row are written only
+**after** a successful send, so a failed send leaves nothing behind and its
+retry yields one email and one row. A row write that fails after the send is
+logged, not surfaced (a failure answer would invite a second email).
 
-**The quote section ("Your quote" / "Tu cotización").** When the payload's
-`quote` is a complete v:1 purchase summary (contract section 3) it renders in
-both the HTML and the plain-text body, after the Sleep System: lines (name,
-detail, quantity, list, discounts, net), list subtotal, discounts,
-merchandise subtotal, exclusions, the payment block (pay in full / plan rows /
-quote-only note), offer terms and provenance. Every value is the client's
-formatted text, string-typed, length-capped and HTML-escaped (angle brackets
-stripped in plain text); **the server does no arithmetic**, so the email
-equals the screen. A malformed summary, more than 20 lines, more than 6 offer
-terms or more than 6 discounts on a line drops the **whole** section (never a
-partial quote). The quote never reaches the Sheet row; the GAS log records
-only `quote=present|absent` and the line count. The shipped kiosk sends
-`quote: null` (pricing is dark: `pricing.surfaces.email` is false).
+**The quote section** ("Your quote" / "Tu cotización") renders verbatim from
+the client's purchase summary when it is complete (all-or-nothing, no server
+arithmetic) and never reaches the row. The shipped kiosk sends `quote: null`
+until governed pricing is activated.
 
-## Inputs still required before any real send
-
-Nothing below exists today, and none may be invented:
-
-1. **The deployed `/exec` URL** in `data/store-config.json` `gasUrl` (blank
-   today; setting it is the activation switch and needs Blake's explicit
-   authorization).
-2. **The three CAN-SPAM values** replacing the `RETAILER_APPROVAL_REQUIRED_*`
-   sentinels in `Code.gs`: `UNSUBSCRIBE_URL` (a working, monitored
-   unsubscribe destination), `POSTAL_ADDRESS` (Lacks' physical postal
-   address), `PRIVACY_CONTACT` — supplied and approved by Lacks. Until then
-   `doPost` answers `canspam_not_configured` and sends nothing.
-3. **The BCC destination**: `RESULT_EMAIL_BCC` (today the shared
-   `dreamfinderleads@gmail.com`; set Lacks' lead-intake inbox or `''`).
-4. **The privacy copy**: real Privacy & Terms content for the in-app privacy
-   overlay, `text.privacyPolicyContact`, and approved consent wording (EN/ES)
-   in `store-config.json`.
-
-Pricing, offers and payment figures in the email additionally require the
-governed pricing activation (contract section 6); without it `quote` stays
-null and the email carries no figures.
-
-## Phase B½ — Send-nothing rehearsal in the repository (no deployment, no inbox)
-Built 2026-09-09 (readiness gap G2). Before any test deployment exists, the
-live-mode client path is rehearsed on one machine with nothing sent:
+## Phase B½ — Send-nothing rehearsal (repository, no deployment)
 
 ```
 python tools/serve_delivery_preview.py --respond success --port 8000
 ```
 
-serves the app with an **in-memory** `gasUrl` naming a stub endpoint on a
-second loopback port; the stub records what the page POSTs and answers like
-`Code.gs` (`--respond canspam_not_configured` is what the shipped `Code.gs`
-answers today; `invalid_request`, `invalid_email`, `send_failed`, `echo`,
-`http_500`, `malformed` and `--unreachable` drive each failure path, and
-`flaky` fails the first POST of each `sendId` with HTTP 500 so the client's one
-automatic retry is exercised). Like `Code.gs`, the stub answers
-`invalid_request` for a missing or malformed `sendId` and
-`{success:true, duplicate:true}` for a `sendId` it already accepted; each
-recorded POST names its `outcome`. The recorded POSTs are readable
-at the URL the banner prints; the console shows only their shape. Nothing is
-deployed, sent or stored and the committed `gasUrl` stays blank.
-`tests/delivery_harness_check.py` runs the whole rehearsal headless in CI:
-shipped and live modes in EN and ES, the payload contract, every failure
-path with its copy and closed-set diagnostic, and the recorded payload
-replayed through the real `doPost`. Phase C's error-path and shape-only-log
-items are therefore proved here first and re-verified against the real
-deployment in Phase C; what Phase C alone can prove is the deployed `/exec`,
-the Sheet row, the delivered email's rendering and the BCC copy.
+Serves the app with an in-memory `gasUrl` pointing at a loopback stub that
+answers like `Code.gs` (`--respond canspam_not_configured` is what an
+unconfigured deployment answers; `invalid_request`, `invalid_email`,
+`send_failed`, `echo`, `http_500`, `malformed`, `flaky` and `--unreachable`
+drive each path). Nothing is deployed, sent or stored.
+`tests/delivery_harness_check.py` runs it headless in CI and replays the
+recorded payload through the real `doPost`.
 
-## Phase C — Test deployment with a seed inbox (no live change)
-1. Point a **local, uncommitted** `gasUrl` at the test `/exec`.
-2. Submit the flow in **EN and ES** with a seed email you control. Verify:
-   - Sheet row appends with correct columns (incl. `lang`, `rsa`, matches, accessories).
-   - Customer email arrives — correct EN/ES subject (now "Sleep Brief & Savings
-     Pass" / "Resumen de Sueño y Pase de Ahorro"), body renders in Gmail/Outlook/iOS,
-     images load, Sleep Brief + matches + Payment Choice section present (no DREAM code for Lacks: the Savings Pass is disabled), no broken links.
-   - BCC inbox receives a copy.
-   - Error paths: invalid email → friendly message; GAS unreachable → network error.
-   - GAS execution log is shape-only (no raw PII; quote presence and line count only).
-   - Re-POST the same body (same `sendId`): answer `duplicate`, no second row, no second email.
-   - If governed pricing is active for the test: the "Your quote" section's figures match the kiosk screen exactly, in Gmail/Outlook/iOS and in the plain-text part.
-   - POST works cross-origin from `beford782.github.io`.
-3. Iterate on `Code.gs` email copy/rendering here (this is where the email is
-   first actually viewable). Consider reordering the email body to lead with the
-   Sleep Brief section before the Savings Pass band.
+## Phase C — Controlled-recipient test (no customer, no repo change)
 
-## Phase D — Go live (with explicit approval)
-1. Set `data/store-config.json` `gasUrl` to the **production** `/exec`.
-2. Commit → back up feature branch → fast-forward `origin/main` (no force).
-3. Live-verify one real seed submission end-to-end (Sheet + email + BCC) and the
-   preview→live confirmation copy swap.
+1. Point a **local, uncommitted** `gasUrl` at the `/exec` (for example by
+   serving a scratch copy); never commit it.
+2. Submit the flow in **EN and ES** to **Blake's own address only**, never a
+   customer's. Set `RESULT_EMAIL_BCC` to an owner-controlled address or leave
+   it blank for this test. Verify:
+   - subject **"Your Sleep Brief from Lacks Furniture"** / **"Tu Resumen de
+     Sueño de Lacks Furniture"** (Lacks issues no Savings Pass code, so the
+     Savings Pass subject never appears);
+   - the body renders in Gmail, Outlook and iOS Mail, images load, the
+     footer shows the postal address, unsubscribe link and privacy contact;
+   - one row in the leads tab with all 10 columns (incl. `Lang`, `RSA`,
+     `Send ID`), and the BCC copy if configured;
+   - re-POSTing the same body answers `duplicate` with no second row or email;
+   - invalid email shows the friendly message; the GAS log is shape-only.
+3. Run `checkDeployment()` again and note the remaining quota.
 
-## Phase E — Production handoff
-Document the live deployment (gasUrl, Sheet id, deployment id, BCC, scopes,
-unsubscribe process); hand the retailer (Lacks) Sheet access; final live QA; update the session
-handoff/memory.
+## Phase D — Go live (explicit owner authorization, PR only)
 
----
+1. On a feature branch: set `"GAS URL"` in `incoming/build_lacks_workbook.py`
+   to the production `/exec`, rebuild the workbook and run
+   `tools/convert_store_data.py` (never hand-edit `data/store-config.json`;
+   `tests/lineage_check.py` fails on it).
+2. In the **same** authorized PR, lift the CI lock "Shipped operating state
+   unchanged" (`gasUrl is blank`) in `.github/workflows/ci.yml`, and land the
+   approved live privacy copy (`tools/validation.py` rejects preview wording
+   once `gasUrl` is non-blank).
+3. Open the PR; merge only when Blake asks, after the required check passes.
+   Never push to `main`. A merge deploys Pages; it is not by itself
+   authorization for showroom use.
+4. After Pages deploys, verify one owner-address submission end to end
+   (Sheet row, email, BCC) and the preview → live copy swap.
 
-## Blocking items before real PII collection (need Lacks-provided content)
-- **Privacy/consent:** real Privacy & Terms content for the in-app
-  `privacyOverlay`, a value for `text.privacyPolicyContact`, and confirmed
-  consent wording (EN/ES).
-- **CAN-SPAM for the sent email:** the email currently has **no functional
-  unsubscribe** and **no physical mailing address**. Add both (or revise copy)
-  before sending real commercial email. Lacks must supply and approve the postal
-  address, the unsubscribe destination/process, and a privacy contact.
-  `Code.gs` now HARD-BLOCKS all sending (`canspam_not_configured`) until the
-  three `RETAILER_APPROVAL_REQUIRED_*` sentinels are replaced with approved
-  values — do not invent them.
+## Phase E — Handoff
+
+Record (outside the repo): sending account, Sheet URL, script ID, deployment
+ID and `/exec`, Script Property values, BCC, unsubscribe process owner and
+quota. Give Lacks access to the Sheet.

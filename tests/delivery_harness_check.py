@@ -739,8 +739,8 @@ except Exception as exc:  # a page error mid-walk must not hide the replay resul
 # A generic scenario runner: each scenario is one fresh "deployment" (its own
 # script cache, lock, sheet and mailbox) that receives a sequence of POST
 # bodies. The whole Code.gs file is loaded with `new Function`, exactly like
-# tests/email_priorities_check.mjs; the CAN-SPAM rebind happens in harness
-# scope only (the source keeps its sentinels).
+# tests/email_priorities_check.mjs; the CAN-SPAM values are set in the stub
+# Script Properties only (the source holds no deployment value).
 REPLAY_MJS = r"""
 import { readFileSync } from "node:fs";
 const [repo, scenariosPath] = process.argv.slice(2);
@@ -753,20 +753,26 @@ function build(gmailFailures) {
   const Logger = { log: (s) => log.push(String(s)) };
   const ContentService = { MimeType: { JSON: "json" },
     createTextOutput: (s) => ({ setMimeType: () => ({ getContent: () => s }), getContent: () => s }) };
-  const SpreadsheetApp = { getActiveSpreadsheet: () => ({ getActiveSheet: () => ({ appendRow: (r) => rows.push(r) }) }) };
-  const GmailApp = { sendEmail: (to, subject, body, opts) => {
-    if (failuresLeft > 0) { failuresLeft -= 1; throw new Error("forced Gmail failure"); }
+  const SpreadsheetApp = { getActiveSpreadsheet: () => ({
+    getSheetByName: (n) => (n === "Leads" ? { appendRow: (r) => rows.push(r) } : null) }) };
+  const MailApp = { sendEmail: (to, subject, body, opts) => {
+    if (failuresLeft > 0) { failuresLeft -= 1; throw new Error("forced MailApp failure"); }
     sent.push({ to, subject, body, opts: opts || {} }); } };
+  const props = {};
+  const PropertiesService = { getScriptProperties: () => ({
+    getProperty: (k) => (Object.prototype.hasOwnProperty.call(props, k) ? props[k] : null) }) };
   const LockService = { getScriptLock: () => ({
     waitLock: (ms) => { lock.waits += 1; lock.held += 1; lock.lastWait = ms; },
     releaseLock: () => { lock.releases += 1; lock.held -= 1; } }) };
   const CacheService = { getScriptCache: () => ({
     get: (k) => (cache.has(k) ? cache.get(k).v : null),
     put: (k, v, ttl) => { cache.set(k, { v: String(v), ttl }); } }) };
-  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", "LockService", "CacheService", gs + `
-    ;return { doPost: function(e) { return doPost(e); },
-      approveCanSpam: function() { UNSUBSCRIBE_URL = 'https://example.test/unsubscribe'; POSTAL_ADDRESS = '1 Test St, Test TX 78501'; PRIVACY_CONTACT = 'privacy@example.test'; } };`)(
-    Logger, ContentService, SpreadsheetApp, GmailApp, LockService, CacheService);
+  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "MailApp", "LockService", "CacheService",
+    "PropertiesService", gs + `
+    ;return { doPost: function(e) { return doPost(e); } };`)(
+    Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService, PropertiesService);
+  api.approveCanSpam = () => Object.assign(props, { UNSUBSCRIBE_URL: "https://example.test/unsubscribe",
+    POSTAL_ADDRESS: "1 Test St, Test TX 78501", PRIVACY_CONTACT: "privacy@example.test" });
   return { api, log, rows, sent, lock, cache, setFailures: (n) => { failuresLeft = n; } };
 }
 const out = {};
@@ -1027,9 +1033,12 @@ if node:
         check("the SHIPPED CAN-SPAM refusal still holds with a valid sendId: no row, no email, nothing cached",
               r["responses"] == [CANSPAM] and not r["rows"] and not r["sent"] and not r["cache"])
         r = out["failed-send-retryable"]
-        check("a send that failed (both Gmail attempts threw) is send_failed and NOT recorded: the same sendId then sends, once",
+        check("a send that failed (both MailApp attempts threw) is send_failed and NOT recorded: the same sendId then sends, once",
               r["responses"] == [{"success": False, "error": "send_failed"}, SENT_OK, DUPLICATE]
               and len(r["sent"]) == 1 and r["lock"]["held"] == 0, str(r["responses"]))
+        check("the failed send wrote NO lead row: the retry leaves exactly one row, its last cell the sendId",
+              len(r["rows"]) == 1 and len(r["rows"][0]) == 10 and r["rows"][0][-1] == base_payload()["sendId"],
+              str([len(x) for x in r["rows"]]))
         r = out["invalid-email-not-recorded"]
         check("an invalid_email refusal is not recorded: the corrected request with the same sendId sends",
               r["responses"] == [{"success": False, "error": "invalid_email"}, SENT_OK] and len(r["sent"]) == 1)
@@ -1062,8 +1071,8 @@ if node:
                   all(lb in html and lb in plain for lb in labels), str([lb for lb in labels if lb not in html or lb not in plain]))
             check(f"{name}: the quote sits after the Sleep System and before the CTA in the HTML part",
                   html.find(heading) < html.find("Bring this email" if not es else "Lleva este correo"))
-            check(f"{name}: the quote never reaches the sheet row (still 9 cells, no figure)",
-                  len(r["rows"][0]) == 9 and q["merchandiseText"] not in json.dumps(r["rows"][0]))
+            check(f"{name}: the quote never reaches the sheet row (10 cells, no figure)",
+                  len(r["rows"][0]) == 10 and q["merchandiseText"] not in json.dumps(r["rows"][0]))
             check(f"{name}: the log records quote presence and line count only - no figure, no name",
                   any(f"quote=present, quote_lines={len(q['lines'])}" in line for line in r["log"])
                   and all(q["merchandiseText"] not in line and q["lines"][0]["name"] not in line for line in r["log"]))

@@ -963,6 +963,7 @@ def main(argv=None) -> int:
             financing_source_hosts=source_hosts.get("financingSourceHosts"),
             mattress_ids=promo_mids,
             accessory_ids=[a.get("id") for a in accessories],
+            accessory_skus=validation.accessory_skus_from_catalog(accessories),
             mattress_brands=promo_brands))
         # Quiz definition — structural contract (pinned ids/types/options) plus
         # bilingual copy and score-tag checks; no-op when the tab is empty.

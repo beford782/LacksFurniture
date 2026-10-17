@@ -409,7 +409,22 @@ def main():
     check("runtime future-verifiedAt rejection present (clock-skew gate)",
           "FINANCING_CLOCK_SKEW_MS" in html and "is in the future" in html)
     check("Code.gs hard-blocks send until CAN-SPAM approved",
-          "RETAILER_APPROVAL_REQUIRED" in gs and "canspam_not_configured" in gs)
+          "RETAILER_APPROVAL_REQUIRED" in gs and "canspam_not_configured" in gs
+          and "if (deployment.required.length) {" in gs)
+    # The repository Code.gs deploys unchanged: every deployment value is a
+    # Script Property, so the source declares each one blank and names no
+    # address. Missing properties refuse (behaviour pinned by
+    # tests/email_priorities_check.mjs and tests/delivery_harness_check.py).
+    check("Code.gs holds no deployment value (each is a Script Property, declared blank)",
+          "PropertiesService.getScriptProperties()" in gs
+          and all(re.search(r"var %s\s*=\s*'';" % k, gs) for k in
+                  ("UNSUBSCRIBE_URL", "POSTAL_ADDRESS", "PRIVACY_CONTACT", "RESULT_EMAIL_BCC", "REPLY_TO"))
+          and all("read('%s')" % k in gs for k in
+                  ("UNSUBSCRIBE_URL", "POSTAL_ADDRESS", "PRIVACY_CONTACT", "RESULT_EMAIL_BCC", "REPLY_TO", "LEADS_SHEET_NAME"))
+          and not re.search(r"['\"][^'\"\s]+@[^'\"\s]+\.[A-Za-z]{2,}['\"]", gs))
+    check("Code.gs sends through MailApp (script.send_mail scope) and logs leads to a named tab",
+          "MailApp.sendEmail(" in gs and "GmailApp" not in gs and "getActiveSheet" not in gs
+          and "getSheetByName(LEADS_SHEET_NAME)" in gs)
     check("Code.gs invents no retailer contact values",
           "unsubscribe@" not in gs and "privacy@" not in gs and "PO Box" not in gs)
     # Substring presence only. This assertion named financing_interest_changed

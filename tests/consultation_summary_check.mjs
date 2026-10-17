@@ -472,12 +472,17 @@ function buildGas() {
     MimeType: { JSON: "json" },
     createTextOutput: (s) => ({ setMimeType: () => ({ getContent: () => s }), getContent: () => s }),
   };
+  // The bound leads Spreadsheet: its "Leads" tab already exists (no header).
   const SpreadsheetApp = {
-    getActiveSpreadsheet: () => ({ getActiveSheet: () => ({ appendRow: (r) => rows.push(r) }) }),
+    getActiveSpreadsheet: () => ({ getSheetByName: (n) => (n === "Leads" ? { appendRow: (r) => rows.push(r) } : null) }),
   };
-  const GmailApp = {
+  const MailApp = {
     sendEmail: (to, subject, body, opts) => sent.push({ to, subject, body, opts: opts || {} }),
   };
+  // Script Properties: empty (unconfigured) until approveCanSpam() sets them.
+  const props = {};
+  const PropertiesService = { getScriptProperties: () => ({
+    getProperty: (k) => (Object.prototype.hasOwnProperty.call(props, k) ? props[k] : null) }) };
   // Script lock + script cache (sendId duplicate suppression). One fresh
   // cache per harness instance, so each buildGas() is a fresh deployment.
   const cache = new Map();
@@ -485,14 +490,10 @@ function buildGas() {
   const CacheService = { getScriptCache: () => ({
     get: (k) => (cache.has(k) ? cache.get(k) : null),
     put: (k, v) => { cache.set(k, String(v)); } }) };
-  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", "LockService", "CacheService", gs + `
+  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "MailApp", "LockService", "CacheService",
+    "PropertiesService", gs + `
     ;return {
       doPost: function(e) { return doPost(e); },
-      approveCanSpam: function() {
-        UNSUBSCRIBE_URL = 'https://example.test/unsubscribe';
-        POSTAL_ADDRESS = '1 Test St, Test TX 78501';
-        PRIVACY_CONTACT = 'privacy@example.test';
-      },
       breakHtmlBuilder: function() {
         buildSimpleHtml = function() { throw new Error('forced HTML failure'); };
       },
@@ -500,7 +501,10 @@ function buildGas() {
         var orig = buildSimpleHtml;
         buildSimpleHtml = function(d, f, es, s) { sink(d); return orig(d, f, es, s); };
       }
-    };`)(Logger, ContentService, SpreadsheetApp, GmailApp, LockService, CacheService);
+    };`)(Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService, PropertiesService);
+  // Sets the stub Script Properties (test-only values) - never a source edit.
+  api.approveCanSpam = () => Object.assign(props, { UNSUBSCRIBE_URL: "https://example.test/unsubscribe",
+    POSTAL_ADDRESS: "1 Test St, Test TX 78501", PRIVACY_CONTACT: "privacy@example.test" });
   return { api, log, rows, sent };
 }
 // Every request carries a fresh, well-formed sendId unless the payload names
@@ -570,7 +574,7 @@ section("Code.gs: the three strings render in the Sleep Brief block, both parts"
       + "Queen · test lower-back support carefully\n"
       + "prioritize shoulder and hip cushioning · Firm 6/10\n"));
   check("the sheet row still has exactly 9 cells and none of this content",
-    g.rows.length === 1 && g.rows[0].length === 9
+    g.rows.length === 1 && g.rows[0].length === 10
     && !g.rows[0].join("|").includes("here to solve a comfort problem"));
 }
 {
@@ -661,7 +665,7 @@ for (const [label, bad] of [["a string", "zzz"], ["a number", 7], ["null", null]
     (g.sent[0].opts.htmlBody.match(/prioritize real copy/g) || []).length === 1
     && !g.sent[0].opts.htmlBody.includes(">   <"));
   check("...and the sheet row stays 9 cells with none of it",
-    g.rows[0].length === 9 && !g.rows[0].join("|").includes("prioritize real copy"));
+    g.rows[0].length === 10 && !g.rows[0].join("|").includes("prioritize real copy"));
 }
 {
   // Non-string SUB-fields (adversarial finding F5): a client bug shipping an

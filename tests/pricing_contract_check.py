@@ -573,7 +573,7 @@ SWEEP_FINDS = [
     ("tools/validation.py",
      "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \""),
     ("tools/validation.py",
-     "                            \"size\": size if kind == \"mattress\" else None,"),
+     "                            \"size\": size if kind in (\"mattress\", \"accessory\") else None,"),
     # ---- Phase 2.1b resolver anchors (index.html) and the payload anchor ----
     ("index.html",
      "        eligible = p.displayEnabled === true"),
@@ -628,7 +628,7 @@ SWEEP_FINDS = [
     ("index.html",
      "      if (pres.state !== 'available') return '';"),
     ("index.html",
-     "        size: accessory ? undefined : size,"),
+     "        size: accessory ? (sizedAccessory ? size : null) : size,"),
     ("index.html",
      "              && sku === sku.trim()) ? sku : null;"),
     ("index.html",

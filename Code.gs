@@ -1,10 +1,27 @@
-// Central DreamFinder lead backup inbox. Every retailer deployment BCCs this
-// address by default so leads roll up centrally. During Apps Script setup,
-// review this value:
-//   - keep the default to participate in the central backup
-//   - replace with a retailer-specific backup inbox if appropriate
-//   - set to '' to disable BCC for this deployment
-var RESULT_EMAIL_BCC = 'dreamfinderleads@gmail.com';
+// \u2500\u2500 Deployment values: Script Properties, never this file \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// This file deploys UNCHANGED to every retailer's Apps Script project and
+// carries no deployment-specific value. Each value below is read per request
+// from the project's Script Properties (Project Settings -> Script
+// Properties; docs/gas-activation-runbook.md) by _loadDeploymentConfig():
+//   UNSUBSCRIBE_URL     required  https:// unsubscribe destination
+//   POSTAL_ADDRESS      required  the retailer's physical postal address
+//   PRIVACY_CONTACT     required  privacy / data-request email address
+//   RESULT_EMAIL_BCC    optional  lead-intake copy address; blank = no BCC
+//   REPLY_TO            optional  reply-to address; blank = the sender
+//   LEADS_SHEET_NAME    optional  leads tab name; blank = 'Leads'
+// The module-level values start blank and are filled only by
+// _loadDeploymentConfig(); a blank or malformed required value refuses the
+// request (see the CAN-SPAM block below).
+var RESULT_EMAIL_BCC = '';
+var REPLY_TO = '';
+var DEFAULT_LEADS_SHEET_NAME = 'Leads';
+var LEADS_SHEET_NAME = DEFAULT_LEADS_SHEET_NAME;
+// The Leads tab's header row, written once when the tab is created. The
+// column contract (append-only, right-most additions) is
+// docs/gas-rsa-field-addition.md.
+var LEADS_HEADER = ['Timestamp', 'Name', 'Email', 'Phone', 'Dream Code', 'Lang',
+  'Matches', 'Accessories', 'RSA', 'Send ID'];
+
 // Defensive payload ceiling, not a merchandising limit. The kiosk currently
 // selects at most one product per Sleep System step, but future stores may add
 // more categories and should not silently lose items after the third.
@@ -25,7 +42,9 @@ var MAX_EMAIL_PRIORITIES = 3;
 // in the script cache (CacheService; best-effort, 6 h maximum lifetime) and
 // the check-then-send runs under the script lock (LockService) so two
 // concurrent deliveries of one sendId cannot both pass the check. Neither
-// service needs an OAuth scope beyond the Gmail + Sheets ones already granted.
+// service (nor PropertiesService) needs an OAuth scope beyond the two the
+// manifest declares (appsscript.json: script.send_mail for MailApp,
+// spreadsheets.currentonly for the bound leads Sheet).
 var SEND_ID_PATTERN = /^[A-Za-z0-9_-]{22,40}$/;
 var SEND_DEDUPE_PREFIX = 'df-sent:';
 var SEND_DEDUPE_TTL_SECONDS = 21600;   // CacheService maximum (6 hours)
@@ -42,27 +61,69 @@ var MAX_QUOTE_OFFER_TERMS = 6;
 var MAX_QUOTE_LINE_DISCOUNTS = 6;
 var MAX_QUOTE_LINE_QUANTITY = 99;
 
-// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-// CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET. The active retailer (Lacks
-// Furniture for this deployment) must supply and approve every value below
-// BEFORE live lead capture. CAN-SPAM requires (a) a working unsubscribe
-// mechanism, honored within 10 business days and kept live >=30 days, and
-// (b) a valid physical postal address in every commercial email. No values
-// are guessed or invented here: doPost() REFUSES to send any email while a
-// sentinel remains, so live capture is hard-blocked until real,
-// retailer-approved values replace all three AND the unsubscribe inbox is
-// actively monitored. (gasUrl in store-config.json must also stay blank
-// until then \u2014 it is blank in this deployment.)
-// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET until the deployment's
+// Script Properties hold them. The active retailer (Lacks Furniture for this
+// deployment) must supply and approve every value BEFORE live lead capture.
+// CAN-SPAM requires (a) a working unsubscribe mechanism, honored within 10
+// business days and kept live >=30 days, and (b) a valid physical postal
+// address in every commercial email. No values are guessed or invented here:
+// doPost() REFUSES to send any email (canspam_not_configured) while any of the
+// three is unset, blank, malformed or still a RETAILER_APPROVAL_REQUIRED
+// placeholder, so live capture is hard-blocked until real, retailer-approved
+// values are set AND the unsubscribe inbox is actively monitored. (gasUrl in
+// store-config.json must also stay blank until then \u2014 it is blank in this
+// deployment.)
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 var CANSPAM_SENTINEL = 'RETAILER_APPROVAL_REQUIRED';
-var UNSUBSCRIBE_URL = 'RETAILER_APPROVAL_REQUIRED_UNSUBSCRIBE_URL';
-var POSTAL_ADDRESS  = 'RETAILER_APPROVAL_REQUIRED_POSTAL_ADDRESS';
-var PRIVACY_CONTACT = 'RETAILER_APPROVAL_REQUIRED_PRIVACY_CONTACT';
+var UNSUBSCRIBE_URL = '';
+var POSTAL_ADDRESS  = '';
+var PRIVACY_CONTACT = '';
 
-function _canSpamConfigured() {
-  return [UNSUBSCRIBE_URL, POSTAL_ADDRESS, PRIVACY_CONTACT].every(function(v) {
-    return v && v.indexOf(CANSPAM_SENTINEL) === -1;
-  });
+// Reads the deployment values from Script Properties into the module-level
+// values above (each Apps Script execution starts from a fresh global scope,
+// so nothing carries over between requests). Returns the names of the values
+// that refuse the request: `required` (CAN-SPAM: unset, blank, malformed or
+// a sentinel) and `invalid` (an optional value that is set but malformed).
+// Names only - a value is never logged.
+function _loadDeploymentConfig() {
+  var props = PropertiesService.getScriptProperties();
+  var read = function(key) {
+    var v = props.getProperty(key);
+    return typeof v === 'string' ? v.trim() : '';
+  };
+  UNSUBSCRIBE_URL = read('UNSUBSCRIBE_URL');
+  POSTAL_ADDRESS = read('POSTAL_ADDRESS');
+  PRIVACY_CONTACT = read('PRIVACY_CONTACT');
+  RESULT_EMAIL_BCC = read('RESULT_EMAIL_BCC');
+  REPLY_TO = read('REPLY_TO');
+  LEADS_SHEET_NAME = read('LEADS_SHEET_NAME') || DEFAULT_LEADS_SHEET_NAME;
+
+  var required = [];
+  var unset = function(v) { return !v || v.indexOf(CANSPAM_SENTINEL) !== -1; };
+  if (unset(UNSUBSCRIBE_URL) || !/^https:\/\/[^\s<>"']+\.[^\s<>"']+$/i.test(UNSUBSCRIBE_URL)) required.push('UNSUBSCRIBE_URL');
+  if (unset(POSTAL_ADDRESS) || POSTAL_ADDRESS.length > 300) required.push('POSTAL_ADDRESS');
+  if (unset(PRIVACY_CONTACT) || !_isValidEmail(PRIVACY_CONTACT)) required.push('PRIVACY_CONTACT');
+
+  var invalid = [];
+  if (RESULT_EMAIL_BCC && !_isValidEmail(RESULT_EMAIL_BCC)) invalid.push('RESULT_EMAIL_BCC');
+  if (REPLY_TO && !_isValidEmail(REPLY_TO)) invalid.push('REPLY_TO');
+  if (LEADS_SHEET_NAME.length > 100) invalid.push('LEADS_SHEET_NAME');
+  return { required: required, invalid: invalid };
+}
+
+// The leads tab, by name (never whichever tab happens to be active): created
+// with the header row when it does not exist yet. The script is container-
+// bound to the leads Spreadsheet, so getActiveSpreadsheet() is that file.
+function _leadsSheet() {
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = book.getSheetByName(LEADS_SHEET_NAME);
+  if (!sheet) {
+    sheet = book.insertSheet(LEADS_SHEET_NAME);
+    sheet.appendRow(LEADS_HEADER);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
 }
 
 // Helper: escape five HTML metacharacters; safe for attribute values and text content.
@@ -378,12 +439,34 @@ function buildQuoteHtml(quote, isEs, c, sans, serif) {
     + '</td></tr>';
 }
 
+// Operator check, run by hand from the Apps Script editor (Run ->
+// checkDeployment) after setting Script Properties. It sends NOTHING and
+// writes no lead: it reports which properties still refuse (names only), the
+// leads tab, and the account's remaining daily recipient quota. Its first run
+// is also what prompts the owner's OAuth consent for exactly the two scopes
+// the manifest declares, before any customer request arrives.
+function checkDeployment() {
+  var deployment = _loadDeploymentConfig();
+  var report = {
+    ready: deployment.required.length === 0 && deployment.invalid.length === 0,
+    refusingRequired: deployment.required,
+    invalidOptional: deployment.invalid,
+    bcc: RESULT_EMAIL_BCC ? 'set' : 'none',
+    replyTo: REPLY_TO ? 'set' : 'sender',
+    leadsTab: _leadsSheet().getName(),
+    remainingDailyRecipients: MailApp.getRemainingDailyQuota()
+  };
+  Logger.log('checkDeployment: ' + JSON.stringify(report));
+  return report;
+}
+
 // Response contract (the client classifies exactly these):
-//   {success:true}                                  sent (row appended, email sent)
+//   {success:true}                                  sent (email sent, then row appended)
 //   {success:true, duplicate:true}                  this sendId already sent; nothing done
 //   {success:false, error:'invalid_request'}        body not an object, or sendId missing/malformed
 //   {success:false, error:'invalid_email'}          address fails the shape check
-//   {success:false, error:'canspam_not_configured'} CAN-SPAM sentinels still in place
+//   {success:false, error:'canspam_not_configured'} a required CAN-SPAM Script Property is
+//                                                   unset, blank, malformed or a sentinel
 //   {success:false, error:'send_failed'}            anything else (detail in the GAS log only)
 function doPost(e) {
   var sendLock = null;
@@ -429,11 +512,22 @@ function doPost(e) {
     }
 
     // Hard block: no commercial email may leave this script until the
-    // retailer-approved CAN-SPAM values replace the sentinels above.
-    if (!_canSpamConfigured()) {
+    // retailer-approved CAN-SPAM values are set in Script Properties. The log
+    // names the refusing properties, never their values.
+    var deployment = _loadDeploymentConfig();
+    if (deployment.required.length) {
       Logger.log('doPost rejected: canspam_not_configured (retailer approval required)');
+      Logger.log('doPost: unset or invalid Script Properties: ' + deployment.required.join(', '));
       return ContentService
         .createTextOutput(JSON.stringify({ success: false, error: 'canspam_not_configured' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    // A set-but-malformed optional value (BCC, reply-to, tab name) is an
+    // operator error, never silently ignored: refused before anything runs.
+    if (deployment.invalid.length) {
+      Logger.log('doPost rejected: deployment_config_invalid (' + deployment.invalid.join(', ') + ')');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -488,13 +582,15 @@ function doPost(e) {
     // fallback body) with NO HTML escaping; buildSimpleHtml re-escapes for HTML.
     var storeName = _safeText(data.storeName, 100).trim() || (isEs ? 'nuestra tienda' : 'our store');
 
-    // --- Log to Google Sheet ---
-    // rsa appended at the end (right-of-last column) per the
-    // append-don't-insert strategy documented in docs/gas-rsa-field-addition.md.
-    // Inserting mid-row would force every other column to re-index. Sheet
-    // operator must add a corresponding "rsa" column header to match.
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    sheet.appendRow([
+    // --- The lead row (Google Sheet) ---
+    // Built and its tab resolved HERE, so a missing or unreadable Sheet fails
+    // the request before any email leaves, but APPENDED only after the email
+    // is sent: a failed send writes no row, so the client's retry of the same
+    // sendId cannot leave a duplicate. rsa and sendId sit at the right end per
+    // the append-don't-insert strategy in docs/gas-rsa-field-addition.md
+    // (inserting mid-row would re-index every other column).
+    var sheet = _leadsSheet();
+    var leadRow = [
       new Date(),
       name,
       email,
@@ -510,8 +606,9 @@ function doPost(e) {
         var qty = _safeQuantity(a && a.quantity);
         return _safeText(a && a.name, 200) + (qty > 1 ? ' x' + qty : '');
       }).join(', '),
-      rsa
-    ]);
+      rsa,
+      sendId
+    ];
 
     // Branding, supplied by the client from STORE_CONFIG (logo wordmark +
     // colors) so customer-visible email identity is config-driven, never
@@ -669,7 +766,8 @@ function doPost(e) {
         name: senderName
       };
       if (RESULT_EMAIL_BCC) mailOptions.bcc = RESULT_EMAIL_BCC;
-      GmailApp.sendEmail(email, subject, plainBody, mailOptions);
+      if (REPLY_TO) mailOptions.replyTo = REPLY_TO;
+      MailApp.sendEmail(email, subject, plainBody, mailOptions);
 
     } catch (emailErr) {
       Logger.log('HTML email failed, trying plain text: ' + emailErr.toString());
@@ -677,7 +775,8 @@ function doPost(e) {
         name: senderName
       };
       if (RESULT_EMAIL_BCC) fallbackOptions.bcc = RESULT_EMAIL_BCC;
-      GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);
+      if (REPLY_TO) fallbackOptions.replyTo = REPLY_TO;
+      MailApp.sendEmail(email, subject, plainBody, fallbackOptions);
     }
 
     // Record the delivered sendId only AFTER a send succeeded, so a failed
@@ -688,6 +787,16 @@ function doPost(e) {
       sendCache.put(dedupeKey, '1', SEND_DEDUPE_TTL_SECONDS);
     } catch (cacheErr) {
       Logger.log('doPost: dedupe record not written: ' + cacheErr.toString());
+    }
+
+    // The lead row, now that the email has gone. A write failure is logged,
+    // not surfaced, for the same reason: reporting failure would invite a
+    // retry that mails the customer twice. The BCC copy (when configured)
+    // still carries the lead.
+    try {
+      sheet.appendRow(leadRow);
+    } catch (rowErr) {
+      Logger.log('doPost: lead row not written (email was sent): ' + rowErr.toString());
     }
 
     return ContentService

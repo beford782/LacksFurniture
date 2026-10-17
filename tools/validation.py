@@ -3712,6 +3712,54 @@ def _pricing_ids_arg(r, name, value):
     return set()
 
 
+def accessory_skus_from_catalog(accessories):
+    """The catalog's accessory price identities, as validate_pricing's
+    `accessory_skus` argument: {id: {size: sku}} for an accessory sold per
+    mattress size (an `accessorySkus` map), {id: sku} for a size-independent
+    one (a string `sku`), {id: None} for an accessory with neither. Records
+    that are not objects with a string id are skipped."""
+    out = {}
+    for a in accessories if isinstance(accessories, (list, tuple)) else []:
+        if not isinstance(a, dict) or not isinstance(a.get("id"), str):
+            continue
+        by_size = a.get("accessorySkus")
+        if isinstance(by_size, dict):
+            out[a["id"]] = dict(by_size)
+        elif isinstance(a.get("sku"), str):
+            out[a["id"]] = a["sku"]
+        else:
+            out[a["id"]] = None
+    return out
+
+
+def _pricing_accessory_skus_arg(r, value):
+    """`accessory_skus` argument sanity: None means "catalog identities not
+    supplied" (an accessory price must then be sizeless - nothing can say
+    which sizes the accessory is sold in). Otherwise a mapping of accessory id
+    -> {size: sku} (sold per size), a sku string (size-independent) or None.
+    A malformed argument, or a malformed identity, is reported or treated as
+    NO identity, so the price it would admit is refused (fail closed)."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        r.add_error(f"accessory_skus must be a mapping of accessory id -> catalog "
+                    f"sku identity (got {_type_name(value)}) - treating it as empty, "
+                    f"so no accessory price can be admitted")
+        return {}
+    out = {}
+    for aid, ident in value.items():
+        if not isinstance(aid, str):
+            continue
+        if isinstance(ident, dict):
+            out[aid] = {z: v for z, v in ident.items()
+                        if isinstance(z, str) and isinstance(v, str)}
+        elif isinstance(ident, str):
+            out[aid] = ident
+        else:
+            out[aid] = None
+    return out
+
+
 def _pricing_canonical_sizes():
     for qid, _qtype, opts in QUIZ_CANONICAL:
         if qid == "mattress_size":
@@ -3990,7 +4038,7 @@ def _validate_pricing_offers(r, offers, *, enabled, now, mad, canonical_hosts,
 
 def validate_pricing(config, *, allowed_source_hosts=None, financing_source_hosts=None,
                      mattress_ids=None, accessory_ids=None, now=None,
-                     mattress_brands=None) -> ValidationReport:
+                     mattress_brands=None, accessory_skus=None) -> ValidationReport:
     """Validate store-config `pricing` — the Phase 2.1 dark framework.
 
     TOTAL over JSON: for any value json.loads can produce, at the top level or
@@ -4004,7 +4052,13 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     they reference — never the price list. `mattress_ids` / `accessory_ids`:
     the catalog ids the same bundle ships; when supplied, every product entry
     (and every offer filter) must name one. `mattress_brands`: the catalog's
-    brands; when supplied, an offer's brand filters must name one. `now`: an offset-bearing datetime for deterministic
+    brands; when supplied, an offer's brand filters must name one.
+    `accessory_skus`: the catalog's accessory price identities
+    (accessory_skus_from_catalog). When supplied, an accessory sold per size
+    is priced per size - each entry names one of its accessorySkus sizes and
+    exactly that size's sku, and a sizeless entry for it is refused - while a
+    size-independent accessory keeps one sizeless entry carrying its catalog
+    sku. When absent, every accessory entry must be sizeless. `now`: an offset-bearing datetime for deterministic
     freshness under test; production passes nothing and is judged against
     UTC now."""
     r = ValidationReport()
@@ -4281,6 +4335,7 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     # ---- products
     mids = _pricing_ids_arg(r, "mattress_ids", mattress_ids)
     aids = _pricing_ids_arg(r, "accessory_ids", accessory_ids)
+    acc_skus = _pricing_accessory_skus_arg(r, accessory_skus)
     products = p.get("products")
     seen_identity = {}
     seen_sku = {}
@@ -4330,11 +4385,46 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                                 f"mattress price without a verified size is "
                                 f"price-unavailable, never inferred from another size")
             elif kind == "accessory":
-                if size is not None:
-                    r.add_error(f"{tag}.size must be null for an accessory (got "
-                                f"{fin_headline.short_repr(size)})")
+                # Per-size accessories (owner direction 2026-10-15): a base or
+                # protector sold in each mattress size is one product PER SIZE,
+                # each with its own catalog sku (accessorySkus) and its own
+                # price. Which form an accessory takes is the CATALOG's call,
+                # never the price entry's.
+                ident_cat = acc_skus.get(pid) if (acc_skus is not None and pid) else None
+                if isinstance(ident_cat, dict):
+                    if size is None:
+                        r.add_error(f"{tag}.size must name one of accessory "
+                                    f"{fin_headline.short_repr(pid)}'s accessorySkus sizes "
+                                    f"{sorted(ident_cat)} - it is sold per mattress size, "
+                                    f"and a sizeless price for it is refused (never "
+                                    f"inferred from another size)")
+                    elif isinstance(size, str) and size.strip().lower() in _PRICING_SIZE_WILDCARDS:
+                        r.add_error(f"{tag}.size {size!r} is a wildcard - an accessory "
+                                    f"sold per size is priced for ONE size; never infer "
+                                    f"another size's price")
+                    elif type(size) is not str or size not in size_set or size not in ident_cat:
+                        r.add_error(f"{tag}.size {fin_headline.short_repr(size)} is not one "
+                                    f"of accessory {fin_headline.short_repr(pid)}'s "
+                                    f"accessorySkus sizes {sorted(ident_cat)} - a price "
+                                    f"names a size the catalog sells")
+                    elif sku and sku != ident_cat[size]:
+                        r.add_error(f"{tag}.sku {fin_headline.short_repr(sku)} must be "
+                                    f"exactly accessorySkus[{size!r}] "
+                                    f"{fin_headline.short_repr(ident_cat[size])} - a "
+                                    f"per-size price is bound to that size's own sku")
+                else:
+                    if size is not None:
+                        r.add_error(f"{tag}.size must be null for an accessory without "
+                                    f"accessorySkus in the catalog (got "
+                                    f"{fin_headline.short_repr(size)})")
+                    if acc_skus is not None and pid and sku and sku != ident_cat:
+                        r.add_error(f"{tag}.sku {fin_headline.short_repr(sku)} must be "
+                                    f"exactly the catalog sku "
+                                    f"{fin_headline.short_repr(ident_cat)} of accessory "
+                                    f"{fin_headline.short_repr(pid)} - a price attaches "
+                                    f"only to the identity the catalog names")
             if pid and (kind == "mattress" and isinstance(size, str) or kind == "accessory"):
-                ident = (pid, size if kind == "mattress" else None)
+                ident = (pid, size if isinstance(size, str) else None)
                 if ident in seen_identity:
                     r.add_error(f"{tag} duplicates products[{seen_identity[ident]}] for "
                                 f"productId {fin_headline.short_repr(pid)} size "
@@ -4407,7 +4497,7 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                             "productId": pid,
                             "productKind": kind,
                             "sku": sku,
-                            "size": size if kind == "mattress" else None,
+                            "size": size if kind in ("mattress", "accessory") else None,
                             "amountMinor": amt,
                             "currency": pc,
                             "kind": pk,
@@ -9020,6 +9110,66 @@ def _self_test() -> int:
     check("pricing accessory with a size -> error", _perr(pu, "size must be null for an accessory"))
     pu["products"][0]["size"] = None
     check("pricing accessory entry with null size -> ok", _pv(pu).ok)
+
+    # Per-size accessories (owner direction 2026-10-15): with the catalog's
+    # accessory identities supplied, an accessory carrying accessorySkus is
+    # priced per size (size = one of its sizes, sku = exactly that size's);
+    # one without keeps the sizeless entry and its catalog sku.
+    _ASK = {"base-a": {"queen": "B-Q", "twin_xl": "B-TXL"}, "pillow-flow": "P-1"}
+
+    def _acc(pid, sku, size):
+        e = json.loads(json.dumps(good_pricing["products"][0]))
+        e.update({"productKind": "accessory", "productId": pid, "sku": sku, "size": size})
+        e["clearance"]["scope"].update({"productId": pid, "productKind": "accessory",
+                                        "sku": sku, "size": size})
+        return e
+
+    def _accdoc(*entries):
+        pu = _pmut(); pu["products"] = list(entries)
+        return pu
+
+    def _apv(pu, **kw):
+        kw.setdefault("accessory_ids", {"base-a", "pillow-flow"})
+        kw.setdefault("accessory_skus", _ASK)
+        return _pv(pu, **kw)
+
+    rq = _apv(_accdoc(_acc("base-a", "B-Q", "queen"), _acc("base-a", "B-TXL", "twin_xl"),
+                      _acc("pillow-flow", "P-1", None)))
+    check("pricing per-size accessory: one entry per accessorySkus size + a sizeless pillow -> ok",
+          rq.ok)
+    if not rq.ok:
+        print("    " + "; ".join(rq.errors[:2]))
+    check("pricing per-size accessory: a sizeless entry for a sized accessory -> error",
+          any("sold per mattress size" in e for e in _apv(_accdoc(_acc("base-a", "B-Q", None))).errors))
+    check("pricing per-size accessory: a size the catalog does not sell -> error",
+          any("is not one of accessory" in e for e in _apv(_accdoc(_acc("base-a", "B-Q", "king"))).errors))
+    check("pricing per-size accessory: a wildcard size -> error",
+          any("is a wildcard" in e for e in _apv(_accdoc(_acc("base-a", "B-Q", "*"))).errors))
+    check("pricing per-size accessory: another size's sku -> error (sku = exactly accessorySkus[size])",
+          any("must be exactly accessorySkus['queen']" in e
+              for e in _apv(_accdoc(_acc("base-a", "B-TXL", "queen"))).errors))
+    rd2 = _apv(_accdoc(_acc("base-a", "B-Q", "queen"), _acc("base-a", "B-Q2", "queen")))
+    check("pricing per-size accessory: duplicate (productId, size) -> error",
+          any("duplicates products[0]" in e and "'queen'" in e for e in rd2.errors))
+    check("pricing size-independent accessory: a sized entry -> error",
+          any("size must be null for an accessory without accessorySkus" in e
+              for e in _apv(_accdoc(_acc("pillow-flow", "P-1", "queen"))).errors))
+    check("pricing size-independent accessory: a sku other than the catalog's -> error",
+          any("exactly the catalog sku" in e for e in _apv(_accdoc(_acc("pillow-flow", "P-9", None))).errors))
+    pc = _accdoc(_acc("base-a", "B-Q", "queen")); pc["products"][0]["clearance"]["scope"]["size"] = None
+    check("pricing per-size accessory: clearance scope must carry the same size -> error",
+          any("clearance.scope.size" in e for e in _apv(pc).errors))
+    check("pricing per-size accessory: without accessory_skus a sized accessory entry is refused (fail closed)",
+          any("size must be null for an accessory" in e
+              for e in _pv(_accdoc(_acc("base-a", "B-Q", "queen")),
+                           accessory_ids={"base-a", "pillow-flow"}).errors))
+    check("pricing malformed accessory_skus argument -> reported, fails closed",
+          any("accessory_skus must be a mapping" in e
+              for e in _apv(_accdoc(_acc("pillow-flow", "P-1", None)), accessory_skus=["x"]).errors))
+    check("accessory_skus_from_catalog: per-size map, single sku, none",
+          accessory_skus_from_catalog([{"id": "a", "accessorySkus": {"queen": "Q"}}, {"id": "b", "sku": "S"},
+                                       {"id": "c"}, "junk", {"id": 5}])
+          == {"a": {"queen": "Q"}, "b": "S", "c": None})
     pu = _pmut(); pu["products"][0]["productId"] = "g99"; pu["products"][0]["clearance"]["scope"]["productId"] = "g99"
     check("pricing unknown productId -> error when catalog ids supplied", _perr(pu, "not a mattress id"))
     check("pricing productId unchecked when catalog ids not supplied",
