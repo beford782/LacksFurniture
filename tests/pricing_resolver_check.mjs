@@ -491,6 +491,29 @@ for (const [label, mut] of FIN_ENV_BAD) {
   check("accessory entry: the OTHER entry's SKU does not match it (SKU identity holds per kind)",
     r3.price.status === "unavailable");
 }
+// A per-size accessory entry (one-application contract, 2026-10-15): the
+// entry names ONE size, and only a query AT that size with that size's sku
+// resolves it. Never inferred from another size; wildcards refused.
+{
+  const sized = (size, sku) => { const p = P();
+    p.products[0] = Object.assign(JSON.parse(JSON.stringify(p.products[0])), {
+      productKind: "accessory", productId: "base-a", size: size, sku: sku });
+    return p; };
+  const rq = (p, size, sku) => resolver(p, F(), Q({ productId: "base-a", sku: sku, size: size })).price.status;
+  check("per-size accessory entry: resolves for a query at its own size", rq(sized("queen", "B-Q"), "queen", "B-Q") === "resolved");
+  check("per-size accessory entry: a query at another size does not match (missing size = unavailable)",
+    rq(sized("queen", "B-Q"), "king", "B-Q") === "unavailable");
+  check("per-size accessory entry: a sizeless query does not match it",
+    rq(sized("queen", "B-Q"), null, "B-Q") === "unavailable" && rq(sized("queen", "B-Q"), undefined, "B-Q") === "unavailable");
+  check("per-size accessory entry: split King unit size twin_xl resolves the twin_xl entry",
+    rq(sized("twin_xl", "B-TXL"), "twin_xl", "B-TXL") === "resolved" && rq(sized("twin_xl", "B-TXL"), "king", "B-TXL") === "unavailable");
+  check("per-size accessory entry: a wildcard-size entry never resolves",
+    ["*", "all", "any", "default", " Any "].every((w) => rq(sized(w, "B-Q"), w, "B-Q") === "unavailable"));
+  check("per-size accessory entry: a non-string size never resolves",
+    [5, {}, [], true].every((z) => rq(sized(z, "B-Q"), z, "B-Q") === "unavailable"));
+  check("per-size accessory entry: sku identity still holds at the right size",
+    rq(sized("queen", "B-Q"), "queen", "B-K") === "unavailable");
+}
 
 // ===========================================================================
 section("Threshold — explicit runtime MINOR-unit amount vs MAJOR-unit plan minimums");

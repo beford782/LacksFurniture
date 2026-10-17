@@ -11771,7 +11771,7 @@
       border: 1px solid var(--color-text-muted);
     }
 
-    /* ===== PURCHASE STUDIO (payment demo, 2026-10-05) =====
+    /* ===== PURCHASE STUDIO (2026-10-05; one application 2026-10-15) =====
        The priced Sleep System and its payment choices on the Consultation
        Summary. Theme tokens only, so it follows the active theme; the
        store's primary colour marks the selected choice. */
@@ -11858,7 +11858,34 @@
       color: var(--color-text);
     }
     .ps-muted { color: var(--color-text-muted); font-weight: 500; font-size: 0.95rem; }
-    .ps-illus { color: var(--ps-ink-accent); font-size: 0.8em; font-weight: 600; margin-left: 0.15em; }
+    /* Admitted offers: the customer's price leads, the list price sits
+       beside it struck through and muted, and each offer is a small named
+       tag with its amount - savings read at a glance, never as clutter. */
+    .ps-was { margin-left: 0.45em; font-size: 0.6em; font-weight: 500; color: var(--color-text-muted);
+      text-decoration-thickness: 1px; font-variant-numeric: tabular-nums; }
+    .ps-row__amount .ps-was, .ps-opt__price .ps-was { font-size: 0.85em; }
+    .ps-offers { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; white-space: normal; }
+    .ps-row__amount .ps-offers { justify-content: flex-end; max-width: 15rem; margin-left: auto; }
+    .ps-offer { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
+      font: 600 0.875rem/1.35 var(--font-sans); color: var(--ps-ink-accent); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--store-primary) 10%, var(--color-surface));
+      border: 1px solid color-mix(in srgb, var(--store-primary) 38%, var(--color-border)); }
+    .ps-sums { margin-top: 0.85rem; padding-top: 0.55rem; border-top: 1px solid var(--color-border); }
+    .ps-sums__row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.12rem 0;
+      font-size: 0.92rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+    .ps-sums__row--save { color: var(--ps-ink-accent); font-weight: 700; }
+    .ps-sums + .ps-subtotal { padding-top: 0.35rem; }
+    .ps-cashgap { font-size: 0.85rem; font-weight: 600; }
+    .ps-terms { margin-top: 0.55rem; }
+    .ps-terms .ps-fine { font-size: 0.875rem; }
+    .ps-terms__title { display: block; margin-top: 0.4rem; font: 700 0.75rem/1.3 var(--font-sans); letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-opt__save, .ps-preview__save { font: 600 0.8rem/1.3 var(--font-sans); color: var(--ps-ink-accent); }
+    @media (forced-colors: active) {
+      .ps-offer { border-color: CanvasText; }
+      .ps-was { color: GrayText; }
+      .ps-sums__row--save, .ps-opt__save, .ps-preview__save { color: CanvasText; }
+    }
     .ps-chips, .ps-picks, .ps-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .ps-chips--size { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .ps-chips--size .ps-chip { min-width: 0; }
@@ -12051,6 +12078,7 @@
     .ps-details__summary { min-height: 44px; display: flex; align-items: center; padding: 0 0.9rem; cursor: pointer;
       font: 600 0.9rem var(--font-sans); touch-action: manipulation; }
     .ps-details__body { padding: 0 0.9rem 0.8rem; }
+    .ps-details__body .ps-fine { font-size: 0.875rem; }
     .ps-dl { margin: 0; display: grid; gap: 0.35rem; }
     .ps-dl > div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9rem; }
     .ps-dl dt { color: var(--color-text-muted); }
@@ -12372,7 +12400,7 @@
       <!-- Sleep Signature stamp (D2, Slice 2): the same answer-derived,
            decorative figure the Sleep Brief renders, at stamp scale. -->
       <div class="noct-results-signature" id="resultsSignature"></div>
-      <!-- Payment demo: the way back to the priced sleep system after
+      <!-- Purchase studio: the way back to the priced sleep system after
            "Browse all matches" (empty and hidden otherwise). -->
       <div class="ps-return" id="psReturnBar" hidden></div>
       <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
@@ -12788,10 +12816,10 @@
       <p class="hf2-lead-line" id="hf2LeadLine"></p>
     </section>
 
-    <!-- Purchase studio (payment demo, owner demo-first direction
-         2026-10-05). Rendered by renderPurchaseStudio() only under demo
-         admission (harness context + validated demo config) with the price
-         gate open; hidden and empty in every shipped state, and emptied by the
+    <!-- Purchase studio (owner direction 2026-10-05; one application
+         2026-10-15). Rendered by renderPurchaseStudio() only under production
+         admission (prices enabled, display on and the handoff surface
+         on); hidden and empty in every shipped state, and emptied by the
          session wipe. While it shows it is the Summary's ONE presentation of
          the selected purchase. -->
     <section class="hf2-review-section ps" id="purchaseStudio" hidden aria-labelledby="psTitle"></section>
@@ -13394,9 +13422,6 @@
     }
 
     function financingPlanFresh(p) {
-      // An example plan is never a governed plan: it is admitted only by the
-      // demo adapter, and a governed plan never reaches the adapter.
-      if (p && p.demo === true) return typeof demoPlanAdmitted === 'function' && demoPlanAdmitted(p);
       if (!financingTermsFresh() || !p || p.verified !== true) return false;
       var f = getFinancingConfig();
       var ts = Date.parse(p.verifiedAt);
@@ -13531,8 +13556,16 @@
             if (!isStr(q.size) || e.size !== q.size) continue;
             if (isStr(e.size) && SIZE_WILDCARDS.indexOf(e.size.replace(/\s+/g, '').toLowerCase()) !== -1) continue;
           } else if (e.productKind === 'accessory') {
-            if (e.size !== null && e.size !== undefined) continue;
-            if (q.size !== null && q.size !== undefined) continue;
+            // An accessory sold per mattress size (catalog accessorySkus) is
+            // queried AT a size and resolves only the entry for exactly that
+            // size; a size-independent accessory is queried sizeless and
+            // resolves only the sizeless entry. Never inferred across sizes.
+            if (e.size === null || e.size === undefined) {
+              if (q.size !== null && q.size !== undefined) continue;
+            } else {
+              if (!isStr(e.size) || !isStr(q.size) || e.size !== q.size) continue;
+              if (SIZE_WILDCARDS.indexOf(e.size.replace(/\s+/g, '').toLowerCase()) !== -1) continue;
+            }
           } else {
             continue;
           }
@@ -13720,7 +13753,8 @@
     //                     keeps it that way until the final activation gate.
     //                     ALSO off (Codex correction, 2026-09-09 — the
     //                     roadmap's state table, restored): no applicable
-    //                     catalog record or SKU for this product-size; the
+    //                     catalog record or SKU for this product-size while
+    //                     the pricing block is not wholly approved; the
     //                     resolver's freshness axis absent or not 'fresh'
     //                     (stale, not-judgeable); its eligibility axis absent
     //                     or not 'eligible' (activation-unapproved). Stale and
@@ -13728,7 +13762,12 @@
     //                     no state copy, no number, no email material, no
     //                     analytics, no persistence — nothing a customer can
     //                     see or that could be read as "approved but hidden".
-    //   price-unavailable ONLY when freshness is 'fresh' AND eligibility is
+    //   price-unavailable while the pricing block is ACTIVE (enabled,
+    //                     displayEnabled, this surface on, presentation and
+    //                     authority approved) and this product-size has no
+    //                     SKU or no pricing entry at all (owner direction
+    //                     2026-10-16: one product's gap is said for that
+    //                     product, never silence) -- OR when freshness is 'fresh' AND eligibility is
     //                     'eligible' but the admitted price cannot be resolved
     //                     or safely formatted — it fails the runtime money
     //                     admission below (safe-integer minor units, positive,
@@ -13788,16 +13827,22 @@
     // shipped catalog collapsed all five into a single ungoverned "From $"
     // figure, which was in fact the Queen price shown to every customer.
     //
-    // The pricing CONTRACT is unchanged and must be: validate_pricing
-    // requires `size: null` on every `productKind: "accessory"` entry. So the
-    // size is resolved on the CATALOG side, by choosing WHICH accessory sku
-    // to ask about, and the resolver query stays sizeless. `accessorySkus`
-    // is deliberately a different key from the mattress `skus` map so the
-    // two can never be confused by shape.
+    // The pricing CONTRACT (owner direction 2026-10-15, one operable
+    // application): an accessory WITH `accessorySkus` is priced per size -
+    // each pricing.products entry names one of its sizes and exactly that
+    // size's sku (validate_pricing, given the catalog) - and the gate queries
+    // it AT the customer's size (a split King base at twin_xl), so only that
+    // size's entry resolves. An accessory with a single `sku` keeps one
+    // sizeless entry and is queried sizeless whatever the customer's size.
+    // `accessorySkus` is deliberately a different key from the mattress
+    // `skus` map so the two can never be confused by shape.
     function pricingIsAccessory(rec) {
       if (!rec || (rec.skus && typeof rec.skus === 'object')) return false;
       return typeof rec.sku === 'string'
         || !!(rec.accessorySkus && typeof rec.accessorySkus === 'object');
+    }
+    function pricingAccessorySized(rec) {
+      return !!(rec && rec.accessorySkus && typeof rec.accessorySkus === 'object');
     }
     function pricingCleanSku(sku) {
       return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0
@@ -13877,6 +13922,18 @@
       }
     }
 
+    // Whether pricing.products carries ANY entry for this product's SKU
+    // (valid or not). Absent -> the product-size is simply not priced;
+    // present -> its own freshness / eligibility / validity decides.
+    function pricingEntryFor(p, productId, sku) {
+      var list = (p && Array.isArray(p.products)) ? p.products : [];
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (e && typeof e === 'object' && e.productId === productId && e.sku === sku) return true;
+      }
+      return false;
+    }
+
     // The gate. Returns a closed presentation record:
     //   { state: 'off' | 'price-unavailable' | 'available',
     //     amountMinor, currency, kind, text, notes, calculation, threshold }
@@ -13886,20 +13943,33 @@
       var p = getPricingConfig();
       if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
-      // Payment demo: decided by the demo context alone, never as a fallback
-      // from a production refusal (see the demo admission adapter).
-      if (typeof demoAdmission === 'function' && demoAdmission()) return demoPricePresentation(surface, m, size, opts, off);
-      var o = (opts && typeof opts === 'object') ? opts : {};
+      var o =(opts && typeof opts === 'object') ? opts : {};
+      // A product-size pricing does not cover (owner direction 2026-10-16:
+      // a failure disables only its own scope). While the WHOLE pricing
+      // block is active - every presentation approval recorded and a named
+      // authority (pricingPresentationApproved) on top of the surface check
+      // above - a product with no SKU at this size, or no pricing entry for
+      // its SKU, says "price unavailable" for itself instead of silence. The
+      // governed state copy, never a number. Dark (every shipped state): off,
+      // exactly as before. A stale, uncleared or otherwise invalid ENTRY that
+      // does exist stays off below (inert internal data).
+      var unpriced = pricingPresentationApproved(p)
+        ? { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
+            text: pricingStateCopy('price-unavailable'), notes: [],
+            calculation: 'unavailable', threshold: 'unknown' }
+        : off;
       var sku = pricingSkuFor(m, size);
       // No applicable catalog record / SKU for this product-size: nothing to
-      // ask the resolver about, and nothing to show.
-      if (!sku) return off;
-      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
+      // ask the resolver about.
+      if (!sku) return unpriced;
+      var rec = pricingCatalogRecord(m);
+      var accessory = pricingIsAccessory(rec);
+      var sizedAccessory = accessory && pricingAccessorySized(rec);
       var r = resolveDarkPricing(p, getFinancingConfig(), {
         nowMs: Date.now(),
         productId: m.id,
         sku: sku,
-        size: accessory ? undefined : size,
+        size: accessory ? (sizedAccessory ? size : null) : size,
         planId: (typeof o.planId === 'string') ? o.planId : null,
         transactionAmountMinor: o.transactionAmountMinor
       });
@@ -13911,7 +13981,7 @@
       // for activation-unapproved ("nothing on any shipped/live surface").
       var fresh = !!(r && r.freshness && r.freshness.status === 'fresh');
       var eligible = !!(r && r.eligibility && r.eligibility.status === 'eligible');
-      if (!fresh || !eligible) return off;
+      if (!fresh || !eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;
       // Fresh and eligible: the price is either admitted, or the surface may
       // say only that a price is unavailable — never a number.
       var resolved = !!(r && r.price && r.price.status === 'resolved');
@@ -13941,10 +14011,7 @@
         return;
       }
       var html = '<div class="drawer-section-label">' + escapeHtml(t('drawer.price_label')) + '</div>'
-        + '<div class="drawer-price__amount">' + escapeHtml(pres.text)
-        + ((pres.state === 'available' && typeof psIllustrative === 'function' && psIllustrative(pricingSkuFor(m, size)))
-          ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '">\u25c7</span>' : '')
-        + '</div>';
+        + '<div class="drawer-price__amount">' + escapeHtml(pres.text) + '</div>';
       var monthly = (pres.state === 'available' && typeof psMattressMonthlyText === 'function')
         ? psMattressMonthlyText('drawer', m) : '';
       if (monthly) html += '<p class="drawer-price__monthly ps-monthly-line">' + escapeHtml(monthly) + '</p>';
@@ -13975,9 +14042,7 @@
       var base = (typeof cls === 'string' && /^[a-z0-9_-]+$/i.test(cls)) ? cls : 'price-slot';
       var html = '<div class="' + base + '" data-price-state="' + escapeHtml(pres.state) + '">'
         + '<span class="' + base + '__label">' + escapeHtml(t('drawer.price_label')) + '</span> '
-        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>'
-        + ((pres.state === 'available' && typeof psIllustrative === 'function' && psIllustrative(pricingSkuFor(m, slotSize)))
-          ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '">\u25c7</span>' : '');
+        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>';
       var monthly = (pres.state === 'available' && typeof psMattressMonthlyText === 'function')
         ? psMattressMonthlyText(surface, m) : '';
       if (monthly) html += '<p class="' + base + '__monthly ps-monthly-line">' + escapeHtml(monthly) + '</p>';
@@ -13993,10 +14058,12 @@
     // (resolveFinalistState) and the Sleep System cart (window._accCart).
     //
     // It is PURE and STATELESS. It reads nothing it does not own, writes
-    // nothing, stores nothing, persists nothing, and never reaches an email
-    // payload, an analytics field or Code.gs — so the gate's stateless
-    // contract holds and the session wipe still has nothing of its own to
-    // clear. It renders NOTHING: production has no caller that draws it.
+    // nothing, stores nothing, persists nothing, and never reaches an
+    // analytics field. It reaches the email ONLY as the shared purchase
+    // summary (purchaseSummaryFor), and only while pricing.surfaces.email is
+    // true (complete, or incomplete with no total) - shipped config sends quote:null -
+    // so the gate's stateless contract holds and the session wipe still has
+    // nothing of its own to clear. It renders nothing itself.
     //
     // Every line's money comes from pricePresentationFor above and from
     // nowhere else — never the resolver directly (the one-call-site
@@ -14087,9 +14154,8 @@
       if (q < 1 || q > maxForItem) return null;
       return q;
     }
-    // The size a line is FOR. Presentation metadata only: it never reaches
-    // the resolver, whose accessory query stays sizeless
-    // (pricePresentationFor). A mattress is priced at the customer's size.
+    // The size a line is FOR - the same size the gate queries the resolver
+    // at (pricePresentationFor). A mattress is priced at the customer's size.
     // An accessory sold per mattress size (an `accessorySkus` map) is that
     // size's OWN product at its own price, so its line says which one
     // (PR #132 review repair, 2026-09-27: the size was discarded, and a
@@ -14107,7 +14173,7 @@
       if (!Object.prototype.hasOwnProperty.call(rec.accessorySkus, size)) return null;
       return pricingCleanSku(rec.accessorySkus[size]) ? size : null;
     }
-    // SPLIT BASE (payment demo, 2026-10-05). A split King is a different
+    // SPLIT BASE (purchase studio, 2026-10-05). A split King is a different
     // configuration, not "quantity 2": two Twin XL adjustable bases, each its
     // own product at its own Twin XL price. It exists only when the cart
     // entry says so explicitly (`split: true`, quantity 2), the product is an
@@ -14157,14 +14223,277 @@
         reason: reason,
         currency: admitted ? pres.currency : null,
         unitAmountMinor: admitted ? pres.amountMinor : null,
-        extendedAmountMinor: admitted ? pres.amountMinor * qty : null
+        extendedAmountMinor: admitted ? pres.amountMinor * qty : null,
+        // Offer facts (filled by quoteApplyOffers when the WHOLE quote
+        // resolves, or line by line by quoteApplyLineOffers when it does not;
+        // otherwise a line carries no discount and its net is its extended
+        // amount, or null).
+        brand: quoteBrandFor(kind, record),
+        discounts: [],
+        discountMinor: 0,
+        netAmountMinor: admitted ? pres.amountMinor * qty : null
       };
+    }
+    // The brand an offer's eligibility is judged against: the CATALOG
+    // record's own brand (a saved-pick projection carries a display brand
+    // joined with its sub-line, which is not an identity). Accessories carry
+    // none. Unknown is null, and an offer that names brands never matches -
+    // nor clears a brand exclusion - for a line whose brand is unknown.
+    function quoteBrandFor(kind, record) {
+      if (kind !== 'mattress' || !record || typeof record.id !== 'string') return null;
+      var index = (typeof window === 'object' && window && window._drawerData) ? window._drawerData : null;
+      var hit = index && index[record.id] && index[record.id].m;
+      if (hit && hit.id === record.id && typeof hit.brand === 'string' && hit.brand) return hit.brand;
+      if (typeof record.brand === 'string' && record.brand && record.brand.indexOf(' · ') === -1) return record.brand;
+      return null;
+    }
+
+    // ─── Offers: exact promotions and discounts (owner direction 2026-10-15) ───
+    // pricing.offers[] holds retailer offers. An offer reaches a figure only
+    // when it is ADMITTED here, at runtime, under the injected clock
+    // (Date.now(), exactly as the resolver's query clock): the price gate is
+    // open with every presentation approval recorded (the same activation
+    // test the resolver's eligibility axis applies), its evidence is a
+    // current retailer promotion, verified by a named person, not in the
+    // future and within pricing.freshness.maxAgeDays, sourced on an
+    // allowlisted host under an APPROVED source policy, approved by a named
+    // person at a parseable instant, inside its [startsAt, endsAt) window,
+    // and its effect is well formed. Anything malformed is refused (fail
+    // closed, never fail open). Shipped config carries offers: [] and the
+    // gate dark, so nothing is ever admitted in production.
+    //
+    // The Savings Pass (discount.mode) is a separate, non-redeemable
+    // presentation code and NEVER reaches a quote figure; an exact store
+    // discount is configured here, as an offer.
+    var OFFER_SKEW_MS = 300000;
+    var OFFER_KINDS = ['mattress', 'accessory'];
+    function offerStamp(v) {
+      if (typeof v !== 'string' || !/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(v)) return null;   // offset required
+      var ts = Date.parse(v);
+      return isFinite(ts) ? ts : null;
+    }
+    function offerNonBlank(v) { return typeof v === 'string' && v.replace(/\s+/g, '').length > 0; }
+    function offerBilingual(v) {
+      return !!(v && typeof v === 'object' && offerNonBlank(v.en) && offerNonBlank(v.es));
+    }
+    function offerHostAllowed(url, hosts) {
+      if (typeof url !== 'string' || url.slice(0, 8) !== 'https://' || !Array.isArray(hosts)) return false;
+      var rest = url.slice(8);
+      var cut = rest.search(/[\/?#]/);
+      var auth = (cut === -1 ? rest : rest.slice(0, cut));
+      if (!auth || auth.indexOf('@') !== -1 || auth.indexOf(':') !== -1) return false;
+      var h = auth.toLowerCase();
+      if (h === 'web.archive.org' || h.slice(-16) === '.web.archive.org') return false;
+      for (var i = 0; i < hosts.length; i++) {
+        var a = hosts[i];
+        if (typeof a !== 'string' || !a) continue;
+        if (h === a || h.slice(-(a.length + 1)) === '.' + a) return true;
+      }
+      return false;
+    }
+    function offerStringList(v) {
+      if (!Array.isArray(v) || !v.length) return false;
+      for (var i = 0; i < v.length; i++) if (!offerNonBlank(v[i])) return false;
+      return true;
+    }
+    // The price gate's activation set, judged once for the whole pricing
+    // block (the per-product clearance stays with each price): enabled,
+    // displayEnabled, presentation approved with business, legal and native
+    // review each approved by a named person, and a named authority.
+    function pricingPresentationApproved(p) {
+      if (!p || typeof p !== 'object' || p.enabled !== true || p.displayEnabled !== true) return false;
+      var rec = function (r) {
+        return !!(r && typeof r === 'object' && r.status === 'approved' && offerNonBlank(r.by) && offerStamp(r.at) !== null);
+      };
+      var pres = (p.presentation && typeof p.presentation === 'object') ? p.presentation : null;
+      var ap = (pres && pres.approvals && typeof pres.approvals === 'object') ? pres.approvals : null;
+      return !!(pres && pres.status === 'approved' && ap && rec(ap.business) && rec(ap.legal) && rec(ap.nativeReview)
+        && p.authority && typeof p.authority === 'object' && offerNonBlank(p.authority.owner) && offerNonBlank(p.authority.role));
+    }
+    function offerEffectValid(e) {
+      if (!e || typeof e !== 'object') return false;
+      if (e.type === 'percent-off') return Number.isSafeInteger(e.basisPoints) && e.basisPoints >= 1 && e.basisPoints <= 10000;
+      if (e.type === 'amount-off') return Number.isSafeInteger(e.amountMinor) && e.amountMinor > 0 && e.amountMinor <= PRICE_AMOUNT_MINOR_MAX;
+      return false;
+    }
+    // One offer, judged against the pricing block and the clock. Pure.
+    function offerAdmitted(o, p, nowMs) {
+      if (!o || typeof o !== 'object' || typeof nowMs !== 'number' || !isFinite(nowMs)) return false;
+      if (!pricingPresentationApproved(p)) return false;
+      if (typeof o.id !== 'string' || !/^[a-z0-9-]{3,64}$/.test(o.id)) return false;
+      if (!offerBilingual(o.label) || !offerBilingual(o.terms) || !offerEffectValid(o.effect)) return false;
+      var el = o.eligibility;
+      if (!el || typeof el !== 'object' || !Array.isArray(el.productKinds) || !el.productKinds.length) return false;
+      for (var k = 0; k < el.productKinds.length; k++) if (OFFER_KINDS.indexOf(el.productKinds[k]) === -1) return false;
+      var lists = ['productIds', 'brands', 'sizes'];
+      for (var li = 0; li < lists.length; li++) {
+        if (el[lists[li]] !== undefined && !offerStringList(el[lists[li]])) return false;
+      }
+      if (o.exclusions !== undefined) {
+        var ex = o.exclusions;
+        if (!ex || typeof ex !== 'object') return false;
+        if (ex.productIds !== undefined && !offerStringList(ex.productIds)) return false;
+        if (ex.brands !== undefined && !offerStringList(ex.brands)) return false;
+      }
+      var start = offerStamp(o.startsAt), end = offerStamp(o.endsAt);
+      if (start === null || end === null || end <= start) return false;
+      if (nowMs < start || nowMs >= end) return false;                     // [startsAt, endsAt)
+      if (o.stacking !== 'exclusive' && o.stacking !== 'combinable') return false;
+      if (!Number.isSafeInteger(o.priority) || o.priority < 0) return false;
+      if (!Object.prototype.hasOwnProperty.call(o, 'minimumMerchandiseMinor')) return false;
+      var min = o.minimumMerchandiseMinor;
+      if (min !== null && (!Number.isSafeInteger(min) || min < 0)) return false;
+      if (o.payment !== 'any' && o.payment !== 'pay-in-full-only') return false;
+      var ev = o.evidence;
+      if (!ev || typeof ev !== 'object' || ev.status !== 'retailer-promotion-current' || !offerNonBlank(ev.verifiedBy)) return false;
+      var vAt = offerStamp(ev.verifiedAt);
+      var mad = p.freshness && typeof p.freshness === 'object' ? p.freshness.maxAgeDays : null;
+      if (vAt === null || vAt > nowMs + OFFER_SKEW_MS) return false;
+      if (!Number.isSafeInteger(mad) || mad <= 0 || mad > 60 || nowMs - vAt > mad * 86400000) return false;
+      var sp = p.sourcePolicy;
+      if (!sp || typeof sp !== 'object' || sp.status !== 'approved' || !offerHostAllowed(ev.sourceUrl, sp.allowedSourceHosts)) return false;
+      var ap = o.approval;
+      var aAt = ap && typeof ap === 'object' ? offerStamp(ap.at) : null;
+      if (!ap || !offerNonBlank(ap.by) || aAt === null || aAt > nowMs + OFFER_SKEW_MS) return false;
+      return true;
+    }
+    // Every admitted offer, ordered by (priority asc, id asc). An id that
+    // appears more than once is ambiguous and admits NONE of its copies.
+    function admittedOffers(p, nowMs) {
+      var list = (p && Array.isArray(p.offers)) ? p.offers : [];
+      var count = {};
+      for (var i = 0; i < list.length; i++) {
+        var id = list[i] && typeof list[i].id === 'string' ? list[i].id : '';
+        if (id) count[id] = (count[id] || 0) + 1;
+      }
+      var out = list.filter(function (o) { return o && count[o.id] === 1 && offerAdmitted(o, p, nowMs); });
+      out.sort(function (a, b) { return a.priority !== b.priority ? a.priority - b.priority : (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)); });
+      return out;
+    }
+    // Whether one admitted offer can apply to one resolved line.
+    function offerMatchesLine(o, ln, listMinor, payment) {
+      if (!offerFitsLine(o, ln, payment)) return false;
+      if (o.minimumMerchandiseMinor !== null && listMinor < o.minimumMerchandiseMinor) return false;
+      return true;
+    }
+    // Everything about one offer and one line EXCEPT the merchandise
+    // minimum (which needs the whole purchase): kinds, products, brands,
+    // sizes, exclusions, and the payment the quote is for.
+    function offerFitsLine(o, ln, payment) {
+      var el = o.eligibility;
+      if (el.productKinds.indexOf(ln.kind) === -1) return false;
+      if (el.productIds && el.productIds.indexOf(ln.productId) === -1) return false;
+      if (el.brands && (ln.brand === null || el.brands.indexOf(ln.brand) === -1)) return false;
+      if (el.sizes && (!ln.size || el.sizes.indexOf(ln.size) === -1)) return false;
+      var ex = o.exclusions || {};
+      if (ex.productIds && ex.productIds.indexOf(ln.productId) !== -1) return false;
+      if (ex.brands && (ln.brand === null || ex.brands.indexOf(ln.brand) !== -1)) return false;
+      if (o.payment === 'pay-in-full-only' && payment !== 'full') return false;
+      return true;
+    }
+    // THE application rule. `lines` are fully resolved quote lines; ctx is
+    // { offers: admitted (already ordered), payment: 'full' | 'financed' }.
+    // Returns new line objects (the inputs are not mutated) and the quote's
+    // offer facts. The minimum is judged against the PRE-discount
+    // merchandise subtotal; each offer applies at most once per line; a
+    // line's remaining amount never drops below zero.
+    function quoteApplyOffers(lines, ctx) {
+      var c = (ctx && typeof ctx === 'object') ? ctx : {};
+      var offers = Array.isArray(c.offers) ? c.offers.slice() : [];
+      offers.sort(function (a, b) { return a.priority !== b.priority ? a.priority - b.priority : (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)); });
+      var payment = c.payment === 'financed' ? 'financed' : 'full';
+      var list = 0;
+      for (var i = 0; i < lines.length; i++) list += lines[i].extendedAmountMinor;
+      var applied = [];
+      var total = 0;
+      var out = lines.map(function (ln) {
+        var cands = offers.filter(function (o) { return offerMatchesLine(o, ln, list, payment); });
+        var next = quoteDiscountLine(ln, cands, applied);
+        total += next.discountMinor;
+        return next;
+      });
+      return { lines: out, listMerchandiseMinor: list, discountMinor: total,
+               appliedOffers: applied, merchandiseMinor: list - total };
+    }
+    // One line under its candidate offers (already ordered): an exclusive
+    // first candidate applies alone, otherwise every combinable applies in
+    // order, each at most once, on the REMAINING amount, never below zero.
+    // Returns a new line; `applied` collects the offer ids used, in order.
+    function quoteDiscountLine(ln, cands, applied) {
+        var next = {};
+        for (var k in ln) if (Object.prototype.hasOwnProperty.call(ln, k)) next[k] = ln[k];
+        var use = !cands.length ? [] : (cands[0].stacking === 'exclusive' ? [cands[0]]
+          : cands.filter(function (o) { return o.stacking === 'combinable'; }));
+        var remaining = ln.extendedAmountMinor;
+        var seen = {};
+        var discounts = [];
+        for (var u = 0; u < use.length; u++) {
+          var o = use[u];
+          if (seen[o.id]) continue;
+          seen[o.id] = true;
+          var d = o.effect.type === 'percent-off'
+            ? Math.floor(remaining * o.effect.basisPoints / 10000)
+            : Math.min(o.effect.amountMinor * ln.quantity, remaining);
+          if (!Number.isSafeInteger(d) || d <= 0) continue;
+          remaining -= d;
+          discounts.push({ offerId: o.id, label: o.label, amountMinor: d });
+          if (applied.indexOf(o.id) === -1) applied.push(o.id);
+        }
+        next.discounts = discounts;
+        next.discountMinor = ln.extendedAmountMinor - remaining;
+        next.netAmountMinor = remaining;
+        return next;
+    }
+    // An INCOMPLETE quote (owner direction 2026-10-16: a missing price
+    // disables only its own line, and a missing optional offer never
+    // disables a valid purchase). Each RESOLVED line receives its offers
+    // under exactly the rule above, but only when the line's outcome cannot
+    // depend on what is still unknown: if ANY offer that fits the line
+    // carries a merchandise minimum, the minimum needs the whole purchase,
+    // so the line stays at its list price until the quote is complete (fail
+    // closed). A pay-in-full-only offer depends only on the payment the
+    // quote is for, which is known: it applies under pay in full and never
+    // under a plan, exactly as on a complete quote. No subtotal, savings
+    // total, financed amount or payment exists here.
+    function quoteApplyLineOffers(lines, ctx) {
+      var c = (ctx && typeof ctx === 'object') ? ctx : {};
+      var offers = Array.isArray(c.offers) ? c.offers.slice() : [];
+      offers.sort(function (a, b) { return a.priority !== b.priority ? a.priority - b.priority : (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)); });
+      var payment = c.payment === 'financed' ? 'financed' : 'full';
+      var applied = [];
+      var out = lines.map(function (ln) {
+        if (!ln || ln.resolved !== true) return ln;
+        var fits = offers.filter(function (o) { return offerFitsLine(o, ln, payment); });
+        for (var f = 0; f < fits.length; f++) {
+          if (fits[f].minimumMerchandiseMinor !== null) return ln;
+        }
+        return quoteDiscountLine(ln, fits, applied);
+      });
+      return { lines: out, appliedOffers: applied };
+    }
+    // The terms of every offer applied to a quote, in application order,
+    // read back from the configured offer of that id.
+    function quoteOfferTerms(q) {
+      var p = getPricingConfig();
+      var list = (p && Array.isArray(p.offers)) ? p.offers : [];
+      var out = [], seen = {};
+      (q && Array.isArray(q.appliedOffers) ? q.appliedOffers : []).forEach(function (id) {
+        if (seen[id]) return;
+        seen[id] = true;
+        var o = list.filter(function (x) { return x && x.id === id; })[0];
+        if (o && offerBilingual(o.terms)) out.push({ offerId: id, label: o.label, terms: o.terms });
+      });
+      return out;
     }
 
     // The quote. `size` is supplied by the caller (priceSizeAnswer stays the
     // single size source and keeps its pinned call count). Returns a closed
-    // record in every state and throws for no input.
-    function buildConsultationQuote(surface, size) {
+    // record in every state and throws for no input. `opts.payment` is the
+    // payment the quote is for: 'full' (the default) or 'financed' (every
+    // plan quote) - a pay-in-full-only offer applies to the first only.
+    function buildConsultationQuote(surface, size, opts) {
+      var qopts = (opts && typeof opts === 'object') ? opts : {};
+      var payment = qopts.payment === 'financed' ? 'financed' : 'full';
       var lines = [];
       if (typeof resolveFinalistState === 'function') {
         var st = resolveFinalistState();
@@ -14200,6 +14529,35 @@
       // an overflowing or out-of-range merchandise amount is unresolved
       // rather than clamped, wrapped or silently shown.
       var merchandiseMinor = (allResolved && priceMoneyValid(sum, currency)) ? sum : null;
+      var listMinor = merchandiseMinor;
+      var discountMinor = 0;
+      var appliedOffers = [];
+      var lineOffers = [];
+      // Whole-quote offers run ONLY over a fully resolved quote (an
+      // incomplete one gets line-level offers only, below). Everything downstream
+      // (subtotal, down-payment bound, financed amount, payments, qualifying
+      // amount, monthly differences, compare, take-home, email) reads the
+      // NET merchandiseMinor, so a discount can never be applied twice. A
+      // net amount that fails the money admission is unresolved.
+      if (listMinor !== null) {
+        var offers = admittedOffers(getPricingConfig(), Date.now());
+        if (offers.length) {
+          var applied = quoteApplyOffers(lines, { offers: offers, payment: payment });
+          lines = applied.lines;
+          discountMinor = applied.discountMinor;
+          appliedOffers = applied.appliedOffers;
+          merchandiseMinor = priceMoneyValid(applied.merchandiseMinor, currency) ? applied.merchandiseMinor : null;
+        }
+      } else if (resolvedCount > 0) {
+        // Incomplete: line-level offers only (quoteApplyLineOffers), and
+        // still no subtotal, savings total or payment.
+        var lineAdmitted = admittedOffers(getPricingConfig(), Date.now());
+        if (lineAdmitted.length) {
+          var partial = quoteApplyLineOffers(lines, { offers: lineAdmitted, payment: payment });
+          lines = partial.lines;
+          lineOffers = partial.appliedOffers;
+        }
+      }
       // Whether a mattress is part of this purchase is a FACT ABOUT THE
       // QUOTE, not something a consumer should infer from the line list.
       // Without it, an accessories-only cart reports status 'complete' and a
@@ -14220,6 +14578,12 @@
         currency: merchandiseMinor === null ? null : currency,
         status: lines.length === 0 ? 'empty'
           : (merchandiseMinor === null ? 'unresolved' : 'complete'),
+        quoteFor: payment,
+        listMerchandiseMinor: merchandiseMinor === null ? null : listMinor,
+        discountMinor: merchandiseMinor === null ? 0 : discountMinor,
+        // On an incomplete quote: the offers applied line by line (their
+        // terms are shown beside those lines), never a savings total.
+        appliedOffers: merchandiseMinor === null ? lineOffers : appliedOffers,
         merchandiseMinor: merchandiseMinor
       };
     }
@@ -14289,7 +14653,7 @@
       // any line is unresolved — an unknown purchase must assess as
       // 'unknown', never as a partial sum that could clear a minimum the
       // real purchase does not.
-      var quote = buildConsultationQuote(surface, size);
+      var quote = buildConsultationQuote(surface, size, { payment: 'financed' });
       var qualifying = quoteQualifyingAmount(quote, plan);
       var pres = pricePresentationFor(surface, finalist, size, {
         planId: planId,
@@ -14413,6 +14777,14 @@
       if (quote.status === 'complete') {
         var text = formatPriceAmount(quote.merchandiseMinor, quote.currency);
         if (!text) return off();
+        // The items above are list amounts; admitted offers are one savings
+        // row, so the arithmetic stays checkable on screen.
+        if (quote.discountMinor > 0) {
+          html += '<div class="hf2-system-total__row hf2-system-total__row--savings">'
+            + '<span class="hf2-system-total__label">' + escapeHtml(t('ps.savings')) + '</span>'
+            + '<span class="hf2-system-total__amount">−' + escapeHtml(formatPriceAmount(quote.discountMinor, quote.currency)) + '</span>'
+            + '</div>';
+        }
         html += '<div class="hf2-system-total__row">'
           + '<span class="hf2-system-total__label">' + escapeHtml(label) + '</span>'
           + '<span class="hf2-system-total__amount">' + escapeHtml(text) + '</span>'
@@ -14492,7 +14864,7 @@
           }
         }
       }
-      if (psDemoConfig()) {
+      if (psEnabled()) {
         var ma = psMattressMonthlyText('compare', mA, true);
         var mb = psMattressMonthlyText('compare', mB, true);
         var rp = psRefPlan();
@@ -14502,18 +14874,23 @@
         }
         // The whole purchase with each mattress: the Sleep System as built,
         // priced around either bed (saved picks only - the purchase model
-        // prices the customer's own candidates).
+        // prices the customer's own candidates). The amount is the NET
+        // pay-in-full merchandise (admitted offers applied, savings named);
+        // the monthly figure is the plan quote's own (pay-in-full-only
+        // offers excluded), so neither borrows the other's discount.
         var cartKeys = Object.keys(window._accCart || {});
         if (cartKeys.length) {
           var sys = function (m) {
             var saved = (window._savedPicks || []).some(function (pk) { return pk && m && pk.id === m.id; });
             if (!saved) return '—';
-            var q = psQuote(size, { finalistId: m.id });
+            var q = psQuote(size, { finalistId: m.id, payment: 'full' });
             if (!psComplete(q)) return '—';
             var out = formatPriceAmount(q.merchandiseMinor, q.currency);
+            if (q.discountMinor > 0) out += ' (' + t('ps.savings_amount', { amount: formatPriceAmount(q.discountMinor, q.currency) }) + ')';
             if (rp) {
-              var e = psPay(q, rp, 0, size);
-              if (e.state === 'calculated') out += ' · ' + t('ps.monthly', { amount: formatPriceAmount(e.payMinor, q.currency) });
+              var qf = psQuote(size, { finalistId: m.id, payment: 'financed' });
+              var e = psPay(qf, rp, 0, size);
+              if (e.state === 'calculated') out += ' · ' + t('ps.monthly', { amount: formatPriceAmount(e.payMinor, qf.currency) });
             }
             return out;
           };
@@ -14631,10 +15008,6 @@
       var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
                   term: null, belowMin: false, method: '' };
       var o = (opts && typeof opts === 'object') ? opts : {};
-      if (plan && typeof plan === 'object' && plan.demo === true) {
-        return typeof demoPayEstimate === 'function'
-          ? demoPayEstimate(surface, finalist, size, plan, principalMinor, cur, o) : out;
-      }
       if (!plan || typeof plan !== 'object' || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
       var fresh = financingPlanFresh(plan);
       var complete = true;
@@ -14744,7 +15117,7 @@
       var finalist = (st && st.kind === 'chosen') ? st.item : null;
       if (!finalist) return none;
       var size = priceSizeAnswer();
-      var quote = buildConsultationQuote(surface, size);
+      var quote = buildConsultationQuote(surface, size, { payment: 'financed' });
       var cur = 'USD';
       var fmt = function (m) { return formatPriceAmount(m, cur); };
       var complete = quote.status === 'complete' && quote.hasMattress
@@ -14857,7 +15230,7 @@
       var finalist = (st && st.kind === 'chosen') ? st.item : null;
       if (!finalist) return none;
       var size = priceSizeAnswer();
-      var quote = buildConsultationQuote(surface, size);
+      var quote = buildConsultationQuote(surface, size, { payment: 'financed' });
       if (!quote.hasMattress || quote.resolvedCount === 0) return none;
       var complete = quote.status === 'complete'
         && priceMoneyValid(quote.merchandiseMinor, quote.currency);
@@ -14868,11 +15241,19 @@
       var term = (fresh && Number.isSafeInteger(plan.termMonths) && plan.termMonths > 0) ? plan.termMonths : null;
       var apr = fresh ? payAprText(plan.apr) : '';
       var minMinor = fresh ? payMinimumMinor(plan) : null;
-      var belowMin = complete && minMinor !== null && quote.merchandiseMinor < minMinor;
+      // A published minimum is tested against the plan's QUALIFYING amount
+      // (quoteQualifyingAmount), never against an assumed merchandise
+      // subtotal: a plan that does not declare its basis is
+      // threshold-unknown, and nothing is calculated for it.
+      var qual = complete ? quoteQualifyingAmount(quote, plan) : { amountMinor: null };
+      var thresholdUnknown = complete && minMinor !== null && qual.amountMinor === null;
+      var belowMin = complete && minMinor !== null && qual.amountMinor !== null && qual.amountMinor < minMinor;
       var mode = PAY_CALC_MODES.indexOf(plan.calculationMode) !== -1 ? plan.calculationMode : 'not-published';
 
       // ---- the payment figure (the one shared calculation) -----------------
-      var est = complete ? payEstimate(surface, finalist, size, plan, quote.merchandiseMinor, cur)
+      var est = (complete && !thresholdUnknown)
+        ? payEstimate(surface, finalist, size, plan, quote.merchandiseMinor, cur,
+            qual.amountMinor === null ? null : { qualifyingMinor: qual.amountMinor })
         : { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null };
       var payMinor = est.payMinor;
       var factorMicro = est.factorMicro;
@@ -14927,11 +15308,10 @@
 
       var notes = [];
       if (calculated) {
-        var demoBasis = typeof psDemoConfig === 'function' && !!psDemoConfig();
         if (est.method === 'published-equal-division') {
-          notes.push(t(demoBasis ? 'pay.fx.basis_equal_example' : 'pay.fx.basis_equal', { n: term }));
+          notes.push(t('pay.fx.basis_equal', { n: term }));
         } else {
-          notes.push(t(demoBasis ? 'pay.fx.basis_example' : 'pay.fx.basis', { pct: String(factorMicro / 10000) }));
+          notes.push(t('pay.fx.basis', { pct: String(factorMicro / 10000) }));
         }
         // The figure appears because the MERCHANDISE subtotal reaches the
         // published minimum; what the lender counts toward it is unpublished,
@@ -14942,6 +15322,8 @@
         notes.push(t('pay.fx.why_terms'));
       } else if (promo && !complete) {
         notes.push(t('pay.fx.why_incomplete'));
+      } else if (promo && thresholdUnknown) {
+        notes.push(t('ps.threshold_unknown'));
       } else if (promo && belowMin) {
         notes.push(t('pay.fx.why_below'));
       } else {
@@ -15131,167 +15513,20 @@
       return any ? parts.join('<br>') : null;
     }
 
-    // ─── Demo admission adapter (payment demo; owner closeout 2026-10-06) ───
-    // The ONE place demo data is admitted. Production admission (the
-    // resolver, the freshness and approval gates, financingPlanFresh) is
-    // unchanged and never falls back to this: a consumer reaches the demo
-    // path only when demoAdmission() holds, and a demo plan reaches only the
-    // demo path.
-    //
-    // demoAdmission() requires TWO independent conditions:
-    //   1. a demo CONTEXT the preview harness writes into the page it serves
-    //      for `--state demo` (window.__DF_DEMO_CONTEXT, frozen, non-writable,
-    //      carrying a per-run random nonce). The ordinary served build never
-    //      contains it; no URL parameter, storage value or control in the app
-    //      can create it.
-    //   2. a VALIDATED demo configuration (STORE_CONFIG.illustrativeDemo,
-    //      contract payment-demo/1) carrying the SAME nonce, a blank gasUrl and
-    //      the bilingual notice, price-source and payment-source copy (the
-    //      notice is required but no longer displayed - Blake, 2026-10-12).
-    // The boundary this enforces is between the normal served build and the
-    // harness demonstration. It is not protection against someone editing
-    // client-side code, which no browser-side check can be.
-    //
-    // Demo data is honest: historical prices keep their own observation
-    // instants (status 'historical-snapshot'), fills say 'illustrative', every
-    // entry is verified:false, the pricing approval records are the shipped
-    // (unapproved) ones, and example plans are unverified with calculation
-    // off. The demo waives real-offer APPROVAL only - identity, size, money,
-    // method and calculation inputs are checked here as strictly as anywhere.
-    var DEMO_PRICE_STATUSES = ['historical-snapshot', 'illustrative'];
-    var DEMO_CALC_MODES = ['published-fixed-factor', 'published-equal-division'];
-    function demoBilingual(v) {
-      return !!(v && typeof v === 'object' && typeof v.en === 'string' && v.en.trim()
-        && typeof v.es === 'string' && v.es.trim());
-    }
-    function demoAdmission() {
-      var ctx = (typeof window === 'object' && window) ? window.__DF_DEMO_CONTEXT : null;
-      if (!ctx || typeof ctx !== 'object' || !Object.isFrozen(ctx)) return null;
-      if (ctx.harness !== 'serve_pricing_preview' || ctx.state !== 'demo') return null;
-      if (typeof ctx.nonce !== 'string' || !/^[0-9a-f]{32}$/.test(ctx.nonce)) return null;
-      var cfg = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG : null;
-      var d = cfg ? cfg.illustrativeDemo : null;
-      if (!d || typeof d !== 'object' || d.contract !== 'payment-demo/1' || d.enabled !== true) return null;
-      if (d.contextNonce !== ctx.nonce) return null;
-      if (!isFinite(Date.parse(d.assembledAt))) return null;
-      if (!demoBilingual(d.notice) || !demoBilingual(d.priceSource) || !demoBilingual(d.paymentSource)) return null;
-      if (cfg.gasUrl) return null;
-      return d;
-    }
-    // The demo entry for one product-size, or null. Identity is the catalog's
-    // own SKU for that product and size (pricingSkuFor), matched exactly once.
-    function demoPriceEntry(m, size) {
-      var d = demoAdmission();
-      var p = getPricingConfig();
-      if (!d || !p || !Array.isArray(p.products) || !m || typeof m.id !== 'string') return null;
-      var demoSku = pricingSkuFor(m, size);
-      if (!demoSku) return null;
-      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
-      var hit = null, n = 0;
-      for (var i = 0; i < p.products.length; i++) {
-        var e = p.products[i];
-        if (e && typeof e === 'object' && e.sku === demoSku) { n++; hit = e; }
-      }
-      if (n !== 1) return null;
-      if (hit.productId !== m.id || hit.productKind !== (accessory ? 'accessory' : 'mattress')) return null;
-      if (accessory ? hit.size !== null : hit.size !== size) return null;
-      var pr = hit.price;
-      if (!pr || pr.kind !== 'regular' || !priceMoneyValid(pr.amountMinor, pr.currency)) return null;
-      var ev = hit.evidence;
-      if (!ev || DEMO_PRICE_STATUSES.indexOf(ev.status) === -1 || ev.verified !== false) return null;
-      if ('verifiedAt' in ev) return null;
-      if (ev.status === 'historical-snapshot') {
-        var ob = Date.parse(ev.observedAt);
-        if (!isFinite(ob) || ob > Date.parse(d.assembledAt)) return null;
-        if (typeof ev.sourceUrl !== 'string' || ev.sourceUrl.indexOf('https://') !== 0) return null;
-      } else if (typeof ev.method !== 'string' || !ev.method.trim() || 'observedAt' in ev || 'sourceUrl' in ev) {
-        return null;
-      }
-      return { entry: hit, status: ev.status, amountMinor: pr.amountMinor, currency: pr.currency };
-    }
-    // An example plan the demo may calculate: unverified, calculation off,
-    // provider 'Demo', a supported method with exact inputs.
-    function demoPlanAdmitted(plan) {
-      if (!demoAdmission() || !plan || typeof plan !== 'object' || plan.demo !== true) return false;
-      if (plan.verified !== false || plan.verificationStatus !== 'illustrative'
-          || plan.paymentCalculationEnabled !== false || plan.provider !== 'Demo') return false;
-      if (plan.kind !== 'open-end-promotional-credit' || typeof plan.id !== 'string') return false;
-      if ('verifiedAt' in plan || 'sourceUrl' in plan) return false;
-      var apr = plan.apr, term = plan.termMonths, c = plan.demoCalculation;
-      if (typeof apr !== 'number' || !isFinite(apr) || apr < 0 || apr > 100) return false;
-      if (!Number.isSafeInteger(term) || term < 1 || term > 120) return false;
-      if (!c || typeof c !== 'object' || DEMO_CALC_MODES.indexOf(c.mode) === -1
-          || PAY_ROUNDING.indexOf(c.rounding) === -1) return false;
-      if (c.mode === 'published-equal-division') return apr === 0 && !('factor' in c);
-      return payFactorMicro(c.factor) !== null;
-    }
-    function demoPlanById(id) {
-      var f = getFinancingConfig();
-      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
-      for (var i = 0; i < plans.length; i++) {
-        if (plans[i] && plans[i].id === id && plans[i].demo === true) return plans[i];
-      }
-      return null;
-    }
-    // pricePresentationFor's demo branch: the same result shape, from the
-    // demo entry. A product-size without an admitted entry is 'off' (no
-    // number), exactly as production treats an unresolved price.
-    function demoPricePresentation(surface, m, size, opts, off) {
-      var hit = demoPriceEntry(m, size);
-      if (!hit) return off;
-      var text = formatPriceAmount(hit.amountMinor, hit.currency);
-      if (!text) return off;
-      var o = (opts && typeof opts === 'object') ? opts : {};
-      var plan = (typeof o.planId === 'string') ? demoPlanById(o.planId) : null;
-      return { state: 'available', amountMinor: hit.amountMinor, currency: hit.currency, kind: 'regular',
-               text: text, provenance: hit.status,
-               notes: pricingCopyList('assumptions').concat(pricingCopyList('disclosures')),
-               calculation: (plan && demoPlanAdmitted(plan)) ? 'available' : 'unavailable',
-               threshold: 'unknown' };
-    }
-    // payEstimate's demo branch. The arithmetic is the governed helpers'
-    // (payFixedFactorMinor / payEqualDivisionMinor, integer minor units,
-    // rounded UP to the dollar); only admission differs.
-    function demoPayEstimate(surface, finalist, size, plan, principalMinor, cur, opts) {
-      var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
-                  term: null, belowMin: false, method: '' };
-      if (!demoPlanAdmitted(plan) || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
-      var pres = pricePresentationFor(surface, finalist, size, { planId: plan.id });
-      if (pres.state !== 'available' || pres.calculation !== 'available') return out;
-      var c = plan.demoCalculation;
-      var payMinor = null, factorMicro = null;
-      if (c.mode === 'published-fixed-factor') {
-        factorMicro = payFactorMicro(c.factor);
-        payMinor = factorMicro !== null ? payFixedFactorMinor(principalMinor, factorMicro) : null;
-      } else {
-        payMinor = payEqualDivisionMinor(principalMinor, plan.termMonths);
-      }
-      if (payMinor === null || !priceMoneyValid(payMinor, cur)) return out;
-      var scheduledMax = payMinor * plan.termMonths;
-      if (!priceMoneyValid(scheduledMax, cur)) return out;
-      out.payMinor = payMinor;
-      out.scheduledMax = scheduledMax;
-      out.interestMax = c.mode === 'published-equal-division' ? 0 : scheduledMax - principalMinor;
-      out.factorMicro = factorMicro;
-      out.term = plan.termMonths;
-      out.method = c.mode;
-      return out;
-    }
-
-    // ─── Purchase studio model (payment demo; owner demo-first direction 2026-10-05) ───
+    // ─── Purchase studio model (owner direction 2026-10-05; one application 2026-10-15) ───
     // ONE live view of the purchase the consultation already holds - the
     // explicit finalist, the size answer and the Sleep System cart - priced
-    // through the same quote model every other surface uses, with the payment
-    // under each plan computed ONLY by payEstimate (the governed methods,
-    // their gates, rounding and freshness). Nothing is stored here except the
-    // two choices the customer makes on this surface (_psPlan, _psDownRaw),
-    // both wiped by resetSessionState via psResetState().
+    // through the same quote model every other surface uses (admitted offers
+    // included), with the payment under each plan computed ONLY by
+    // payEstimate (the governed methods, their gates, rounding and
+    // freshness). Nothing is stored here except the two choices the customer
+    // makes on this surface (_psPlan, _psDownRaw), both wiped by
+    // resetSessionState via psResetState().
     //
-    // Renders only when demoAdmission() admits the build: the preview
-    // harness's `demo` state injects a frozen page context whose nonce
-    // matches STORE_CONFIG.illustrativeDemo (both absent from shipped data and
-    // locked absent by tests/payment_demo_check.py), and only while the price
-    // gate is open. Shipped behaviour is unchanged: nothing renders.
+    // Renders only under PRODUCTION admission (psEnabled): pricing enabled,
+    // displayEnabled, and the handoff surface on - and every price inside it
+    // still passes the full fail-closed gate (fresh, eligible, admitted
+    // money). Shipped config keeps all of these false: nothing renders.
     //
     // What-if figures (another size, another saved mattress, another base,
     // an item removed) are COMPLETE quotes built by the same model with the
@@ -15307,9 +15542,24 @@
       _psPlan = 'full'; _psDownRaw = ''; _psChangeNote = null; _psDetailsOpen = false; _psReturn = false;
       var bar = document.getElementById('psReturnBar');
       if (bar) { bar.hidden = true; bar.innerHTML = ''; }
+      // The studio itself is emptied by the wipe, never left showing the
+      // previous customer's purchase until the next render.
+      var box = document.getElementById('purchaseStudio');
+      if (box) { box.hidden = true; box.innerHTML = ''; }
     }
-    function psDemoConfig() {
-      return demoAdmission();
+    // Production admission for the studio and everything that hangs off it
+    // (change sheets, the return bar, monthly lines on results / drawer /
+    // compare - each of which additionally needs its own surface flag
+    // through pricePresentationFor).
+    function psEnabled() {
+      var p = getPricingConfig();
+      return !!(p && p.enabled === true && p.displayEnabled === true && pricingSurfaceEnabled('handoff'));
+    }
+    // The payment a studio quote is FOR: pay in full, or financed (every
+    // plan, calculable or quote-only). Pay-in-full-only offers apply to the
+    // first only.
+    function psPayMode() {
+      return _psPlan === 'full' ? 'full' : 'financed';
     }
     var PS_SIZES = ['twin', 'twin_xl', 'full', 'queen', 'king', 'cal_king'];
     var PS_STEPS = ['base', 'pillow', 'protection'];
@@ -15355,10 +15605,14 @@
     function psStepOf(rec) {
       return (rec && typeof sleepSystemStepIdForItem === 'function') ? sleepSystemStepIdForItem(rec) : null;
     }
+    // One quote of the purchase (or of a sandboxed what-if). `over.payment`
+    // picks the payment it is for; by default the one in view.
     function psQuote(size, over) {
-      return psWithState(over || {}, function () {
+      var o = over || {};
+      var payment = (o.payment === 'full' || o.payment === 'financed') ? o.payment : psPayMode();
+      return psWithState(o, function () {
         var st = resolveFinalistState();
-        var q = buildConsultationQuote('handoff', size);
+        var q = buildConsultationQuote('handoff', size, { payment: payment });
         q.finalist = (st && st.kind === 'chosen') ? st.item : null;
         return q;
       });
@@ -15367,14 +15621,26 @@
       return !!(q && q.status === 'complete' && q.hasMattress && priceMoneyValid(q.merchandiseMinor, q.currency));
     }
     // The payment under one plan for one complete quote and one down payment.
+    // `q` is a FINANCED quote (pay-in-full-only offers excluded).
     function psPay(q, plan, downMinor, size) {
       var none = { state: 'none', payMinor: null };
       if (!plan || !psComplete(q) || !q.finalist) return none;
+      // The published minimum is tested against the plan's QUALIFYING amount
+      // and nothing else. A plan that publishes a minimum without a basis
+      // this version can compute is threshold-unknown: no payment, never the
+      // merchandise subtotal assumed in its place.
+      var qual = quoteQualifyingAmount(q, plan);
+      if (typeof plan.minimumPurchase === 'number' && qual.amountMinor === null) {
+        return { state: 'threshold-unknown', payMinor: null };
+      }
       var down = Number.isSafeInteger(downMinor) && downMinor > 0 ? downMinor : 0;
       var principal = q.merchandiseMinor - down;
       if (principal <= 0) return { state: 'nothing-financed', payMinor: null };
+      // A plan that requires a down payment shows no figure until one is
+      // entered, and says so - never a payment on an assumed $0 down.
+      if (plan.downPaymentRequired === true && down === 0) return { state: 'down-required', payMinor: null };
       var e = payEstimate('handoff', q.finalist, size, plan, principal, q.currency,
-        { downEntered: down > 0, qualifyingMinor: q.merchandiseMinor });
+        { downEntered: down > 0, qualifyingMinor: qual.amountMinor === null ? undefined : qual.amountMinor });
       if (e.payMinor === null) return { state: e.belowMin ? 'below-min' : 'not-calculable', payMinor: null };
       // THE read model every payment surface formats from (Summary
       // centerpiece, comparison, Bring It Home, take-home), so one term means
@@ -15410,9 +15676,8 @@
         var pl = plans[i];
         if (!pl || typeof pl !== 'object' || typeof pl.id !== 'string') continue;
         var method = pl.calculationMode;
-        if (pl.demo === true ? demoPlanAdmitted(pl)
-            : (pl.paymentCalculationEnabled === true && financingPlanFresh(pl)
-               && (method === 'published-fixed-factor' || method === 'published-equal-division'))) {
+        if (pl.paymentCalculationEnabled === true && financingPlanFresh(pl)
+            && (method === 'published-fixed-factor' || method === 'published-equal-division')) {
           calc.push(pl);
         } else if ((pl.kind === 'lease-to-own' || pl.kind === 'closed-end-installment')
             && pl.presentationScenario !== 'mexico-delivery') {
@@ -15432,20 +15697,54 @@
       if (p.minor >= merchMinor) return { state: 'too-large', minor: null, raw: raw };
       return { state: 'ok', minor: p.minor, raw: raw };
     }
-    // Whether a priced SKU is an illustrative demo entry (status, not a list).
-    function psIllustrative(sku) {
-      if (!demoAdmission() || typeof sku !== 'string') return false;
+    // Where the figures come from, for the provenance line: the oldest
+    // evidence instant among the priced lines and their source hosts. Read
+    // from the same pricing entries the resolver admitted (matched by the
+    // catalog SKU each line already carries); '' when nothing is known.
+    function psDateText(ms) {
+      if (typeof ms !== 'number' || !isFinite(ms)) return '';
+      var loc = currentLang === 'es' ? 'es-US' : 'en-US';
+      var opts = { month: 'short', day: 'numeric', year: 'numeric' };
+      try { return new Intl.DateTimeFormat(loc, Object.assign({ timeZone: 'America/Chicago' }, opts)).format(new Date(ms)); }
+      catch (e) {
+        try { return new Intl.DateTimeFormat(loc, opts).format(new Date(ms)); } catch (e2) { return ''; }
+      }
+    }
+    function psHostOf(url) {
+      if (typeof url !== 'string' || url.slice(0, 8) !== 'https://') return '';
+      var auth = url.slice(8).split(/[\/?#]/)[0] || '';
+      return auth.indexOf('@') === -1 && auth.indexOf(':') === -1 ? auth.toLowerCase().replace(/^www\./, '') : '';
+    }
+    function psPriceProvenance(q) {
       var p = getPricingConfig();
       var list = (p && Array.isArray(p.products)) ? p.products : [];
-      for (var i = 0; i < list.length; i++) {
-        var e = list[i];
-        if (e && e.sku === sku) return !!(e.evidence && e.evidence.status === 'illustrative');
-      }
-      return false;
+      var oldest = null, hosts = [];
+      (q && Array.isArray(q.lines) ? q.lines : []).forEach(function (ln) {
+        if (!ln.resolved || typeof ln.sku !== 'string') return;
+        for (var i = 0; i < list.length; i++) {
+          var e = list[i];
+          if (!e || e.sku !== ln.sku || e.productId !== ln.productId || !e.evidence) continue;
+          var ts = Date.parse(e.evidence.verifiedAt);
+          if (isFinite(ts) && (oldest === null || ts < oldest)) oldest = ts;
+          var h = psHostOf(e.evidence.sourceUrl);
+          if (h && hosts.indexOf(h) === -1) hosts.push(h);
+          break;
+        }
+      });
+      if (oldest === null || !hosts.length) return '';
+      return t('ps.prices_verified', { date: psDateText(oldest), host: hosts.join(', ') });
     }
-    // The plan a single mattress's monthly illustration uses on the results,
+    function psTermsProvenance() {
+      if (typeof financingTermsFresh !== 'function' || !financingTermsFresh()) return '';
+      var f = getFinancingConfig();
+      var ts = f ? Date.parse(f.verifiedAt) : NaN;
+      var host = f ? psHostOf(f.sourceUrl) : '';
+      if (!isFinite(ts) || !host) return '';
+      return t('ps.terms_verified', { date: psDateText(ts), host: host });
+    }
+    // The plan a single mattress's monthly figure uses on the results,
     // drawer and compare surfaces: the plan the customer is viewing in the
-    // studio when it calculates, otherwise the longest 0% example (the most
+    // studio when it calculates, otherwise the longest 0% plan (the most
     // conservative: no interest is hidden behind the lower figure).
     function psRefPlan() {
       var calc = psPlans().calc;
@@ -15456,17 +15755,22 @@
       });
       return best || calc[0] || null;
     }
-    // "or about $X/mo · 0% APR for 24 months (example)" for one mattress at
-    // the customer's size, or '' (no demo, no price, no calculable plan).
+    // "or about $X/mo with <plan>" for one mattress at the customer's size,
+    // bought alone, or '' (studio not admitted, no price, no calculable
+    // plan). The qualifying amount is the plan's own basis applied to that
+    // one-item purchase (quoteQualifyingAmount): a plan publishing a minimum
+    // without a computable basis shows nothing here.
     function psMattressMonthlyText(surface, m, short) {
-      if (!psDemoConfig() || !m) return '';
+      if (!psEnabled() || !m) return '';
       var size = priceSizeAnswer();
       var pres = pricePresentationFor(surface, m, size, null);
       if (pres.state !== 'available' || !priceMoneyValid(pres.amountMinor, pres.currency)) return '';
       var plan = psRefPlan();
       if (!plan) return '';
+      var alone = quoteQualifyingAmount({ status: 'complete', merchandiseMinor: pres.amountMinor, currency: pres.currency }, plan);
+      if (typeof plan.minimumPurchase === 'number' && alone.amountMinor === null) return '';
       var e = payEstimate(surface, m, size, plan, pres.amountMinor, pres.currency,
-        { qualifyingMinor: pres.amountMinor });
+        alone.amountMinor === null ? null : { qualifyingMinor: alone.amountMinor });
       if (e.payMinor === null) return '';
       if (short) return t('ps.monthly', { amount: formatPriceAmount(e.payMinor, pres.currency) });
       return t('ps.mattress_monthly', { amount: formatPriceAmount(e.payMinor, pres.currency), plan: L(plan.headline) || '' });
@@ -15476,24 +15780,39 @@
     // a PROPOSED purchase into an honest current-versus-proposed preview (two
     // complete quotes, same plan, same term, same down payment).
     function psContext() {
-      var demo = psDemoConfig();
-      if (!demo) return null;
-      var p = getPricingConfig();
-      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled('handoff')) return null;
+      if (!psEnabled()) return null;
       if (typeof resolveFinalistState !== 'function') return null;
       var size = priceSizeAnswer();
       var cur = 'USD';
       var fmt = function (m) { return formatPriceAmount(m, cur); };
-      var q = psQuote(size, {});
-      var complete = psComplete(q);
-      var merch = complete ? q.merchandiseMinor : null;
-      var down = psDown(merch);
       var plans = psPlans();
       var calcById = {}, quoteById = {};
       plans.calc.forEach(function (pl) { calcById[pl.id] = pl; });
       plans.quote.forEach(function (pl) { quoteById[pl.id] = pl; });
+      // A plan that is no longer offered returns the purchase to Pay in full
+      // BEFORE any quote is built, so every figure is for the payment shown.
       if (_psPlan !== 'full' && !calcById[_psPlan] && !quoteById[_psPlan]) _psPlan = 'full';
       var sel = calcById[_psPlan] || null;
+      // The purchase as quoted for the payment in view, and both payment
+      // quotes: pay in full (every admitted offer) and financed (pay-in-full-
+      // only offers excluded). The difference is named, never hidden.
+      var q = psQuote(size, {});
+      // The handoff surface flag is not enough: the studio shows only when
+      // the governed gate ADMITS a price for the chosen finalist at the
+      // customer's own size ('available': fresh, eligible, admitted money).
+      // Stale, unapproved, dark, price-unavailable or unpriced-at-this-size
+      // data renders no studio at all - no chips, no figures; the slots keep
+      // their own governed state copy.
+      if (!q.finalist) return null;
+      if (pricePresentationFor('handoff', q.finalist, size, null).state !== 'available') return null;
+      var qFull = psPayMode() === 'full' ? q : psQuote(size, { payment: 'full' });
+      var qFin = psPayMode() === 'financed' ? q : psQuote(size, { payment: 'financed' });
+      var complete = psComplete(q);
+      var merch = complete ? q.merchandiseMinor : null;
+      var finComplete = psComplete(qFin);
+      var down = psDown(finComplete ? qFin.merchandiseMinor : null);
+      var cashGap = (psComplete(qFull) && finComplete && qFin.merchandiseMinor > qFull.merchandiseMinor)
+        ? qFin.merchandiseMinor - qFull.merchandiseMinor : 0;
       // A down payment belongs to a calculated plan: with Pay in full or a
       // quote-only plan in view, a leftover entry (its field is disabled)
       // never shapes any figure, and is applied again when a plan is chosen.
@@ -15513,20 +15832,24 @@
         if (m === 0) return t('ps.same_month');
         return t('ps.per_month_term', { amount: (m > 0 ? '+' : '−') + fmt(Math.abs(m)), n: termN });
       };
-      var ctx = { demo: demo, size: size, fmt: fmt, q: q, complete: complete, merch: merch, down: down,
+      var ctx = { size: size, fmt: fmt, q: q, qFull: qFull, qFin: qFin, complete: complete, merch: merch, down: down,
+                  cashGap: cashGap,
                   plans: plans, calcById: calcById, quoteById: quoteById, sel: sel, downMinor: downMinor,
                   downUsable: downUsable, downBad: downBad, payNow: payNow, signed: signed,
                   monthlySigned: monthlySigned, termN: termN };
-      // Current versus proposed, for one changed purchase. `monthlyNote`
-      // names why no monthly difference is shown when there is none.
+      // Current versus proposed, for one changed purchase (both quoted for
+      // the payment in view, so admitted offers apply alike to each side).
+      // `monthlyNote` names why no monthly difference is shown when there is
+      // none.
       ctx.proposal = function (q2) {
         var out = { complete: psComplete(q2), subtotal: '', subtotalDiff: '', currentSubtotal: complete ? fmt(merch) : '',
-                    monthly: '', currentMonthly: '', monthlyDiff: '', monthlyNote: '', missing: [] };
+                    savings: '', monthly: '', currentMonthly: '', monthlyDiff: '', monthlyNote: '', missing: [] };
         if (!out.complete) {
           out.missing = q2.lines.filter(function (l) { return !l.resolved; }).map(quoteLineName);
           return out;
         }
         out.subtotal = fmt(q2.merchandiseMinor);
+        if (q2.discountMinor > 0) out.savings = fmt(q2.discountMinor);
         if (complete) out.subtotalDiff = signed(q2.merchandiseMinor - merch);
         if (!sel) { out.monthlyNote = _psPlan === 'full' ? 'full' : 'quote'; return out; }
         if (payNow.state !== 'calculated') { out.monthlyNote = payNow.state; return out; }
@@ -15579,7 +15902,7 @@
         modelLine: (typeof sleepPlanModelLine === 'function') ? sleepPlanModelLine({ id: id, tier: tier }) : '',
         fit: fit,
         priced: !!(ml && ml.resolved), price: (ml && ml.resolved) ? ctx.fmt(ml.unitAmountMinor) : '',
-        illustrative: !!(ml && ml.resolved && psIllustrative(ml.sku)),
+        savings: (ml && ml.resolved && ml.discountMinor > 0) ? ctx.fmt(ml.discountMinor) : '',
         proposal: current ? null : ctx.proposal(q2)
       };
     }
@@ -15682,7 +16005,7 @@
           id: a.id, current: current, name: L(a.name) || '', image: a.image || '',
           reason: reasons[a.id] || '',
           priced: !!(line && line.resolved), price: (line && line.resolved) ? ctx.fmt(line.unitAmountMinor) : '',
-          illustrative: !!(line && line.resolved && psIllustrative(line.sku)),
+          savings: (line && line.resolved && line.discountMinor > 0) ? ctx.fmt(line.discountMinor) : '',
           sizeNote: (line && !line.resolved) ? t('ps.not_in_size', { size: ctx.size ? sizeLabelFor(ctx.size) : '' }) : '',
           config: cf.config, configNote: cf.note,
           proposal: current ? null : ctx.proposal(q2)
@@ -15697,18 +16020,27 @@
       return { show: true, kind: 'accessory', step: step, target: target, mode: (target || inStep.length) ? 'change' : 'add',
                options: options, none: none, planLabel: ctx.sel ? (L(ctx.sel.headline) || '') : '' };
     }
+    // A line's applied offers as display records (label in the active
+    // language and the amount), from the quote's own discount facts.
+    function psDiscountsOf(ln, fmt) {
+      return (ln && Array.isArray(ln.discounts) ? ln.discounts : []).map(function (d) {
+        return { offerId: d.offerId, label: L(d.label) || '', amount: fmt(d.amountMinor), amountMinor: d.amountMinor };
+      });
+    }
     function purchaseStudioFor() {
       var none = { show: false };
       var ctx = psContext();
       if (!ctx) return none;
-      var demo = ctx.demo, size = ctx.size, fmt = ctx.fmt, q = ctx.q, complete = ctx.complete, merch = ctx.merch;
+      var size = ctx.size, fmt = ctx.fmt, q = ctx.q, complete = ctx.complete, merch = ctx.merch;
       var down = ctx.down, plans = ctx.plans, sel = ctx.sel, downMinor = ctx.downMinor;
       var downUsable = ctx.downUsable, downBad = ctx.downBad, payNow = ctx.payNow;
+      var qFull = ctx.qFull, qFin = ctx.qFin;
       if (!q.finalist) return { show: true, empty: true };
 
       // ---- the selected mattress and its size -----------------------------------
       var mLine = q.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
       var fin = q.finalist;
+      var mDisc = !!(mLine && mLine.resolved && mLine.discountMinor > 0);
       var mattress = {
         id: fin.id, name: L(fin.name) || fin.name || '', brand: fin.brand || '',
         image: fin.imageUrl || fin.image || '',
@@ -15717,16 +16049,17 @@
         modelLine: (typeof sleepPlanModelLine === 'function') ? sleepPlanModelLine(fin) : '',
         why: psProductLine(fin.id),
         priced: !!(mLine && mLine.resolved),
-        price: (mLine && mLine.resolved) ? fmt(mLine.unitAmountMinor) : '',
-        illustrative: !!(mLine && mLine.resolved && psIllustrative(mLine.sku))
+        // With an admitted offer the customer's price leads and the list
+        // price is shown struck beside it; the offer is named below.
+        price: (mLine && mLine.resolved) ? fmt(mDisc ? mLine.netAmountMinor : mLine.unitAmountMinor) : '',
+        listPrice: mDisc ? fmt(mLine.unitAmountMinor) : '',
+        discounts: mDisc ? psDiscountsOf(mLine, fmt) : []
       };
+      // Size chips change the answer; they carry NO price. The studio prices
+      // the customer's own size only - another size is priced only after the
+      // customer chooses it, never shown as a what-if beside it.
       var sizes = PS_SIZES.map(function (sz) {
-        var qs = psQuote(sz, {});
-        var ml = qs.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
-        return {
-          id: sz, label: sizeLabelFor(sz) || sz, active: sz === size,
-          price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : ''
-        };
+        return { id: sz, label: sizeLabelFor(sz) || sz, active: sz === size };
       });
 
       // ---- the selected Sleep System, one row per item, grouped by step ---------
@@ -15736,6 +16069,7 @@
         var step = rec ? psStepOf(rec) : null;
         var keys = (cart[ln.productId] && Array.isArray(cart[ln.productId].reasonKeys)) ? cart[ln.productId].reasonKeys : [];
         var key = keys.filter(function (k) { return k && k !== 'default' && k !== 'standard'; })[0] || '';
+        var disc = !!(ln.resolved && ln.discountMinor > 0);
         return {
           id: ln.productId, step: step || '', name: quoteLineName(ln), image: (rec && rec.image) || '',
           why: key && typeof accessoryReasonText === 'function' ? accessoryReasonText(key) : '',
@@ -15744,8 +16078,11 @@
           max: PS_STEP_MAX[step] || 1,
           priced: ln.resolved,
           unit: ln.resolved ? fmt(ln.unitAmountMinor) : '',
-          ext: ln.resolved ? fmt(ln.extendedAmountMinor) : '',
-          illustrative: ln.resolved && psIllustrative(ln.sku)
+          // `ext` is what the line costs the customer (net of any admitted
+          // offer); `list` is the struck list amount when an offer applies.
+          ext: ln.resolved ? fmt(disc ? ln.netAmountMinor : ln.extendedAmountMinor) : '',
+          list: disc ? fmt(ln.extendedAmountMinor) : '',
+          discounts: disc ? psDiscountsOf(ln, fmt) : []
         };
       });
       var missing = q.lines.filter(function (l) { return !l.resolved; }).map(quoteLineName);
@@ -15763,11 +16100,15 @@
       });
 
       // ---- the payment choices --------------------------------------------------
+      // Pay in full is quoted with every admitted offer; each plan is quoted
+      // FINANCED (pay-in-full-only offers excluded), so each card is the
+      // figure that payment would really carry.
+      var fullOk = psComplete(qFull), finOk = psComplete(qFin);
       var cards = [{ id: 'full', kind: 'full', label: t('ps.pay_full'), selected: _psPlan === 'full',
-                     amount: complete ? fmt(merch) : '', sub: complete ? t('ps.pay_full_sub') : '' }];
+                     amount: fullOk ? fmt(qFull.merchandiseMinor) : '', sub: fullOk ? t('ps.pay_full_sub') : '' }];
       plans.calc.forEach(function (pl) {
-        var e = (complete && downUsable) ? psPay(q, pl, downMinor, size)
-          : { state: (complete && downBad) ? 'down-invalid' : 'none', payMinor: null };
+        var e = (finOk && downUsable) ? psPay(qFin, pl, downMinor, size)
+          : { state: (finOk && downBad) ? 'down-invalid' : 'none', payMinor: null };
         var ok = e.state === 'calculated';
         cards.push({
           id: pl.id, kind: 'calc', label: L(pl.headline) || '', selected: _psPlan === pl.id,
@@ -15790,9 +16131,10 @@
         result = { kind: 'full', amount: complete ? fmt(merch) : '' };
       } else if (sel) {
         result = { kind: 'calc', label: L(sel.headline) || '', state: payNow.state,
-                   apr: payAprText(sel.apr), term: sel.termMonths };
+                   apr: payAprText(sel.apr), term: sel.termMonths, planId: sel.id };
         if (payNow.state === 'calculated') {
           result.monthly = fmt(payNow.payMinor);
+          result.monthlyMinor = payNow.payMinor;
           result.scheduled = psBound(payNow.scheduledMinor, payNow.scheduledUpper, true);
           result.interest = payNow.interestMinor > 0 ? psBound(payNow.interestMinor, payNow.interestUpper, true) : t('ps.no_interest');
           result.interestLc = payNow.interestMinor > 0 ? psBound(payNow.interestMinor, payNow.interestUpper) : t('ps.no_interest_lc');
@@ -15802,30 +16144,249 @@
           result.cost = psBound(payNow.totalPaidMinor, payNow.totalPaidUpper, true);
           result.costLc = psBound(payNow.totalPaidMinor, payNow.totalPaidUpper);
           result.totalPaidMinor = payNow.totalPaidMinor;
+          result.upper = !!payNow.totalPaidUpper;
           result.exact = !payNow.scheduledUpper;
+          result.disclosure = L(sel.disclosure) || '';
         }
       } else if (ctx.quoteById[_psPlan]) {
         result = { kind: 'quote', label: L(ctx.quoteById[_psPlan].headline) || '' };
       }
+      var offerTerms = quoteOfferTerms(q).map(function (o) {
+        return { offerId: o.offerId, label: L(o.label) || '', terms: L(o.terms) || '' };
+      });
       return {
         show: true, empty: false,
-        priceSource: L(demo.priceSource) || '', paymentSource: L(demo.paymentSource) || '',
+        priceSource: psPriceProvenance(q) || pricingTotalCopy('provenance') || '',
+        paymentSource: psTermsProvenance(),
         size: size || '', sizeLabel: size ? sizeLabelFor(size) : '', sizes: sizes,
         mattress: mattress, lines: lines, steps: steps,
-        complete: complete, subtotal: complete ? fmt(merch) : '', missing: missing,
+        complete: complete, subtotal: complete ? fmt(merch) : '', merchMinor: complete ? merch : null,
+        listSubtotal: (complete && q.discountMinor > 0) ? fmt(q.listMerchandiseMinor) : '',
+        savings: (complete && q.discountMinor > 0) ? fmt(q.discountMinor) : '',
+        discountMinor: complete ? q.discountMinor : 0,
+        // Every applied offer's terms - on an incomplete purchase, the
+        // line-level offers its priced lines carry (never a savings total).
+        offerTerms: offerTerms,
+        // Financing in view drops a pay-in-full-only offer: said explicitly,
+        // with the difference, never silently.
+        cashGap: (_psPlan !== 'full' && ctx.cashGap > 0) ? fmt(ctx.cashGap) : '',
+        // What every plan is quoted on (Bring It Home's intro), and the
+        // pay-in-full savings no plan carries, whatever is selected.
+        financedSubtotal: finOk ? fmt(qFin.merchandiseMinor) : '',
+        financedGap: ctx.cashGap > 0 ? fmt(ctx.cashGap) : '',
+        missing: missing,
         plan: _psPlan, cards: cards, result: result,
-        down: { state: down.state, raw: down.raw, applies: !!sel, amount: down.state === 'ok' ? fmt(down.minor) : '',
+        down: { state: down.state, raw: down.raw, applies: !!sel, required: !!(sel && sel.downPaymentRequired === true), amount: down.state === 'ok' ? fmt(down.minor) : '',
                 preset: down.state === 'none' ? '0'
                   : (down.state === 'ok' && [25000, 50000, 100000].indexOf(down.minor) !== -1 ? String(down.minor / 100) : '') },
         excludes: pricingTotalCopy('excludes') || ''
       };
     }
 
+    // The email payload's `quote`: the shared summary itself, and only while
+    // pricing.surfaces.email is true and the summary is a v2 record - either
+    // complete, or incomplete and carrying NO total of any kind; null
+    // otherwise (every shipped state).
+    function emailQuoteGate(summary) {
+      if (!pricingSurfaceEnabled('email')) return null;
+      if (!summary || typeof summary !== 'object' || summary.v !== 2) return null;
+      if (summary.complete === true) return summary;
+      if (summary.complete !== false) return null;
+      var totals = ['listSubtotalText', 'discountText', 'merchandiseText', 'merchandiseMinor', 'discountMinor', 'payment'];
+      for (var i = 0; i < totals.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(summary, totals[i])) return null;
+      }
+      return summary;
+    }
+    // ─── Shared purchase summary (owner direction 2026-10-15) ───
+    // ONE closed record of the purchase as the studio shows it, consumed by
+    // the take-home preview and the email payload - no second computation.
+    // Every *Text field is produced by the same formatters the screen uses
+    // (formatPriceAmount, psBound, t()). null unless the studio is admitted
+    // (a priced mattress), and null for a language other than the active
+    // one (the active dictionary is the only formatter the screen has).
+    //
+    // v2 (owner direction 2026-10-16: one unpriced line must not remove
+    // every priced figure). `complete: true` is the whole purchase with its
+    // totals and payment, as before. `complete: false` lists every line -
+    // the priced ones with their list / discount / net (line-level offers
+    // only), the rest marked "price unavailable" - and carries NO subtotal,
+    // savings total, financed amount, payment or plan figure at all; the
+    // keys are absent, never blank (emailQuoteGate and Code.gs refuse an
+    // incomplete summary that carries one).
+    function psFingerprint(obj) {
+      // FNV-1a and a second mixing lane over the stable JSON of the figures.
+      var s = JSON.stringify(obj);
+      var h1 = 0x811c9dc5, h2 = (0x01000193 ^ s.length) >>> 0;
+      for (var i = 0; i < s.length; i++) {
+        var c = s.charCodeAt(i);
+        h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+        h2 = Math.imul(h2 ^ c, 0x5bd1e995) >>> 0;
+        h2 = (h2 ^ (h2 >>> 15)) >>> 0;
+      }
+      return ('00000000' + h1.toString(16)).slice(-8) + ('00000000' + h2.toString(16)).slice(-8);
+    }
+    function purchaseSummaryFor(lang) {
+      if (typeof lang === 'string' && lang && lang !== currentLang) return null;
+      var m = purchaseStudioFor();
+      if (!m || !m.show || m.empty || !m.mattress || !m.mattress.priced) return null;
+      var ctx = psContext();
+      if (!ctx) return null;
+      var q = ctx.q;
+      var complete = !!(m.complete && psComplete(q));
+      var fmt = ctx.fmt;
+      var lines = q.lines.map(function (ln) {
+        var line = {
+          name: ln.kind === 'mattress' ? m.mattress.name : quoteLineName(ln),
+          detail: ln.size ? (ln.split ? t('ps.split_line', { size: sizeLabelFor(ln.size) }) : sizeLabelFor(ln.size)) : '',
+          quantity: ln.quantity,
+          priced: ln.resolved === true
+        };
+        if (!line.priced) {
+          line.statusText = t('ps.price_unavailable');
+          return line;
+        }
+        line.listText = fmt(ln.extendedAmountMinor);
+        line.discounts = psDiscountsOf(ln, fmt).map(function (d) { return { label: d.label, amountText: '−' + d.amount }; });
+        line.netText = fmt(ln.netAmountMinor);
+        return line;
+      });
+      var figures;
+      if (!complete) {
+        figures = {
+          v: 2, complete: false, currency: 'USD', size: m.size, sizeLabel: m.sizeLabel,
+          lines: lines,
+          incompleteText: t('ps.quote_incomplete'),
+          exclusionsText: m.excludes || '',
+          offerTerms: m.offerTerms.map(function (o) { return o.label + ': ' + o.terms; }),
+          provenance: m.priceSource || ''
+        };
+        return psSummaryOut(figures);
+      }
+      var r = m.result;
+      var payment;
+      if (r.kind === 'calc' && r.state === 'calculated') {
+        payment = { kind: 'plan', planLabel: r.label, aprText: t('ps.apr', { apr: r.apr }),
+                    termText: t('ps.months_n', { n: r.term }), downText: r.down, financedText: r.financed,
+                    paymentText: t('ps.monthly', { amount: r.monthly }), paymentMinor: r.monthlyMinor,
+                    totalPaidText: r.costLc, interestText: r.interestLc, upper: !!r.upper,
+                    disclosure: r.disclosure || '' };
+      } else if (r.kind === 'calc') {
+        payment = { kind: 'quote-only', planLabel: r.label, note: t(psStateKey(r.state)) };
+      } else if (r.kind === 'quote') {
+        payment = { kind: 'quote-only', planLabel: r.label, note: t('ps.quote_detail') };
+      } else {
+        payment = { kind: 'full', totalText: m.subtotal };
+      }
+      figures = {
+        v: 2, complete: true, currency: 'USD', size: m.size, sizeLabel: m.sizeLabel,
+        lines: lines,
+        listSubtotalText: fmt(q.listMerchandiseMinor),
+        discountText: q.discountMinor > 0 ? '−' + fmt(q.discountMinor) : '',
+        merchandiseText: m.subtotal, merchandiseMinor: q.merchandiseMinor, discountMinor: q.discountMinor,
+        exclusionsText: m.excludes || '',
+        offerTerms: m.offerTerms.map(function (o) { return o.label + ': ' + o.terms; }),
+        payment: payment,
+        provenance: [m.priceSource, m.paymentSource].filter(Boolean).join(' · ')
+      };
+      return psSummaryOut(figures);
+    }
+    // The summary record: the figures, when they were computed, and the
+    // fingerprint of the figures alone (the stale-send guard).
+    function psSummaryOut(figures) {
+      var out = {};
+      for (var k in figures) if (Object.prototype.hasOwnProperty.call(figures, k)) out[k] = figures[k];
+      out.computedAt = new Date(Date.now()).toISOString();
+      out.fingerprint = psFingerprint(figures);
+      return out;
+    }
+    // The PURCHASE IDENTITY behind the summary (owner direction 2026-10-17).
+    // Two keys, two jobs:
+    //   - summary.fingerprint (above) hashes the LOCALIZED figures the
+    //     customer previews - the stale-send guard compares it, so the email
+    //     always carries exactly what was previewed, wording included;
+    //   - this key hashes the substantive purchase facts only - each line's
+    //     kind, product, sku, size, split and quantity, its minor amounts and
+    //     applied offer ids, and (complete purchases) the totals and the
+    //     selected plan with its minor payment figures. No translated label,
+    //     formatted text or timestamp, so English and Spanish agree.
+    // consultationIdentityKey() below folds this identity into the content
+    // key the take-home send's duplicate prevention uses, so a language
+    // switch never makes a new send of the same purchase. It carries no
+    // customer data and is never sent. Null exactly when purchaseSummaryFor
+    // is null.
+    function purchaseIdentityKey() {
+      if (!purchaseSummaryFor(currentLang)) return null;
+      var m = purchaseStudioFor();
+      var ctx = psContext();
+      if (!m || !m.show || !ctx) return null;
+      var q = ctx.q;
+      var complete = !!(m.complete && psComplete(q));
+      var id = {
+        v: 1, currency: 'USD', size: m.size || null, complete: complete,
+        lines: q.lines.map(function (ln) {
+          var priced = ln.resolved === true;
+          return [ln.kind, ln.productId, ln.sku || null, ln.size || null, !!ln.split, ln.quantity, priced,
+                  priced ? ln.unitAmountMinor : null, priced ? ln.extendedAmountMinor : null,
+                  priced ? ln.netAmountMinor : null,
+                  priced ? (Array.isArray(ln.discounts) ? ln.discounts : []).map(function (d) { return [d.offerId, d.amountMinor]; }) : []];
+        })
+      };
+      if (complete) {
+        var r = m.result || {};
+        var p = ctx.payNow || {};
+        var calc = r.kind === 'calc' && r.state === 'calculated';
+        id.merchandiseMinor = q.merchandiseMinor;
+        id.discountMinor = q.discountMinor;
+        id.payment = [_psPlan, r.kind || null, r.state || null, ctx.sel ? ctx.sel.termMonths : null,
+                      calc ? p.downMinor : null, calc ? p.financedMinor : null, calc ? p.payMinor : null,
+                      calc ? p.totalPaidMinor : null, calc ? !!p.totalPaidUpper : null];
+      }
+      return psFingerprint(id);
+    }
+    // The CONTENT IDENTITY of a take-home send (owner direction 2026-10-17):
+    // everything the email carries, as language-neutral state - the quiz
+    // answers (ids and numbers; the Sleep Brief, consultation rows and
+    // recommendations all derive from them), the saved picks and favorite,
+    // the finalist, the Sleep System cart (ids, quantities, split, reason
+    // keys), the consultation priorities (stored as bilingual objects) and
+    // the purchase identity above. The localized text built from this state
+    // is excluded, so the presentation language never changes it; name and
+    // phone are excluded too (an edited name is not a different email); the
+    // credited salesperson is included. Time-varying promotion admission is
+    // NOT (inert while the shipped scenarios are empty). With
+    // the recipient address it keys the session's send-attempt registry, so a
+    // changed shortlist is a NEW send even while no priced purchase is shown.
+    function consultationIdentityKey() {
+      var a = (typeof answers === 'object' && answers) ? answers : {};
+      var cart = (window._accCart && typeof window._accCart === 'object') ? window._accCart : {};
+      var fin = (typeof resolveFinalistState === 'function') ? resolveFinalistState() : null;
+      var tf = (typeof analytics === 'object' && analytics && Array.isArray(analytics.trialFocus)) ? analytics.trialFocus : [];
+      var id = {
+        v: 1,
+        answers: Object.keys(a).sort().map(function (k) { return [k, a[k] === undefined ? null : a[k]]; }),
+        saved: (Array.isArray(window._savedPicks) ? window._savedPicks : []).map(function (p) { return p && p.id ? p.id : null; }),
+        favorite: window._favoriteMattressId || null,
+        finalist: fin ? [fin.kind || null, (fin.item && fin.item.id) || null] : null,
+        cart: Object.keys(cart).sort().map(function (k) {
+          var c = cart[k] || {};
+          return [k, c.quantity === undefined ? null : c.quantity, !!c.split,
+                  Array.isArray(c.reasonKeys) ? c.reasonKeys.slice() : []];
+        }),
+        priorities: tf,
+        // The salesperson the email credits ("Helped by"): a changed
+        // attribution is a different email. A staff id, not customer data.
+        rsa: (typeof getHf2DeviceRsa === 'function') ? getHf2DeviceRsa() : '',
+        purchase: purchaseIdentityKey()
+      };
+      return psFingerprint(id);
+    }
+
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
-    // ─── Purchase studio (payment demo) — rendering and controls ───
-    // The Consultation Summary's ONE purchase presentation (demo admission
-    // only): the selected mattress with Change mattress, a compact row per
+    // ─── Purchase studio — rendering and controls ───
+    // The Consultation Summary's ONE purchase presentation (production
+    // admission only, psEnabled): the selected mattress with Change mattress, a compact row per
     // Sleep System item with Change / Remove / quantity, the merchandise
     // subtotal, one selected-payment centerpiece and a compact comparison.
     // Alternatives open in a focused sheet that PREVIEWS a change (two
@@ -15835,10 +16396,19 @@
       return '<button type="button" ' + attrs + ' onclick="' + action + '" '
         + 'ontouchend="event.preventDefault();' + action + ';">' + label + '</button>';
     }
-    var PS_ILLUS_MARK = '◇';
-    function psMark(on) {
-      return on ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '" aria-label="'
-        + escapeHtml(t('ps.illustrative_mark')) + '">' + PS_ILLUS_MARK + '</span>' : '';
+    // A discounted amount: the customer's price leads, the list price sits
+    // beside it struck through (with a visually hidden "was" for screen
+    // readers, since a strike is not announced).
+    function psStruck(list) {
+      return list ? ' <s class="ps-was"><span class="sr-only">' + escapeHtml(t('ps.was')) + ' </span>' + escapeHtml(list) + '</s>' : '';
+    }
+    // The offers applied to one line, each named with its amount.
+    function psOfferTags(discounts) {
+      if (!Array.isArray(discounts) || !discounts.length) return '';
+      return '<span class="ps-offers">' + discounts.map(function (d) {
+        return '<span class="ps-offer" data-ps-offer="' + escapeHtml(d.offerId) + '">'
+          + escapeHtml(t('ps.offer_line', { label: d.label, amount: d.amount })) + '</span>';
+      }).join('') + '</span>';
     }
     function psImg(src, cls) {
       return src ? '<img class="' + cls + '" src="' + escapeHtml(src) + '" alt="" loading="lazy" decoding="async">' : '';
@@ -15847,6 +16417,8 @@
       if (state === 'below-min') return 'ps.below_min';
       if (state === 'down-invalid') return 'ps.fix_down';
       if (state === 'nothing-financed') return 'ps.down_too_large';
+      if (state === 'threshold-unknown') return 'ps.threshold_unknown';
+      if (state === 'down-required') return 'ps.down_required';
       return 'ps.needs_complete';
     }
     function psStepTitle(step, mode) {
@@ -15855,7 +16427,7 @@
     // ---- the purchase (left) ------------------------------------------------
     function psPurchaseHtml(m) {
       var mt = m.mattress;
-      var html = '<div class="ps-hero">'
+      var html = '<div class="ps-hero" data-ps-kind="mattress" data-ps-size="' + escapeHtml(m.sizeLabel || '') + '">'
         + '<div class="ps-hero__media">' + psImg(mt.image, 'ps-hero__img') + '</div>'
         + '<div class="ps-hero__id"><span class="ps-kicker">' + escapeHtml(t('ps.selected_mattress')) + '</span>'
         + '<h3 class="ps-hero__name">' + escapeHtml(mt.name) + '</h3>'
@@ -15863,9 +16435,9 @@
         + (mt.modelLine ? '<p class="ps-hero__badge">' + escapeHtml(mt.modelLine) + '</p>' : '')
         + (mt.why ? '<p class="ps-hero__why" data-ps="fit-why">' + escapeHtml(mt.why) + '</p>' : '')
         + '<p class="ps-hero__price" data-ps="mattress-price">'
-        + (mt.priced ? escapeHtml(mt.price) + psMark(mt.illustrative)
+        + (mt.priced ? '<span class="ps-net">' + escapeHtml(mt.price) + '</span>' + psStruck(mt.listPrice)
           : '<span class="ps-muted">' + escapeHtml(t('ps.no_price_size', { size: m.sizeLabel })) + '</span>')
-        + '</p></div>'
+        + '</p>' + psOfferTags(mt.discounts) + '</div>'
         + psBtn('class="fin-btn fin-btn-secondary ps-change" id="psChangeMattress" data-ps-open="mattress"',
           escapeHtml(t('ps.change_mattress')), 'window.psOpenSheet(\'mattress\',\'\',\'\',this)')
         + '</div>';
@@ -15874,8 +16446,7 @@
         + m.sizes.map(function (s) {
           return psBtn('class="ps-chip' + (s.active ? ' is-on' : '') + '" aria-pressed="' + (s.active ? 'true' : 'false')
             + '" data-ps-size="' + escapeHtml(s.id) + '"',
-            '<span class="ps-chip__name">' + escapeHtml(s.label) + '</span>'
-            + '<span class="ps-chip__price">' + escapeHtml(s.price || t('ps.not_priced')) + '</span>',
+            '<span class="ps-chip__name">' + escapeHtml(s.label) + '</span>',
             'window.psSetSize(\'' + psId(s.id) + '\')');
         }).join('') + '</div></div>';
       // the Sleep System, compact
@@ -15896,15 +16467,16 @@
                 'window.psQty(\'' + psId(l.id) + '\',1)')
               + '</span>';
           }
-          html += '<li class="ps-row' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '" data-ps-step="' + escapeHtml(st.step) + '">'
+          html += '<li class="ps-row' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '" data-ps-step="' + escapeHtml(st.step)
+            + '" data-ps-size="' + escapeHtml(l.size) + '" data-ps-qty="' + l.qty + '">'
             + psImg(l.image, 'ps-row__img')
             + '<span class="ps-row__text"><span class="ps-row__cat">' + escapeHtml(t('ps.cat_' + st.step)) + '</span>'
             + '<span class="ps-row__name">' + escapeHtml(l.name) + '</span>'
             + '<span class="ps-row__meta">' + escapeHtml([l.size, (l.priced && l.qty > 1) ? t('ps.each', { amount: l.unit }) : ''].filter(Boolean).join(' · ')) + '</span>'
             + (l.why ? '<span class="ps-row__why" data-ps-why>' + escapeHtml(l.why) + '</span>' : '') + '</span>'
             + qty
-            + '<span class="ps-row__amount">' + (l.priced ? escapeHtml(l.ext) + psMark(l.illustrative)
-              : '<span class="ps-muted">' + escapeHtml(t('ps.no_price')) + '</span>') + '</span>'
+            + '<span class="ps-row__amount">' + (l.priced ? '<span class="ps-net">' + escapeHtml(l.ext) + '</span>' + psStruck(l.list) + psOfferTags(l.discounts)
+              : '<span class="ps-muted">' + escapeHtml(t('ps.price_unavailable')) + '</span>') + '</span>'
             + '<span class="ps-row__actions">'
             + psBtn('class="ps-link" data-ps-change="' + escapeHtml(l.id) + '"', escapeHtml(t('ps.change')),
               'window.psOpenSheet(\'accessory\',\'' + psId(st.step) + '\',\'' + psId(l.id) + '\',this)')
@@ -15935,8 +16507,17 @@
       });
       html += '</ul>';
       if (m.complete) {
-        html += '<div class="ps-subtotal" data-ps="subtotal"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+        // With admitted offers: the list subtotal, the savings, then the
+        // customer's price - three short rows that add up on screen.
+        if (m.savings) {
+          html += '<div class="ps-sums" data-ps="savings">'
+            + '<div class="ps-sums__row"><span>' + escapeHtml(t('ps.list_subtotal')) + '</span><span>' + escapeHtml(m.listSubtotal) + '</span></div>'
+            + '<div class="ps-sums__row ps-sums__row--save"><span>' + escapeHtml(t('ps.savings')) + '</span><span>\u2212' + escapeHtml(m.savings) + '</span></div>'
+            + '</div>';
+        }
+        html += '<div class="ps-subtotal" data-ps="subtotal"><span>' + escapeHtml(t(m.savings ? 'ps.your_price' : 'ps.subtotal')) + '</span>'
           + '<strong>' + escapeHtml(m.subtotal) + '</strong></div>'
+          + (m.cashGap ? '<p class="ps-note ps-cashgap" data-ps="cash-gap">' + escapeHtml(t('ps.cash_offer_dropped', { amount: m.cashGap })) + '</p>' : '')
           + (m.excludes ? '<p class="ps-fine">' + escapeHtml(m.excludes) + '</p>' : '');
       } else {
         html += '<div class="ps-subtotal is-incomplete" data-ps="subtotal"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
@@ -15963,7 +16544,7 @@
       } else if (r.kind === 'calc' && r.state === 'calculated') {
         // The monthly figure tied to its term, APR and down payment; then
         // what the customer pays in all against what the products cost.
-        html += '<span class="ps-center__label">' + escapeHtml(t('ps.center_example')) + '</span>'
+        html += '<span class="ps-center__label">' + escapeHtml(t('ps.center_plan')) + '</span>'
           + '<span class="ps-center__big" data-ps-big>' + escapeHtml(t('ps.monthly', { amount: r.monthly })) + '</span>'
           + '<span class="ps-center__terms">' + escapeHtml(t('ps.center_terms', { n: r.term, apr: r.apr, down: r.down })) + '</span>'
           + '<div class="ps-center__figs">'
@@ -15991,9 +16572,20 @@
           + ' <span class="ps-fig__sub">(' + escapeHtml(t('ps.payments_n', { n: r.term })) + ')</span></dd></div>'
           + '</dl><p class="ps-fine">' + escapeHtml(t(r.exact ? 'ps.rounding_exact' : 'ps.rounding')) + '</p>';
       }
+      if (r.kind === 'calc' && r.state === 'calculated' && r.disclosure) {
+        html += '<p class="ps-fine" data-ps="plan-disclosure">' + escapeHtml(r.disclosure) + '</p>';
+      }
       if (m.excludes) html += '<p class="ps-fine">' + escapeHtml(m.excludes) + '</p>';
-      html += '<p class="ps-source">' + escapeHtml(m.priceSource) + '</p>'
-        + '<p class="ps-source">' + escapeHtml(m.paymentSource) + '</p></div></details>';
+      // The terms of every applied offer, beside the figures they shape.
+      if (m.offerTerms && m.offerTerms.length) {
+        html += '<div class="ps-terms" data-ps="offer-terms"><span class="ps-terms__title">' + escapeHtml(t('ps.offer_terms')) + '</span>'
+          + m.offerTerms.map(function (o) {
+            return '<p class="ps-fine"><strong>' + escapeHtml(o.label) + '.</strong> ' + escapeHtml(o.terms) + '</p>';
+          }).join('') + '</div>';
+      }
+      if (m.priceSource) html += '<p class="ps-source">' + escapeHtml(m.priceSource) + '</p>';
+      if (m.paymentSource) html += '<p class="ps-source">' + escapeHtml(m.paymentSource) + '</p>';
+      html += '</div></details>';
       return html;
     }
     // ---- the comparison (right) -----------------------------------------------
@@ -16054,10 +16646,11 @@
       if (s === 'negative' || s === 'invalid') return t('ps.down_invalid');
       if (s === 'too-large') return t('ps.down_too_large');
       if (s === 'ok') return t('ps.down_applied');
+      if (m.down.required) return t('ps.down_required_hint');
       return t('ps.down_hint');
     }
     function psDownHtml(m) {
-      return '<label class="ps-kicker" for="psDownInput">' + escapeHtml(t('ps.down_label')) + '</label>'
+      return '<label class="ps-kicker" for="psDownInput">' + escapeHtml(t(m.down.required ? 'ps.down_label_required' : 'ps.down_label')) + '</label>'
         + '<div class="ps-down__row"><span class="ps-down__cur" aria-hidden="true">$</span>'
         + '<input id="psDownInput" class="ps-down__input" type="text" inputmode="decimal" autocomplete="off" '
         + 'aria-describedby="psDownMsg" value="' + escapeHtml(m.down.raw) + '"'
@@ -16175,7 +16768,8 @@
       }
       html += '<div class="ps-preview__row"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
         + '<span class="ps-preview__vals">' + escapeHtml(p.currentSubtotal) + ' → <strong>' + escapeHtml(p.subtotal) + '</strong>'
-        + (p.subtotalDiff ? ' <span class="ps-preview__diff">(' + escapeHtml(p.subtotalDiff) + ')</span>' : '') + '</span></div>';
+        + (p.subtotalDiff ? ' <span class="ps-preview__diff">(' + escapeHtml(p.subtotalDiff) + ')</span>' : '') + '</span></div>'
+        + (p.savings ? '<p class="ps-fine ps-preview__save">' + escapeHtml(t('ps.preview_savings', { amount: p.savings })) + '</p>' : '');
       if (p.monthly) {
         html += '<div class="ps-preview__row"><span>' + escapeHtml(t('ps.preview_monthly', { plan: sm.planLabel })) + '</span>'
           + '<span class="ps-preview__vals">' + escapeHtml(t('ps.monthly', { amount: p.currentMonthly })) + ' → <strong>'
@@ -16212,8 +16806,9 @@
           + ((sm.kind === 'mattress' ? o.fit : o.reason) ? '<span class="ps-opt__why">' + escapeHtml(sm.kind === 'mattress' ? o.fit : o.reason) + '</span>' : '')
           + (o.configNote ? '<span class="ps-opt__config">' + escapeHtml(o.configNote) + '</span>' : '')
           + '</span><span class="ps-opt__nums"><span class="ps-opt__price">'
-          + (o.priced ? escapeHtml(o.config && o.config.quantity > 1 ? t('ps.each', { amount: o.price }) : o.price) + psMark(o.illustrative)
+          + (o.priced ? escapeHtml(o.config && o.config.quantity > 1 ? t('ps.each', { amount: o.price }) : o.price)
             : escapeHtml(o.sizeNote || t('ps.not_priced'))) + '</span>'
+          + (o.savings ? '<span class="ps-opt__save">' + escapeHtml(t('ps.savings_amount', { amount: o.savings })) + '</span>' : '')
           + (o.proposal && o.proposal.subtotalDiff ? '<span class="ps-opt__delta">' + escapeHtml(t('ps.system_change', { amount: o.proposal.subtotalDiff })) + '</span>' : '')
           + (o.proposal && o.proposal.monthlyDiff ? '<span class="ps-opt__delta">' + escapeHtml(o.proposal.monthlyDiff) + '</span>' : '')
           + '</span>';
@@ -16344,7 +16939,7 @@
     function psRenderReturn() {
       var bar = document.getElementById('psReturnBar');
       if (!bar) return;
-      var on = _psReturn && !!psDemoConfig();
+      var on = _psReturn && psEnabled();
       bar.hidden = !on;
       bar.innerHTML = on ? psBtn('class="fin-btn fin-btn-primary ps-return__btn" id="psReturnBtn"',
         escapeHtml(t('ps.back_to_system')), 'window.psReturnToStudio()') : '';
@@ -16461,71 +17056,98 @@
     // Ids reach inline handlers only when they are plain catalog ids.
     function psId(id) { return (typeof id === 'string' && /^[A-Za-z0-9_-]+$/.test(id)) ? id : ''; }
     // The take-home preview's priced row (escaped HTML in title/detail, the
-    // item list plain - the packet renderer escapes items itself).
+    // item list plain - the packet renderer escapes items itself). Built
+    // from the SAME shared summary the email payload carries
+    // (purchaseSummaryFor), so the preview and the send can never disagree.
+    // When pricing.surfaces.email is true the row is part of what is sent
+    // ("Your quote": the complete purchase, or an incomplete one with its
+    // priced lines and no total); otherwise it is shown in store only and
+    // nothing priced enters the payload.
     function psTakeHomeRow() {
       var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
       if (!m.show || m.empty) return null;
-      // Plain text (the packet renderer escapes items): an illustrative price
-      // carries the same mark as on the Summary, and the price-source line
-      // that explains the mark follows the totals. No notice, no per-price note.
-      var anyIllus = false;
-      var priced = function (on, amount) {
-        if (!on) return amount;
-        anyIllus = true;
-        return amount + ' ' + PS_ILLUS_MARK;
-      };
-      var items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
-        + (m.mattress.priced ? priced(m.mattress.illustrative, m.mattress.price) : t('ps.no_price'))].concat(m.lines.map(function (l) {
-        return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
-          + ' ' + (l.priced ? priced(l.illustrative, l.ext) : t('ps.no_price'));
-      }));
-      var parts = [t('ps.subtotal') + ': ' + (m.complete ? m.subtotal : t('ps.incomplete'))];
-      var r = m.result;
-      if (r.kind === 'calc' && r.state === 'calculated') {
-        // Total PAID from the shared read model (down payment included), the
-        // same figure the Summary and the comparison show.
-        parts.push(t(r.hasDown ? 'ps.th_plan_down' : 'ps.th_plan', { plan: t('ps.cmp_terms', { n: r.term, apr: r.apr }),
-          monthly: t('ps.monthly', { amount: r.monthly }), down: r.down, total: r.costLc }));
-        parts.push(t('ps.card_interest', { amount: r.interestLc }));
-      } else if (r.kind === 'quote') {
-        parts.push(r.label + ': ' + t('pay.fx.to_confirm'));
-      } else if (r.kind === 'full' && m.complete) {
-        parts.push(t('ps.th_full', { amount: m.subtotal }));
+      var sum = (typeof purchaseSummaryFor === 'function') ? purchaseSummaryFor(currentLang) : null;
+      var emailed = !!emailQuoteGate(sum);
+      var items, parts;
+      if (sum) {
+        items = sum.lines.map(function (l) {
+          var head = l.name + (l.detail ? ' (' + l.detail + ')' : '') + (l.quantity > 1 ? ' × ' + l.quantity : '');
+          if (!l.priced) return head + ' ' + l.statusText;
+          var off = l.discounts.map(function (d) { return d.label + ' ' + d.amountText; }).join(', ');
+          return head + ' ' + l.netText + (off ? ' (' + off + ')' : '');
+        });
+        parts = [];
       }
-      if (anyIllus && m.priceSource) parts.push(m.priceSource);
-      // present:false - the recap reads "- in store": the priced system is
-      // shown here, never added to the email (sendResults does not read it).
-      return { present: false, title: escapeHtml(t('ps.th_title')), detail: escapeHtml(parts.join(' · ')), items: items };
+      if (sum && sum.complete === false) {
+        // An incomplete purchase: the priced lines and the unpriced ones,
+        // exactly as the email states them - and no total of any kind.
+        parts.push(sum.incompleteText);
+        if (sum.exclusionsText) parts.push(sum.exclusionsText);
+      } else if (sum) {
+        if (sum.discountText) parts.push(t('ps.savings') + ': ' + sum.discountText);
+        parts.push(t(sum.discountText ? 'ps.your_price' : 'ps.subtotal') + ': ' + sum.merchandiseText);
+        var pay = sum.payment;
+        if (pay.kind === 'plan') {
+          parts.push(t(m.result.hasDown ? 'ps.th_plan_down' : 'ps.th_plan', { plan: pay.planLabel,
+            monthly: pay.paymentText, down: pay.downText, total: pay.totalPaidText }));
+          parts.push(t('ps.card_interest', { amount: pay.interestText }));
+        } else if (pay.kind === 'quote-only') {
+          // The summary's own note: the take-home and the email say the
+          // same thing about a plan that shows no figure.
+          parts.push(pay.planLabel + ': ' + (pay.note || t('pay.fx.to_confirm')));
+        } else {
+          parts.push(t('ps.th_full', { amount: pay.totalText }));
+        }
+        if (sum.exclusionsText) parts.push(sum.exclusionsText);
+      } else {
+        // No summary (defence in depth; the studio always has one while it
+        // shows): the lines as they stand, no total, never emailed.
+        items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
+          + (m.mattress.priced ? m.mattress.price : t('ps.price_unavailable'))].concat(m.lines.map(function (l) {
+          return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
+            + ' ' + (l.priced ? l.ext : t('ps.price_unavailable'));
+        }));
+        parts = [t('ps.subtotal') + ': ' + t('ps.incomplete')];
+      }
+      // present:true only when the quote really is part of the send; the
+      // recap otherwise reads "- in store".
+      return { present: emailed, fingerprint: sum ? sum.fingerprint : null,
+               title: escapeHtml(t(emailed ? 'ps.th_title_quote' : 'ps.th_title')),
+               detail: escapeHtml(parts.join(' · ')), items: items };
     }
-    // Bring It Home's panel for a path made only of example plans (demo
-    // admission only): each plan's example figures for the current purchase,
-    // from purchaseStudioFor (the Summary's own model), and the way back to
-    // the full comparison. '' for any governed path.
-    function psSheetDemoPanel(plans) {
-      if (typeof demoAdmission !== 'function' || !demoAdmission()) return '';
-      if (!Array.isArray(plans) || !plans.length || !plans.every(function (pl) { return pl && pl.demo === true; })) return '';
+    // Bring It Home's figures for a path whose plans the studio calculates:
+    // each plan's payment for the current purchase from purchaseStudioFor
+    // (the Summary's own read model, so the two surfaces show one figure),
+    // and the way to the full comparison. '' when the studio is not
+    // admitted or none of the path's plans is calculable; the governed
+    // payment-facts rows stay beneath it either way.
+    function psSheetPanel(plans) {
+      if (!psEnabled() || !Array.isArray(plans) || !plans.length) return '';
       var m = purchaseStudioFor();
-      if (!m.show) return '';
-      var ids = plans.map(function (pl) { return pl.id; });
+      if (!m.show || m.empty) return '';
+      var ids = plans.map(function (pl) { return pl && pl.id; });
+      var cards = m.cards.filter(function (c) { return c.kind === 'calc' && ids.indexOf(c.id) !== -1; });
+      if (!cards.length) return '';
       var html = '<div class="ps-sheet" data-ps-sheet>';
-      if (m.empty || !m.complete) {
+      if (!m.financedSubtotal) {
         html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.needs_complete')) + '</p>';
       } else {
-        html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.sheet_intro', { amount: m.subtotal })) + '</p>'
+        // Plans are quoted financed: the subtotal they apply to is the
+        // financed one, and a pay-in-full offer they do not carry is named.
+        html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.sheet_intro', { amount: m.financedSubtotal })) + '</p>'
+          + (m.financedGap ? '<p class="fin-offer__detail" data-ps="bih-cash-gap">' + escapeHtml(t('ps.cash_offer_dropped', { amount: m.financedGap })) + '</p>' : '')
           // A down payment applies to every plan alike: said once.
           + (m.down.amount && m.down.applies ? '<p class="fin-offer__detail" data-ps="bih-down">' + escapeHtml(t('ps.cmp_down_note', { amount: m.down.amount })) + '</p>' : '')
           + '<ul class="ps-sheet__plans">';
         var anyFigure = false;
-        m.cards.filter(function (c) { return c.kind === 'calc' && ids.indexOf(c.id) !== -1; }).forEach(function (c) {
-          // The Summary's own card figures (total paid includes any down
-          // payment).
+        cards.forEach(function (c) {
           if (c.monthly) anyFigure = true;
           html += '<li class="ps-sheet__plan" data-ps-sheet-plan="' + escapeHtml(c.id) + '">'
             + '<span class="ps-sheet__label">' + escapeHtml(t('ps.cmp_terms', { n: c.term, apr: c.apr })) + '</span>'
             + (c.monthly
               ? '<span class="ps-sheet__amount">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
                 + '<span class="ps-sheet__sub">'
-                + escapeHtml(t('ps.card_total', { amount: c.total })) + ' \u00b7 '
+                + escapeHtml(t('ps.card_total', { amount: c.total })) + ' · '
                 + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
               : '<span class="ps-sheet__sub">' + escapeHtml(t(psStateKey(c.state))) + '</span>')
             + '</li>';
@@ -16535,7 +17157,7 @@
         // sit above the purchase price without any interest.
         html += '</ul>'
           + (anyFigure ? '<p class="fin-offer__detail" data-ps="bih-rounding">' + escapeHtml(t('ps.sheet_rounding')) + '</p>' : '')
-          + '<p class="fin-offer__disclosure">' + escapeHtml(m.paymentSource) + '</p>';
+          + (m.paymentSource ? '<p class="fin-offer__disclosure">' + escapeHtml(m.paymentSource) + '</p>' : '');
       }
       return html + psBtn('class="fin-btn fin-btn-primary ps-sheet__go" id="psSheetGo"',
         escapeHtml(t('ps.sheet_go')), 'window.psOpenStudio()') + '</div>';
@@ -18326,14 +18948,17 @@
               : '');
       }
 
-      // Payment demo: a path made only of EXAMPLE plans explains itself with
-      // the example figures for this purchase (the same model as the
-      // Summary's payment comparison) and a route to that comparison - never
-      // the governed lender copy, which would present a demo as a provider.
-      if (typeof psSheetDemoPanel === 'function') {
+      // A promotional path whose plans the purchase studio calculates leads
+      // with the SAME figures the Summary shows (one read model, psPay via
+      // purchaseStudioFor) and a route to the full comparison. The governed
+      // lender copy and payment-facts rows stay beneath it, unchanged; a
+      // path with no calculable plan gets nothing extra.
+      if (typeof psSheetPanel === 'function' && fresh) {
         finPromotionalByProvider(groups.promotional).forEach(function(grp) {
-          var demoPanel = psSheetDemoPanel(grp.plans);
-          if (demoPanel) bodies[finPathId('promo', grp.provider)] = demoPanel;
+          if (!grp.plans.length || !grp.plans.every(financingPlanFresh)) return;
+          var psPanel = psSheetPanel(grp.plans);
+          var pid = finPathId('promo', grp.provider);
+          if (psPanel && bodies[pid]) bodies[pid] = psPanel + bodies[pid];
         });
       }
 
@@ -23536,6 +24161,59 @@
       });
     }
 
+    // The take-home send's own state (owner direction 2026-10-15): the
+    // in-flight flag, this content's idempotency key, the content it was made
+    // for, and the summary fingerprint the preview rendered. Reset by the
+    // session wipe and whenever the take-home screen opens.
+    // `unresolved`: a request carrying this sendId left the device and no
+    // definitive answer came back (a transport failure, or the server's
+    // delivery_unconfirmed) - the email may already be in the inbox.
+    // `attempts` (owner direction 2026-10-17): the session's SEND ATTEMPT
+    // REGISTRY, one record per content key (recipient address + purchase
+    // identity) ever sent this session: { sendId, state }. A content key that
+    // was sent before ALWAYS goes out again under its own original sendId,
+    // whatever was sent in between (A -> B -> A, purchase X -> Y -> X), so
+    // the server's per-sendId ledger can refuse a second email. States:
+    //   'in-flight'  - the request is out (taps are refused meanwhile);
+    //   'uncertain'  - it left the device with no definitive answer
+    //                  (transport failure, delivery_unconfirmed);
+    //   'confirmed'  - the server answered success (or duplicate);
+    //   'failed'     - the server refused it before sending (send_failed,
+    //                  invalid_email, invalid_request, canspam_not_configured):
+    //                  nothing was sent and the server keeps the id retryable.
+    // Every state reuses its sendId; the state only reports the outcome. Each
+    // response updates only its own record. Nothing is ever evicted (an
+    // evicted uncertain record would silently make that content resendable);
+    // the records hold the address, so the new-customer wipe drops the whole
+    // registry, and `usedIds` keeps a fresh id from colliding with a recorded
+    // one.
+    var emailSendState = { inFlight: false, sendId: null, contentKey: null, previewFingerprint: null, unresolved: false,
+                           attempts: null, usedIds: null, current: null };
+    // A fresh sendId: 18 random bytes from crypto.getRandomValues, base64url
+    // (24 chars of [A-Za-z0-9_-]). No crypto, no id - and a live send then
+    // refuses to go rather than sending without one.
+    function emailNewSendId() {
+      var c = (typeof crypto === 'object' && crypto && typeof crypto.getRandomValues === 'function') ? crypto : null;
+      if (!c) return null;
+      var bytes = new Uint8Array(18);
+      c.getRandomValues(bytes);
+      var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+      var out = '';
+      for (var i = 0; i < bytes.length; i += 3) {
+        var n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+        out += A[(n >> 18) & 63] + A[(n >> 12) & 63] + A[(n >> 6) & 63] + A[n & 63];
+      }
+      return out;
+    }
+    // Re-render the take-home preview with the CURRENT figures, keeping what
+    // the customer typed (the stale-figures path of sendResults).
+    function emailRefreshPreview() {
+      var ids = ['emailNameInput', 'emailInput', 'emailPhoneInput'];
+      var kept = ids.map(function(id) { var el = document.getElementById(id); return el ? el.value : ''; });
+      window.showEmailCapture();
+      ids.forEach(function(id, i) { var el = document.getElementById(id); if (el) el.value = kept[i]; });
+    }
+
     window.showEmailCapture = function() {
       analytics.log('email_capture_viewed', {});
 
@@ -23598,11 +24276,24 @@
           title: FC('emailHeading'),
           detail: finEmailBody() });
       }
-      // Payment demo only: the priced Sleep System and the payment choice
-      // shown on the Summary, so the take-home preview agrees with it. Never
-      // part of the send payload (sendResults does not read this packet).
+      // The priced Sleep System and the payment choice shown on the Summary
+      // (production admission only), built from the shared purchase summary.
+      // It is "Your quote" - part of the send - only while
+      // pricing.surfaces.email is true; otherwise it is shown in store only.
+      // The fingerprint it rendered is what sendResults checks before any
+      // send. A new sendId is made for this preview ONLY when no send is out
+      // and none is unresolved: this screen is re-rendered by a language
+      // switch (even mid-send) and re-opened from the handoff, and a send
+      // whose answer was lost may already have gone out under the current
+      // id - its retry must keep that id (the server sends at most once per
+      // id). Nor is the in-flight flag cleared here.
       var psRow = (typeof psTakeHomeRow === 'function') ? psTakeHomeRow() : null;
       if (psRow) packet.push(psRow);
+      emailSendState.previewFingerprint = (psRow && psRow.fingerprint) || null;
+      if (!emailSendState.sendId || (!emailSendState.inFlight && !emailSendState.unresolved)) {
+        emailSendState.sendId = emailNewSendId();
+        emailSendState.contentKey = null;
+      }
 
       var summaryEl = document.getElementById('emailPreview');
       if (summaryEl) summaryEl.innerHTML = packet.map(function(r) {
@@ -23637,6 +24328,8 @@
       var sendBtn = document.getElementById('emailSendBtn');
       sendBtn.classList.remove('sending');
       sendBtn.classList.remove('sent');
+      sendBtn.disabled = false;
+      sendBtn.removeAttribute('aria-busy');
       sendBtn.style.display = '';
       var capView = document.getElementById('emailCaptureView');
       if (capView) capView.style.display = '';
@@ -23675,16 +24368,22 @@
     });
 
     window.sendResults = function() {
+      // In-flight guard: one send at a time. The button carries both onclick
+      // and ontouchend (the iPad pattern), and a customer may tap again while
+      // a request is out - every re-entry is a no-op, and a finished send
+      // stays done.
+      if (emailSendState.inFlight) return;
       const emailInput = document.getElementById('emailInput');
       const nameInput = document.getElementById('emailNameInput');
       const phoneInput = document.getElementById('emailPhoneInput');
       const errorEl = document.getElementById('emailError');
       const sendBtn = document.getElementById('emailSendBtn');
       const confirmation = document.getElementById('emailConfirmation');
+      if (sendBtn.classList.contains('sent')) return;
       const email = emailInput.value.trim();
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
-      
+
       // Validate
       if (!email) {
         errorEl.textContent = currentLang === 'es' ? 'Por favor ingresa tu correo electrónico.' : 'Please enter your email address.';
@@ -23698,6 +24397,55 @@
       }
       
       errorEl.textContent = '';
+      // Stale guard: the figures the customer previewed are the figures that
+      // are sent. The shared summary is recomputed now; if its fingerprint
+      // differs from the one the preview rendered, nothing is sent, the
+      // preview re-renders with the current figures and the customer is
+      // told. (Both are null whenever no priced purchase is shown.)
+      const _summaryNow = (typeof purchaseSummaryFor === 'function') ? purchaseSummaryFor(currentLang) : null;
+      const _fingerprintNow = _summaryNow ? _summaryNow.fingerprint : null;
+      if (_fingerprintNow !== emailSendState.previewFingerprint) {
+        emailRefreshPreview();
+        errorEl.textContent = t('email.figures_changed');
+        return;
+      }
+      // One sendId per recipient and content: every retry - automatic, the
+      // visible "Try again", after a language switch, a re-opened screen or
+      // an edited name or phone - reuses it, because an attempt whose answer
+      // was lost may already have mailed this address (the server sends at
+      // most once per id and answers a repeat as a duplicate). A different
+      // address or different content (answers, picks, finalist, Sleep System,
+      // priorities, or the purchase: product, size, quantity, amount, offer,
+      // plan or payment figure) is a different email: a new id. The content
+      // is keyed by consultationIdentityKey(), NOT the localized fingerprint,
+      // so the presentation language never changes the id.
+      const _contentIdNow = (typeof consultationIdentityKey === 'function') ? consultationIdentityKey() : null;
+      // The address is compared case-insensitively (A@x and a@x are one
+      // recipient); the payload still carries it exactly as typed.
+      const _contentKey = [email.toLowerCase(), _contentIdNow || ''].join('\u0001');
+      // The registry decides the id: content sent before this session reuses
+      // its own; new content takes the previewed candidate unless that id
+      // already belongs to another record, else a fresh one.
+      if (!emailSendState.attempts) emailSendState.attempts = Object.create(null);
+      if (!emailSendState.usedIds) emailSendState.usedIds = Object.create(null);
+      let _attempt = emailSendState.attempts[_contentKey] || null;
+      if (_attempt) {
+        emailSendState.sendId = _attempt.sendId;
+      } else {
+        if (!emailSendState.sendId || emailSendState.usedIds[emailSendState.sendId] === true) {
+          emailSendState.sendId = emailNewSendId();
+        }
+        if (emailSendState.sendId) {
+          _attempt = { sendId: emailSendState.sendId, state: 'new' };
+          emailSendState.attempts[_contentKey] = _attempt;
+          emailSendState.usedIds[_attempt.sendId] = true;
+        }
+      }
+      emailSendState.current = _attempt;
+      emailSendState.contentKey = _contentKey;
+      emailSendState.inFlight = true;
+      sendBtn.disabled = true;
+      sendBtn.setAttribute('aria-busy', 'true');
       // Slice 6: the in-flight verb is mode-aware — preview mode saves on
       // this tablet and sends nothing (emailDeliveryLive() is the one truth).
       sendBtn.textContent = emailDeliveryLive()
@@ -23838,6 +24586,14 @@
       // Compile payload
       const payload = {
         storeName: (STORE_CONFIG && STORE_CONFIG.storeName) || '',
+        // Idempotency key (owner direction 2026-10-15): Code.gs sends at most
+        // one email per sendId, so an automatic or customer retry of the
+        // same content can never send twice.
+        sendId: emailSendState.sendId,
+        // The shared purchase summary - the SAME record the preview rendered
+        // (fingerprint-checked above) - only while pricing.surfaces.email is
+        // true; null otherwise, which is every shipped state.
+        quote: emailQuoteGate(_summaryNow),
         name: name,
         email: email,
         phone: phone,
@@ -23946,26 +24702,29 @@
       // GAS-side prerequisites (NOT automatic): deploy Code.gs as a web app
       // (Execute as: Me, Access: Anyone), bind a Google Sheet (+ 'rsa' column),
       // and review RESULT_EMAIL_BCC in Code.gs. See Code.gs for details.
-      const gasUrl = (STORE_CONFIG && STORE_CONFIG.gasUrl) || '';
-      // Some scenarios (e.g. the historical demo) disable live submission entirely:
-      // preview-only regardless of gasUrl, so a reconstructed scenario can never
-      // send a real customer email.
-      const _submitScenario = getActivePromotionScenario();
-      const scenarioBlocksEmail = !!(_submitScenario && _submitScenario.disableEmailSubmission);
-      const isEmailPreview = !gasUrl || scenarioBlocksEmail;
+      // ONE live/preview truth (trust gate): emailDeliveryLive() - gasUrl
+      // configured AND the active scenario does not block submission (e.g.
+      // the historical demo, which must never send a real customer email).
+      // The welcome data-use sentence, the email screen's preview note and
+      // this send path all read the same helper.
+      const isEmailPreview = !emailDeliveryLive();
+      const gasUrl = isEmailPreview ? '' : ((STORE_CONFIG && STORE_CONFIG.gasUrl) || '');
 
       analytics.log(isEmailPreview ? 'email_previewed' : 'email_submitted', {
         email: email,
         name: name,
         phone: phone
       });
-      
+
       function showSuccess() {
+        emailSendState.inFlight = false;
         sendBtn.textContent = isEmailPreview
           ? (currentLang === 'es' ? '✓ Guardado' : '✓ Saved')
           : (currentLang === 'es' ? '✓ ¡Enviado!' : '✓ Sent!');
         sendBtn.classList.remove('sending');
         sendBtn.classList.add('sent');
+        // Done stays done: the button remains disabled after success.
+        sendBtn.removeAttribute('aria-busy');
         // Persistent confirmation: hide the whole capture view and reveal the
         // confirmation, which carries its own CTAs ("Start New Customer" /
         // "Back to handoff"). No auto-jump — the RSA decides what's next, so the
@@ -23976,54 +24735,99 @@
         try { confirmation.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
       }
 
-      function showError(msg) {
+      function showError(msg, retry) {
+        emailSendState.inFlight = false;
         // Slice 6: restore the button's actual initial label (renderEmailChrome
-        // sets it); the old reset labels matched nothing on the screen.
-        sendBtn.textContent = currentLang === 'es' ? 'Guardar Mi Resumen →' : 'Save My Sleep Brief →';
+        // sets it); after a transport failure the same button is the retry
+        // action, and it reuses this content's sendId.
+        sendBtn.textContent = retry ? t('email.retry')
+          : (currentLang === 'es' ? 'Guardar Mi Resumen →' : 'Save My Sleep Brief →');
         sendBtn.classList.remove('sending');
+        sendBtn.disabled = false;
+        sendBtn.removeAttribute('aria-busy');
         errorEl.textContent = msg || (currentLang === 'es' ? 'Algo salió mal. Por favor intenta de nuevo.' : 'Something went wrong. Please try again.');
       }
-      
-      if (gasUrl && !scenarioBlocksEmail) {
+
+      if (!isEmailPreview) {
         // Real send via Google Apps Script.
         // NOTE: No Content-Type header → "simple request" → no CORS preflight.
         // GAS web apps deployed as "Anyone" return Access-Control-Allow-Origin:*,
         // so we can read the JSON response and check success.
-        fetch(gasUrl, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        })
-        // Every continuation is sessionBound: an in-flight send cannot be
-        // taken back, and by the time a wipe runs the promise may already be
-        // settled with its continuation queued. Success, server-declared
-        // failure, malformed response and rejection therefore each validate
-        // the epoch at callback time and no-op against a torn-down session.
-        .then(sessionBound(function(res) {
-          // Shaped so the classifier below can validate it, rather than a free
-          // string that would fall through as unclassified.
-          if (!res.ok) throw new Error('http_' + res.status);
-          return res.json();
-        }))
-        .then(sessionBound(function(data) {
-          if (data && data.success) {
-            showSuccess();
-          } else {
-            // NEVER the server's own error string. It is outside our control
-            // and the request we just sent it contained the customer's name,
-            // email and phone — an endpoint that echoes any part of its input
-            // back would put them straight into the console. Only a value
-            // drawn from a closed set is logged.
-            console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));
-            showError(currentLang === 'es' ? 'No pudimos enviar tu correo — por favor pide a tu especialista de sueño que lo reenvíe.' : 'We couldn\'t send your email — please ask your sales specialist to re-send it.');
-          }
-        }))
-        .catch(sessionBound(function(err) {
-          // NEVER the Error object. A JSON parse failure embeds a fragment of
-          // the response body in .message, and a rejected request can carry
-          // the full request URL — neither is safe to print verbatim.
-          console.error('[DreamFinder] send failed:', transportFailureCode(err));
-          showError(currentLang === 'es' ? 'Error de red. Por favor intenta de nuevo.' : 'Network error. Please try again.');
-        }));
+        // Without a well-formed sendId the server would refuse the request
+        // (invalid_request); nothing is sent and the customer sees the
+        // refusal copy rather than a transport retry.
+        if (typeof payload.sendId !== 'string' || !/^[A-Za-z0-9_-]{22,40}$/.test(payload.sendId)) {
+          console.error('[DreamFinder] send failed:', emailFailureCode('invalid_request'));
+          showError(currentLang === 'es' ? 'No pudimos enviar tu correo — por favor pide a tu especialista de sueño que lo reenvíe.' : 'We couldn\'t send your email — please ask your sales specialist to re-send it.');
+          return;
+        }
+        // One automatic retry, with the SAME payload and sendId, after a
+        // transport failure (network, http_5xx, malformed response); a server
+        // refusal (invalid_email, canspam_not_configured, invalid_request,
+        // send_failed) is never retried.
+        // Outcomes are written to THIS attempt's own record; the session-wide
+        // flag follows only while this attempt is still the current one.
+        var settle = function(state) {
+          if (_attempt) _attempt.state = state;
+          if (emailSendState.current === _attempt) emailSendState.unresolved = (state === 'uncertain' || state === 'in-flight');
+        };
+        var sendAttempt = function(n) {
+          settle('in-flight');
+          fetch(gasUrl, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          })
+          // Every continuation is sessionBound: an in-flight send cannot be
+          // taken back, and by the time a wipe runs the promise may already be
+          // settled with its continuation queued. Success, server-declared
+          // failure, malformed response and rejection therefore each validate
+          // the epoch at callback time and no-op against a torn-down session.
+          .then(sessionBound(function(res) {
+            // Shaped so the classifier below can validate it, rather than a free
+            // string that would fall through as unclassified.
+            if (!res.ok) throw new Error('http_' + res.status);
+            return res.json();
+          }))
+          .then(sessionBound(function(data) {
+            if (data && data.success) {
+              settle('confirmed');
+              showSuccess();
+            } else if (!data || typeof data !== 'object') {
+              // A body that is not a result object is a transport fault.
+              var bad = new Error('malformed'); bad.name = 'SyntaxError';
+              throw bad;
+            } else {
+              // NEVER the server's own error string. It is outside our control
+              // and the request we just sent it contained the customer's name,
+              // email and phone — an endpoint that echoes any part of its input
+              // back would put them straight into the console. Only a value
+              // drawn from a closed set is logged.
+              console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));
+              settle(emailFailureCode(data && data.error) === 'delivery_unconfirmed' ? 'uncertain' : 'failed');
+              // delivery_unconfirmed: an earlier attempt of this content may
+              // already have been delivered, and the server will not send it
+              // again - never "couldn't send", never a retry action.
+              showError(emailFailureCode(data && data.error) === 'delivery_unconfirmed'
+                ? t('email.delivery_unconfirmed')
+                : (currentLang === 'es' ? 'No pudimos enviar tu correo — por favor pide a tu especialista de sueño que lo reenvíe.' : 'We couldn\'t send your email — please ask your sales specialist to re-send it.'));
+            }
+          }))
+          .catch(sessionBound(function(err) {
+            // NEVER the Error object. A JSON parse failure embeds a fragment of
+            // the response body in .message, and a rejected request can carry
+            // the full request URL — neither is safe to print verbatim.
+            var code = transportFailureCode(err);
+            console.error('[DreamFinder] send failed:', code);
+            if (n === 0 && emailTransportRetryable(code)) {
+              sendBtn.textContent = t('email.retrying');
+              sessionTimeout(function() { sendAttempt(1); }, 1500);
+              return;
+            }
+            settle('uncertain');
+            showError(currentLang === 'es' ? 'Error de red. Por favor intenta de nuevo.' : 'Network error. Please try again.', true);
+          }));
+        };
+        sendAttempt(0);
       } else {
         // Presentation mode: demonstrate the completed email experience without
         // claiming that a live retailer email service is connected.
@@ -28765,11 +29569,20 @@
     var EMAIL_FAILURE_CODES = [
       'invalid_email',            // Code.gs: recipient failed _isValidEmail()
       'canspam_not_configured',   // Code.gs: retailer CAN-SPAM values still sentinels
-      'send_failed'               // Code.gs: doPost catch-all; detail stays in its Logger
+      'send_failed',              // Code.gs: doPost catch-all; detail stays in its Logger
+      'invalid_request',          // Code.gs: missing/malformed sendId (or request shape)
+      'delivery_unconfirmed'      // Code.gs: this sendId may already have gone out; never resent
     ];
     function emailFailureCode(raw) {
       return (typeof raw === 'string' && EMAIL_FAILURE_CODES.indexOf(raw) !== -1)
         ? raw : 'unclassified';
+    }
+    // Transport faults are retried once, automatically, with the same
+    // sendId (the server dedupes on it): a network rejection, an HTTP 5xx
+    // and a malformed response. A server REFUSAL is a decision, not a
+    // fault, and is never retried.
+    function emailTransportRetryable(code) {
+      return code === 'network' || code === 'malformed_response' || /^http_5\d\d$/.test(code);
     }
     function transportFailureCode(err) {
       // Our own thrown shape, validated rather than trusted.
@@ -28973,6 +29786,21 @@
           if (sendBtn.classList) sendBtn.classList.remove('sending', 'sent');
           if (sendBtn.style) sendBtn.style.display = '';
           sendBtn.disabled = false;
+          if (sendBtn.removeAttribute) sendBtn.removeAttribute('aria-busy');
+        }
+        // The take-home send's state: no in-flight flag, idempotency key,
+        // previewed fingerprint or send-attempt record survives into the next
+        // customer's session.
+        if (typeof emailSendState === 'object' && emailSendState) {
+          emailSendState.inFlight = false;
+          emailSendState.sendId = null;
+          emailSendState.contentKey = null;
+          emailSendState.previewFingerprint = null;
+          emailSendState.unresolved = false;
+          // The attempt registry holds recipient addresses: dropped whole.
+          emailSendState.attempts = null;
+          emailSendState.usedIds = null;
+          emailSendState.current = null;
         }
 
         // --- 8. analytics -------------------------------------------------
@@ -29641,7 +30469,7 @@
        navigation. All copy is injected from the generic dictionaries by
        renderSafetyDialog(); the English text below is only a no-JS
        placeholder and is overwritten before the dialog is ever shown. -->
-  <!-- The purchase studio's change sheet (payment demo). A body child, so
+  <!-- The purchase studio's change sheet. A body child, so
        the background it makes inert while open is never its own ancestor. -->
   <div class="ps-sheet-backdrop" id="psSheetBackdrop" hidden onclick="window.psCloseSheet()" ontouchend="event.preventDefault();window.psCloseSheet();"></div>
   <div class="ps-sheet-dialog" id="psSheet" role="dialog" aria-modal="true" aria-labelledby="psSheetTitle" hidden></div>

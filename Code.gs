@@ -1,10 +1,27 @@
-// Central DreamFinder lead backup inbox. Every retailer deployment BCCs this
-// address by default so leads roll up centrally. During Apps Script setup,
-// review this value:
-//   - keep the default to participate in the central backup
-//   - replace with a retailer-specific backup inbox if appropriate
-//   - set to '' to disable BCC for this deployment
-var RESULT_EMAIL_BCC = 'dreamfinderleads@gmail.com';
+// \u2500\u2500 Deployment values: Script Properties, never this file \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// This file deploys UNCHANGED to every retailer's Apps Script project and
+// carries no deployment-specific value. Each value below is read per request
+// from the project's Script Properties (Project Settings -> Script
+// Properties; docs/gas-activation-runbook.md) by _loadDeploymentConfig():
+//   UNSUBSCRIBE_URL     required  https:// unsubscribe destination
+//   POSTAL_ADDRESS      required  the retailer's physical postal address
+//   PRIVACY_CONTACT     required  privacy / data-request email address
+//   RESULT_EMAIL_BCC    optional  lead-intake copy address; blank = no BCC
+//   REPLY_TO            optional  reply-to address; blank = the sender
+//   LEADS_SHEET_NAME    optional  leads tab name; blank = 'Leads'
+// The module-level values start blank and are filled only by
+// _loadDeploymentConfig(); a blank or malformed required value refuses the
+// request (see the CAN-SPAM block below).
+var RESULT_EMAIL_BCC = '';
+var REPLY_TO = '';
+var DEFAULT_LEADS_SHEET_NAME = 'Leads';
+var LEADS_SHEET_NAME = DEFAULT_LEADS_SHEET_NAME;
+// The Leads tab's header row, written once when the tab is created. The
+// column contract (append-only, right-most additions) is
+// docs/gas-rsa-field-addition.md.
+var LEADS_HEADER = ['Timestamp', 'Name', 'Email', 'Phone', 'Dream Code', 'Lang',
+  'Matches', 'Accessories', 'RSA', 'Send ID'];
+
 // Defensive payload ceiling, not a merchandising limit. The kiosk currently
 // selects at most one product per Sleep System step, but future stores may add
 // more categories and should not silently lose items after the third.
@@ -15,27 +32,207 @@ var MAX_EMAIL_ACCESSORIES = 20;
 // legitimate content, so the cap is a hard bound rather than a display choice.
 var MAX_EMAIL_PRIORITIES = 3;
 
-// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-// CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET. The active retailer (Lacks
-// Furniture for this deployment) must supply and approve every value below
-// BEFORE live lead capture. CAN-SPAM requires (a) a working unsubscribe
-// mechanism, honored within 10 business days and kept live >=30 days, and
-// (b) a valid physical postal address in every commercial email. No values
-// are guessed or invented here: doPost() REFUSES to send any email while a
-// sentinel remains, so live capture is hard-blocked until real,
-// retailer-approved values replace all three AND the unsubscribe inbox is
-// actively monitored. (gasUrl in store-config.json must also stay blank
-// until then \u2014 it is blank in this deployment.)
-// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-var CANSPAM_SENTINEL = 'RETAILER_APPROVAL_REQUIRED';
-var UNSUBSCRIBE_URL = 'RETAILER_APPROVAL_REQUIRED_UNSUBSCRIBE_URL';
-var POSTAL_ADDRESS  = 'RETAILER_APPROVAL_REQUIRED_POSTAL_ADDRESS';
-var PRIVACY_CONTACT = 'RETAILER_APPROVAL_REQUIRED_PRIVACY_CONTACT';
+// \u2500\u2500 Send identity + duplicate suppression \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Every request carries a client-generated `sendId` (crypto.getRandomValues,
+// reused for the client's automatic retry of the same content). A request
+// without a well-formed one is refused `invalid_request` before anything is
+// written or sent.
+//
+// AT-MOST-ONCE per sendId (2026-10-16): a duplicate customer email is worse
+// than a lost one, and "rows written after sending" alone does not prevent
+// one (a crash between the send and any later record would leave the retry
+// free to send again). So everything runs under the script lock
+// (LockService), and the durable record is a hidden ledger tab in the bound
+// Sheet (SENDS_SHEET_NAME: one row per sendId - id, state, time, pending
+// lead) written BEFORE the send:
+//   1. the script cache ('df-sent:<sendId>', best effort, 6 h) is a fast
+//      path for 'sent'; the ledger is the authority (no expiry, no eviction);
+//   2. a ledger row already in 'sent' / 'row_pending' / 'complete' answers
+//      {success:true, duplicate:true}: no email, no row;
+//   3. a ledger row in 'sending' or 'unconfirmed' (or any unknown state)
+//      means an earlier attempt may have reached MailApp with no recorded
+//      outcome: answered delivery_unconfirmed and NEVER sent again;
+//   4. otherwise the 'sending' marker (with the lead row it will write) is
+//      appended and flushed, THEN MailApp runs once. A MailApp exception is
+//      an unknown outcome (Google may already have accepted the message):
+//      'unconfirmed', delivery_unconfirmed, and no plain-text resend;
+//   5. after the send: cache + ledger 'sent', then the lead row; a lead-row
+//      failure leaves the ledger 'row_pending' with the lead kept for
+//      recoverPendingLeads(), never silently lost.
+// A failure to take the lock, read the ledger, check the quota or write the
+// marker happens before any send and answers send_failed: nothing was sent
+// and the same sendId stays retryable. None of these services needs an OAuth
+// scope beyond the two the manifest declares (appsscript.json:
+// script.send_mail for MailApp, spreadsheets.currentonly for the bound Sheet).
+var SEND_ID_PATTERN = /^[A-Za-z0-9_-]{22,40}$/;
+var SEND_DEDUPE_PREFIX = 'df-sent:';
+var SEND_DEDUPE_TTL_SECONDS = 21600;   // CacheService maximum (6 hours)
+var SEND_LOCK_WAIT_MS = 10000;
+var SENDS_SHEET_NAME = 'DreamFinder Sends';
+var SENDS_HEADER = ['Send ID', 'State', 'Updated', 'Pending lead'];
+// Ledger ids carry a text prefix so the Sheet never coerces one (a leading
+// '-', '+' or '=' or an all-digit id) into a number or a formula.
+var SENDS_ID_PREFIX = 'id:';
+var SEND_STATE_SENDING = 'sending';
+var SEND_STATE_UNCONFIRMED = 'unconfirmed';
+var SEND_STATE_SENT = 'sent';
+var SEND_STATE_ROW_PENDING = 'row_pending';
+var SEND_STATE_COMPLETE = 'complete';
 
-function _canSpamConfigured() {
-  return [UNSUBSCRIBE_URL, POSTAL_ADDRESS, PRIVACY_CONTACT].every(function(v) {
-    return v && v.indexOf(CANSPAM_SENTINEL) === -1;
-  });
+// \u2500\u2500 Purchase summary ("Your quote") ceilings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// The quote is rendered VERBATIM from the client's purchase summary (the same
+// formatted strings the kiosk screen shows). The server does no arithmetic on
+// it. A summary past these ceilings is refused WHOLE rather than shortened: a
+// truncated line list under totals that still count the hidden lines would
+// misstate the purchase.
+var MAX_QUOTE_LINES = 20;
+var MAX_QUOTE_OFFER_TERMS = 6;
+var MAX_QUOTE_LINE_DISCOUNTS = 6;
+var MAX_QUOTE_LINE_QUANTITY = 99;
+
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET until the deployment's
+// Script Properties hold them. The active retailer (Lacks Furniture for this
+// deployment) must supply and approve every value BEFORE live lead capture.
+// CAN-SPAM requires (a) a working unsubscribe mechanism, honored within 10
+// business days and kept live >=30 days, and (b) a valid physical postal
+// address in every commercial email. No values are guessed or invented here:
+// doPost() REFUSES to send any email (canspam_not_configured) while any of the
+// three is unset, blank, malformed or still a RETAILER_APPROVAL_REQUIRED
+// placeholder, so live capture is hard-blocked until real, retailer-approved
+// values are set AND the unsubscribe inbox is actively monitored. (gasUrl in
+// store-config.json must also stay blank until then \u2014 it is blank in this
+// deployment.)
+// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+var CANSPAM_SENTINEL = 'RETAILER_APPROVAL_REQUIRED';
+var UNSUBSCRIBE_URL = '';
+var POSTAL_ADDRESS  = '';
+var PRIVACY_CONTACT = '';
+
+// Reads the deployment values from Script Properties into the module-level
+// values above (each Apps Script execution starts from a fresh global scope,
+// so nothing carries over between requests). Returns the names of the values
+// that refuse the request: `required` (CAN-SPAM: unset, blank, malformed or
+// a sentinel) and `invalid` (an optional value that is set but malformed).
+// Names only - a value is never logged.
+function _loadDeploymentConfig() {
+  var props = PropertiesService.getScriptProperties();
+  var read = function(key) {
+    var v = props.getProperty(key);
+    return typeof v === 'string' ? v.trim() : '';
+  };
+  UNSUBSCRIBE_URL = read('UNSUBSCRIBE_URL');
+  POSTAL_ADDRESS = read('POSTAL_ADDRESS');
+  PRIVACY_CONTACT = read('PRIVACY_CONTACT');
+  RESULT_EMAIL_BCC = read('RESULT_EMAIL_BCC');
+  REPLY_TO = read('REPLY_TO');
+  LEADS_SHEET_NAME = read('LEADS_SHEET_NAME') || DEFAULT_LEADS_SHEET_NAME;
+
+  var required = [];
+  var unset = function(v) { return !v || v.indexOf(CANSPAM_SENTINEL) !== -1; };
+  if (unset(UNSUBSCRIBE_URL) || !/^https:\/\/[^\s<>"']+\.[^\s<>"']+$/i.test(UNSUBSCRIBE_URL)) required.push('UNSUBSCRIBE_URL');
+  if (unset(POSTAL_ADDRESS) || POSTAL_ADDRESS.length > 300) required.push('POSTAL_ADDRESS');
+  if (unset(PRIVACY_CONTACT) || !_isValidEmail(PRIVACY_CONTACT)) required.push('PRIVACY_CONTACT');
+
+  var invalid = [];
+  if (RESULT_EMAIL_BCC && !_isValidEmail(RESULT_EMAIL_BCC)) invalid.push('RESULT_EMAIL_BCC');
+  if (REPLY_TO && !_isValidEmail(REPLY_TO)) invalid.push('REPLY_TO');
+  if (LEADS_SHEET_NAME.length > 100) invalid.push('LEADS_SHEET_NAME');
+  return { required: required, invalid: invalid };
+}
+
+// The leads tab, by name (never whichever tab happens to be active): created
+// with the header row when it does not exist yet. The script is container-
+// bound to the leads Spreadsheet, so getActiveSpreadsheet() is that file.
+function _leadsSheet() {
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = book.getSheetByName(LEADS_SHEET_NAME);
+  if (!sheet) {
+    sheet = book.insertSheet(LEADS_SHEET_NAME);
+    sheet.appendRow(LEADS_HEADER);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// The send ledger (see "Send identity" above): a hidden tab, created with
+// its header on first use. Only doPost and recoverPendingLeads write it, both
+// under the script lock.
+function _sendsSheet() {
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = book.getSheetByName(SENDS_SHEET_NAME);
+  if (!sheet) {
+    sheet = book.insertSheet(SENDS_SHEET_NAME);
+    sheet.appendRow(SENDS_HEADER);
+    sheet.setFrozenRows(1);
+    sheet.hideSheet();
+  }
+  return sheet;
+}
+
+// {row, state} for sendId's ledger row (exact, case-sensitive), or null.
+// Reads throw rather than answer "not found": the caller fails closed.
+function _findSend(ledger, sendId) {
+  var last = ledger.getLastRow();
+  if (last < 2) return null;
+  var want = SENDS_ID_PREFIX + sendId;
+  var cells = ledger.getRange(2, 1, last - 1, 2).getValues();
+  for (var i = cells.length - 1; i >= 0; i--) {
+    if (String(cells[i][0]) === want) return { row: i + 2, state: String(cells[i][1]) };
+  }
+  return null;
+}
+
+function _setSendState(ledger, row, state, pendingLead) {
+  ledger.getRange(row, 2, 1, 3).setValues([[state, new Date(), pendingLead]]);
+}
+
+// The lead row as the ledger keeps it until the Leads tab has it: JSON, the
+// timestamp as ISO text (restored to a Date by recoverPendingLeads).
+function _pendingLeadJson(leadRow) {
+  return JSON.stringify(leadRow);
+}
+
+// Operator recovery, run by hand from the Apps Script editor (Run ->
+// recoverPendingLeads). Appends every lead whose email was SENT but whose
+// Leads row was never written ('sent' or 'row_pending' with a kept lead),
+// marks each 'complete' and clears its kept copy. It sends NOTHING. Rows in
+// 'sending' / 'unconfirmed' are only counted: whether that email arrived is
+// for the owner to check (inbox, BCC copy), never guessed here. Counts only
+// are logged, never a lead value.
+function recoverPendingLeads() {
+  var deployment = _loadDeploymentConfig();
+  if (deployment.invalid.indexOf('LEADS_SHEET_NAME') !== -1) {
+    throw new Error('LEADS_SHEET_NAME is invalid; fix the Script Property first');
+  }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(SEND_LOCK_WAIT_MS);
+  try {
+    var ledger = _sendsSheet();
+    var leads = _leadsSheet();
+    var report = { recovered: 0, unconfirmed: 0 };
+    var last = ledger.getLastRow();
+    if (last >= 2) {
+      var cells = ledger.getRange(2, 1, last - 1, 4).getValues();
+      for (var i = 0; i < cells.length; i++) {
+        var state = String(cells[i][1]);
+        var kept = String(cells[i][3] || '');
+        if ((state === SEND_STATE_SENT || state === SEND_STATE_ROW_PENDING) && kept) {
+          var row = JSON.parse(kept);
+          row[0] = new Date(row[0]);
+          leads.appendRow(row);
+          _setSendState(ledger, i + 2, SEND_STATE_COMPLETE, '');
+          report.recovered += 1;
+        } else if (state === SEND_STATE_SENDING || state === SEND_STATE_UNCONFIRMED) {
+          report.unconfirmed += 1;
+        }
+      }
+    }
+    Logger.log('recoverPendingLeads: ' + JSON.stringify(report));
+    return report;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // Helper: escape five HTML metacharacters; safe for attribute values and text content.
@@ -98,17 +295,406 @@ function _safeArray(v) {
   return Array.isArray(v) ? v : [];
 }
 
+// Helper: a quote string. STRING-TYPED (a non-string is '', never
+// "[object Object]" or a coerced number), trimmed, bounded.
+function _quoteText(v, max) {
+  var t = typeof v === 'string' ? v.trim() : '';
+  return t ? _safeText(t, max) : '';
+}
+
+// The purchase summary ("Your quote"), projected onto a fresh closed literal.
+// Returns null - the section is then absent from BOTH MIME parts - unless the
+// record is a v:2 USD summary in one of two closed forms:
+//   complete: true  - every line priced (a name, a list figure and a net
+//                     figure), the merchandise subtotal, and a payment block
+//                     of one of the three closed kinds with its required text;
+//   complete: false - an incomplete purchase (owner direction 2026-10-16):
+//                     priced lines as above, every other line marked by its
+//                     status text ("Price unavailable") and carrying NO
+//                     figure, the incomplete note, and NO subtotal, savings
+//                     total, financed amount, payment or plan figure - an
+//                     incomplete summary carrying any of those keys is
+//                     refused whole.
+// ALL-OR-NOTHING, like the priorities block: a malformed or oversized summary
+// is never rendered partially. Numeric fields the client carries for its own
+// use (merchandiseMinor, discountMinor, paymentMinor) are deliberately not
+// projected: the email shows the screen's formatted figures only, and nothing
+// here computes one.
+var QUOTE_INCOMPLETE_FORBIDDEN = ['listSubtotalText', 'discountText', 'merchandiseText', 'merchandiseMinor',
+  'discountMinor', 'payment'];
+function _safeQuote(q) {
+  if (!q || typeof q !== 'object' || Array.isArray(q) || q.v !== 2) return null;
+  if (q.complete !== true && q.complete !== false) return null;
+  var complete = q.complete === true;
+  if (!complete) {
+    for (var f = 0; f < QUOTE_INCOMPLETE_FORBIDDEN.length; f++) {
+      if (Object.prototype.hasOwnProperty.call(q, QUOTE_INCOMPLETE_FORBIDDEN[f])) return null;
+    }
+  }
+  if (q.currency !== 'USD') return null;
+  if (!Array.isArray(q.lines) || q.lines.length === 0 || q.lines.length > MAX_QUOTE_LINES) return null;
+  var rawTerms = q.offerTerms == null ? [] : q.offerTerms;
+  if (!Array.isArray(rawTerms) || rawTerms.length > MAX_QUOTE_OFFER_TERMS) return null;
+
+  var lines = [];
+  var unpricedCount = 0;
+  for (var i = 0; i < q.lines.length; i++) {
+    var l = q.lines[i];
+    if (!l || typeof l !== 'object' || Array.isArray(l)) return null;
+    var qty = l.quantity;
+    if (typeof qty !== 'number' || !isFinite(qty) || Math.floor(qty) !== qty
+        || qty < 1 || qty > MAX_QUOTE_LINE_QUANTITY) return null;
+    if (l.priced !== true && l.priced !== false) return null;
+    if (l.priced === false) {
+      // An unpriced line: only on an incomplete summary, its status text
+      // required, and no figure of any kind beside it.
+      if (complete) return null;
+      if (l.listText != null || l.netText != null || l.discounts != null) return null;
+      var unpriced = {
+        name: _quoteText(l.name, 200),
+        detail: _quoteText(l.detail, 200),
+        quantity: qty,
+        priced: false,
+        statusText: _quoteText(l.statusText, 120)
+      };
+      if (!unpriced.name || !unpriced.statusText) return null;
+      lines.push(unpriced);
+      unpricedCount++;
+      continue;
+    }
+    var rawDiscounts = l.discounts == null ? [] : l.discounts;
+    if (!Array.isArray(rawDiscounts) || rawDiscounts.length > MAX_QUOTE_LINE_DISCOUNTS) return null;
+    var discounts = [];
+    for (var d = 0; d < rawDiscounts.length; d++) {
+      var rd = rawDiscounts[d];
+      var dLabel = _quoteText(rd && rd.label, 200);
+      var dAmount = _quoteText(rd && rd.amountText, 60);
+      if (!dLabel || !dAmount) return null;
+      discounts.push({ label: dLabel, amountText: dAmount });
+    }
+    var line = {
+      name: _quoteText(l.name, 200),
+      detail: _quoteText(l.detail, 200),
+      quantity: qty,
+      priced: true,
+      listText: _quoteText(l.listText, 60),
+      discounts: discounts,
+      netText: _quoteText(l.netText, 60)
+    };
+    if (!line.name || !line.listText || !line.netText) return null;
+    lines.push(line);
+  }
+
+  var offerTerms = [];
+  for (var k = 0; k < rawTerms.length; k++) {
+    var term = _quoteText(rawTerms[k], 600);
+    if (!term) return null;
+    offerTerms.push(term);
+  }
+
+  if (!complete) {
+    // Incomplete: at least one line really is unpriced, and its note says so.
+    if (unpricedCount === 0) return null;
+    var partial = {
+      complete: false,
+      sizeLabel: _quoteText(q.sizeLabel, 60),
+      lines: lines,
+      incompleteText: _quoteText(q.incompleteText, 400),
+      exclusionsText: _quoteText(q.exclusionsText, 400),
+      offerTerms: offerTerms,
+      provenance: _quoteText(q.provenance, 300)
+    };
+    if (!partial.incompleteText) return null;
+    return partial;
+  }
+
+  var p = q.payment;
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+  var payment;
+  if (p.kind === 'full') {
+    payment = { kind: 'full', totalText: _quoteText(p.totalText, 60) };
+    if (!payment.totalText) return null;
+  } else if (p.kind === 'plan') {
+    payment = {
+      kind: 'plan',
+      planLabel: _quoteText(p.planLabel, 200),
+      aprText: _quoteText(p.aprText, 60),
+      termText: _quoteText(p.termText, 60),
+      downText: _quoteText(p.downText, 60),
+      financedText: _quoteText(p.financedText, 60),
+      paymentText: _quoteText(p.paymentText, 60),
+      totalPaidText: _quoteText(p.totalPaidText, 60),
+      interestText: _quoteText(p.interestText, 60),
+      disclosure: _quoteText(p.disclosure, 1000)
+    };
+    if (!payment.planLabel || !payment.paymentText || !payment.financedText) return null;
+  } else if (p.kind === 'quote-only') {
+    payment = { kind: 'quote-only', planLabel: _quoteText(p.planLabel, 200), note: _quoteText(p.note, 400) };
+    if (!payment.planLabel) return null;
+  } else {
+    return null;
+  }
+
+  var out = {
+    complete: true,
+    sizeLabel: _quoteText(q.sizeLabel, 60),
+    lines: lines,
+    listSubtotalText: _quoteText(q.listSubtotalText, 60),
+    discountText: _quoteText(q.discountText, 60),
+    merchandiseText: _quoteText(q.merchandiseText, 60),
+    exclusionsText: _quoteText(q.exclusionsText, 400),
+    offerTerms: offerTerms,
+    payment: payment,
+    provenance: _quoteText(q.provenance, 300)
+  };
+  if (!out.merchandiseText) return null;
+  return out;
+}
+
+// Localized labels for the quote section (both MIME parts read the same set).
+function _quoteLabels(isEs) {
+  return isEs ? {
+    heading: 'Tu cotizaci\u00f3n',
+    size: 'Tama\u00f1o',
+    qty: 'Cant.',
+    list: 'Precio de lista',
+    net: 'Tu precio',
+    listSubtotal: 'Subtotal de lista',
+    discounts: 'Descuentos',
+    merchandise: 'Subtotal de mercanc\u00eda',
+    offerTerms: 'T\u00e9rminos de la oferta',
+    payFull: 'Pago de contado',
+    total: 'Total',
+    plan: 'Plan',
+    apr: 'APR',
+    term: 'Plazo',
+    down: 'Pago inicial',
+    financed: 'Monto financiado',
+    payment: 'Pago mensual',
+    totalPaid: 'Total pagado',
+    charge: 'Inter\u00e9s'
+  } : {
+    heading: 'Your quote',
+    size: 'Size',
+    qty: 'Qty',
+    list: 'List price',
+    net: 'Your price',
+    listSubtotal: 'List subtotal',
+    discounts: 'Discounts',
+    merchandise: 'Merchandise subtotal',
+    offerTerms: 'Offer terms',
+    payFull: 'Pay in full',
+    total: 'Total',
+    plan: 'Plan',
+    apr: 'APR',
+    term: 'Term',
+    down: 'Down payment',
+    financed: 'Amount financed',
+    payment: 'Monthly payment',
+    totalPaid: 'Total paid',
+    charge: 'Interest'
+  };
+}
+
+// The quote's text/plain block. Angle brackets stripped like the priority
+// lines so hostile markup cannot arrive looking like markup.
+function buildQuotePlain(quote, isEs) {
+  if (!quote) return '';
+  var Q = _quoteLabels(isEs);
+  var s = function(v) { return String(v || '').replace(/[<>]/g, ''); };
+  var out = [Q.heading + (quote.sizeLabel ? ' (' + Q.size + ': ' + s(quote.sizeLabel) + ')' : '') + ':'];
+  quote.lines.forEach(function(l, i) {
+    out.push((i + 1) + '. ' + s(l.name) + (l.quantity > 1 ? ' x ' + l.quantity : '')
+      + (l.detail ? ' - ' + s(l.detail) : ''));
+    if (!l.priced) {
+      out.push('   ' + s(l.statusText));
+      return;
+    }
+    out.push('   ' + Q.list + ': ' + s(l.listText));
+    l.discounts.forEach(function(dc) { out.push('   ' + s(dc.label) + ': ' + s(dc.amountText)); });
+    out.push('   ' + Q.net + ': ' + s(l.netText));
+  });
+  if (quote.complete !== true) {
+    // Incomplete: the note, never a total or a payment.
+    out.push(s(quote.incompleteText));
+    if (quote.exclusionsText) out.push(s(quote.exclusionsText));
+    if (quote.offerTerms.length) {
+      out.push(Q.offerTerms + ':');
+      quote.offerTerms.forEach(function(tm) { out.push('- ' + s(tm)); });
+    }
+    if (quote.provenance) out.push(s(quote.provenance));
+    return out.join('\n');
+  }
+  if (quote.listSubtotalText) out.push(Q.listSubtotal + ': ' + s(quote.listSubtotalText));
+  if (quote.discountText) out.push(Q.discounts + ': ' + s(quote.discountText));
+  out.push(Q.merchandise + ': ' + s(quote.merchandiseText));
+  if (quote.exclusionsText) out.push(s(quote.exclusionsText));
+  var p = quote.payment;
+  if (p.kind === 'full') {
+    out.push(Q.payFull + ' - ' + Q.total + ': ' + s(p.totalText));
+  } else if (p.kind === 'plan') {
+    out.push(Q.plan + ': ' + s(p.planLabel));
+    [[Q.apr, p.aprText], [Q.term, p.termText], [Q.down, p.downText], [Q.financed, p.financedText],
+     [Q.payment, p.paymentText], [Q.totalPaid, p.totalPaidText], [Q.charge, p.interestText]]
+      .forEach(function(r) { if (r[1]) out.push('   ' + r[0] + ': ' + s(r[1])); });
+    if (p.disclosure) out.push(s(p.disclosure));
+  } else {
+    out.push(Q.plan + ': ' + s(p.planLabel));
+    if (p.note) out.push(s(p.note));
+  }
+  if (quote.offerTerms.length) {
+    out.push(Q.offerTerms + ':');
+    quote.offerTerms.forEach(function(tm) { out.push('- ' + s(tm)); });
+  }
+  if (quote.provenance) out.push(s(quote.provenance));
+  return out.join('\n');
+}
+
+// The quote's HTML section: one table row of the outer email table. Simple
+// nested tables with inline styles only (Outlook-safe; no flex, no grid, no
+// classes); every payload-derived value escaped at its interpolation; nothing
+// payload-sourced enters a style attribute. `c`, `sans`, `serif` are the
+// template's palette and font stacks.
+function buildQuoteHtml(quote, isEs, c, sans, serif) {
+  if (!quote) return '';
+  var Q = _quoteLabels(isEs);
+  var e = _escapeHtml;
+  var cell = 'font-family:' + sans + ';font-size:12px;color:' + c.text + ';line-height:1.45;';
+  var muted = 'font-family:' + sans + ';font-size:11px;color:' + c.textMuted + ';line-height:1.45;';
+  var fig = 'font-family:' + sans + ';font-size:12px;color:' + c.text + ';text-align:right;white-space:nowrap;';
+  function row(label, value, strong) {
+    return '<tr><td style="' + cell + 'padding:4px 0;' + (strong ? 'font-weight:700;' : '') + '">' + label + '</td>'
+      + '<td align="right" style="' + fig + 'padding:4px 0;' + (strong ? 'font-weight:700;' : '') + '">' + value + '</td></tr>';
+  }
+  var linesHtml = quote.lines.map(function(l) {
+    var head = '<tr><td colspan="2" style="padding:10px 0 2px;border-top:1px solid ' + c.border + ';">'
+      + '<div style="font-family:' + serif + ';font-size:15px;color:' + c.text + ';line-height:1.25;">' + e(l.name)
+      + (l.quantity > 1 ? ' <span style="white-space:nowrap;">&times; ' + l.quantity + '</span>' : '') + '</div>'
+      + (l.detail ? '<div style="' + muted + '">' + e(l.detail) + '</div>' : '')
+      + '</td></tr>';
+    if (!l.priced) {
+      return head + '<tr><td colspan="2" style="' + muted + 'padding:4px 0;">' + e(l.statusText) + '</td></tr>';
+    }
+    return head
+      + row(Q.list, e(l.listText))
+      + l.discounts.map(function(dc) { return row(e(dc.label), e(dc.amountText)); }).join('')
+      + row(Q.net, e(l.netText), true);
+  }).join('');
+  var complete = quote.complete === true;
+  // Incomplete: the note stands where the totals and the payment would be.
+  var totals = !complete
+    ? '<tr><td colspan="2" style="' + cell + 'padding:4px 0;font-weight:700;">' + e(quote.incompleteText) + '</td></tr>'
+    : (quote.listSubtotalText ? row(Q.listSubtotal, e(quote.listSubtotalText)) : '')
+      + (quote.discountText ? row(Q.discounts, e(quote.discountText)) : '')
+      + row(Q.merchandise, e(quote.merchandiseText), true);
+  var p = quote.payment;
+  var payHtml;
+  if (!complete) {
+    payHtml = '';
+  } else if (p.kind === 'full') {
+    payHtml = row(Q.payFull + ' &mdash; ' + Q.total, e(p.totalText), true);
+  } else if (p.kind === 'plan') {
+    payHtml = row(Q.plan, e(p.planLabel), true)
+      + [[Q.apr, p.aprText], [Q.term, p.termText], [Q.down, p.downText], [Q.financed, p.financedText],
+         [Q.payment, p.paymentText], [Q.totalPaid, p.totalPaidText], [Q.charge, p.interestText]]
+        .filter(function(r) { return r[1]; })
+        .map(function(r) { return row(r[0], e(r[1])); }).join('')
+      + (p.disclosure ? '<tr><td colspan="2" style="' + muted + 'padding:6px 0 0;">' + e(p.disclosure) + '</td></tr>' : '');
+  } else {
+    payHtml = row(Q.plan, e(p.planLabel), true)
+      + (p.note ? '<tr><td colspan="2" style="' + muted + 'padding:4px 0 0;">' + e(p.note) + '</td></tr>' : '');
+  }
+  return '<tr><td style="padding:8px 32px 24px;">'
+    + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:10px;">'
+    + Q.heading + (quote.sizeLabel ? ' &middot; ' + e(quote.sizeLabel) : '') + '</div>'
+    + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background:' + c.surface + ';border:1px solid ' + c.border + ';border-left:4px solid ' + c.red + ';border-radius:3px;">'
+    + '<tr><td style="padding:6px 18px 14px;">'
+    + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">'
+    + linesHtml
+    + '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
+    + totals
+    + (quote.exclusionsText ? '<tr><td colspan="2" style="' + muted + 'padding:2px 0 6px;">' + e(quote.exclusionsText) + '</td></tr>' : '')
+    + (payHtml ? '<tr><td colspan="2" style="padding:6px 0 0;border-top:1px solid ' + c.border + ';font-size:0;line-height:0;">&nbsp;</td></tr>' : '')
+    + payHtml
+    + (quote.offerTerms.length
+        ? '<tr><td colspan="2" style="padding:10px 0 0;">'
+          + '<div style="' + muted + 'font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:10px;">' + Q.offerTerms + '</div>'
+          + quote.offerTerms.map(function(tm) { return '<div style="' + muted + 'margin-top:3px;">' + e(tm) + '</div>'; }).join('')
+          + '</td></tr>'
+        : '')
+    + (quote.provenance ? '<tr><td colspan="2" style="font-family:' + sans + ';font-size:10px;color:' + c.textSubtle + ';padding:8px 0 0;">' + e(quote.provenance) + '</td></tr>' : '')
+    + '</table>'
+    + '</td></tr></table>'
+    + '</td></tr>';
+}
+
+// Operator check, run by hand from the Apps Script editor (Run ->
+// checkDeployment) after setting Script Properties. It sends NOTHING and
+// writes no lead: it reports which properties still refuse (names only), the
+// leads tab, and the account's remaining daily recipient quota. Its first run
+// is also what prompts the owner's OAuth consent for exactly the two scopes
+// the manifest declares, before any customer request arrives.
+function checkDeployment() {
+  var deployment = _loadDeploymentConfig();
+  var report = {
+    ready: deployment.required.length === 0 && deployment.invalid.length === 0,
+    refusingRequired: deployment.required,
+    invalidOptional: deployment.invalid,
+    bcc: RESULT_EMAIL_BCC ? 'set' : 'none',
+    replyTo: REPLY_TO ? 'set' : 'sender',
+    leadsTab: _leadsSheet().getName(),
+    sendsTab: _sendsSheet().getName(),
+    remainingDailyRecipients: MailApp.getRemainingDailyQuota()
+  };
+  Logger.log('checkDeployment: ' + JSON.stringify(report));
+  return report;
+}
+
+// Response contract (the client classifies exactly these):
+//   {success:true}                                  sent (email sent, then row appended)
+//   {success:true, duplicate:true}                  this sendId already sent; nothing done
+//   {success:false, error:'delivery_unconfirmed'}   an earlier attempt of this sendId (or this
+//                                                   one: MailApp threw) may have gone out; the
+//                                                   outcome is unknown, so it is never resent
+//   {success:false, error:'invalid_request'}        body not an object, or sendId missing/malformed
+//   {success:false, error:'invalid_email'}          address fails the shape check
+//   {success:false, error:'canspam_not_configured'} a required CAN-SPAM Script Property is
+//                                                   unset, blank, malformed or a sentinel
+//   {success:false, error:'send_failed'}            nothing was sent (lock timeout, ledger or
+//                                                   Sheet unreadable, quota exhausted, a
+//                                                   malformed optional property, anything else
+//                                                   before the send); detail in the GAS log only
 function doPost(e) {
+  var sendLock = null;
   try {
     var data = JSON.parse(e.postData.contents);
 
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      Logger.log('doPost rejected: invalid_request (body is not an object)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'invalid_request' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // Shape-only summary; full PII (email/name/phone) shouldn't persist in GAS logs.
+    // The quote is logged by presence and line count only - never a figure.
     Logger.log('doPost received: name_len=' + (data.name ? String(data.name).length : 0)
       + ', email=' + (data.email ? 'set' : 'unset')
       + ', phone=' + (data.phone ? 'set' : 'unset')
       + ', matches=' + ((data.allMatches || []).length)
       + ', accessories=' + ((data.accessories || []).length)
-      + ', lang=' + (data.lang || ''));
+      + ', lang=' + (data.lang || '')
+      + ', sendId=' + (typeof data.sendId === 'string' && SEND_ID_PATTERN.test(data.sendId) ? 'set' : 'invalid')
+      + ', quote=' + (data.quote && typeof data.quote === 'object' ? 'present' : 'absent')
+      + ', quote_lines=' + (data.quote && Array.isArray(data.quote.lines) ? data.quote.lines.length : 0));
+
+    var sendId = typeof data.sendId === 'string' ? data.sendId : '';
+    if (!SEND_ID_PATTERN.test(sendId)) {
+      Logger.log('doPost rejected: invalid_request (sendId missing or malformed)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'invalid_request' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
     var lang = _normalizeLang(data.lang);
     var isEs = lang === 'es';
@@ -122,11 +708,70 @@ function doPost(e) {
     }
 
     // Hard block: no commercial email may leave this script until the
-    // retailer-approved CAN-SPAM values replace the sentinels above.
-    if (!_canSpamConfigured()) {
+    // retailer-approved CAN-SPAM values are set in Script Properties. The log
+    // names the refusing properties, never their values.
+    var deployment = _loadDeploymentConfig();
+    if (deployment.required.length) {
       Logger.log('doPost rejected: canspam_not_configured (retailer approval required)');
+      Logger.log('doPost: unset or invalid Script Properties: ' + deployment.required.join(', '));
       return ContentService
         .createTextOutput(JSON.stringify({ success: false, error: 'canspam_not_configured' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    // A set-but-malformed optional value (BCC, reply-to, tab name) is an
+    // operator error, never silently ignored: refused before anything runs.
+    if (deployment.invalid.length) {
+      Logger.log('doPost rejected: deployment_config_invalid (' + deployment.invalid.join(', ') + ')');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Duplicate suppression (see "Send identity" at the top): under the
+    // script lock, the cache fast path, then the durable ledger. The lock is
+    // held through the send and the records, and released in finally.
+    sendLock = LockService.getScriptLock();
+    try {
+      sendLock.waitLock(SEND_LOCK_WAIT_MS);
+    } catch (lockErr) {
+      sendLock = null;
+      Logger.log('doPost refused: lock_timeout (nothing sent; the sendId stays retryable)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var sendCache = CacheService.getScriptCache();
+    var dedupeKey = SEND_DEDUPE_PREFIX + sendId;
+    var cachedState = null;
+    try {
+      cachedState = sendCache.get(dedupeKey);
+    } catch (cacheReadErr) {
+      Logger.log('doPost: cache read failed; the ledger decides: ' + cacheReadErr.toString());
+    }
+    if (cachedState) {
+      Logger.log('doPost duplicate: sendId already sent (cache); no row, no email');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, duplicate: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    // The durable ledger decides next. Unreadable means send_failed (the
+    // outer catch), never "not found".
+    var ledger = _sendsSheet();
+    var prior = _findSend(ledger, sendId);
+    if (prior) {
+      if (prior.state === SEND_STATE_SENT || prior.state === SEND_STATE_ROW_PENDING
+          || prior.state === SEND_STATE_COMPLETE) {
+        Logger.log('doPost duplicate: sendId already sent (ledger); no row, no email');
+        try { sendCache.put(dedupeKey, SEND_STATE_SENT, SEND_DEDUPE_TTL_SECONDS); } catch (recacheErr) {}
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: true, duplicate: true }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      // 'sending', 'unconfirmed' or anything unrecognized: an earlier attempt
+      // may have reached MailApp. Never sent again.
+      Logger.log('doPost refused: delivery_unconfirmed (ledger state ' + _safeText(prior.state, 20) + '; never resent)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'delivery_unconfirmed' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -167,13 +812,15 @@ function doPost(e) {
     // fallback body) with NO HTML escaping; buildSimpleHtml re-escapes for HTML.
     var storeName = _safeText(data.storeName, 100).trim() || (isEs ? 'nuestra tienda' : 'our store');
 
-    // --- Log to Google Sheet ---
-    // rsa appended at the end (right-of-last column) per the
-    // append-don't-insert strategy documented in docs/gas-rsa-field-addition.md.
-    // Inserting mid-row would force every other column to re-index. Sheet
-    // operator must add a corresponding "rsa" column header to match.
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    sheet.appendRow([
+    // --- The lead row (Google Sheet) ---
+    // Built and its tab resolved HERE, so a missing or unreadable Sheet fails
+    // the request before any email leaves, but APPENDED only after the email
+    // is sent: a failed send writes no row, so the client's retry of the same
+    // sendId cannot leave a duplicate. rsa and sendId sit at the right end per
+    // the append-don't-insert strategy in docs/gas-rsa-field-addition.md
+    // (inserting mid-row would re-index every other column).
+    var sheet = _leadsSheet();
+    var leadRow = [
       new Date(),
       name,
       email,
@@ -189,8 +836,9 @@ function doPost(e) {
         var qty = _safeQuantity(a && a.quantity);
         return _safeText(a && a.name, 200) + (qty > 1 ? ' x' + qty : '');
       }).join(', '),
-      rsa
-    ]);
+      rsa,
+      sendId
+    ];
 
     // Branding, supplied by the client from STORE_CONFIG (logo wordmark +
     // colors) so customer-visible email identity is config-driven, never
@@ -323,7 +971,12 @@ function doPost(e) {
       // the promo header drops any "current offer" claim and the disclosure is
       // surfaced. Both empty for genuine current scenarios -> behavior unchanged.
       promoScenario: _safeText(data.promoScenario, 80),
-      promoDisclosure: _safeText(data.promoDisclosure, 400)
+      promoDisclosure: _safeText(data.promoDisclosure, 400),
+      // The purchase summary ("Your quote"), pre-localized by the client to
+      // data.lang from the same read model the kiosk screen renders. Null
+      // (section absent in both parts) unless it is a complete, well-formed
+      // v:1 summary; never reaches the sheet row.
+      quote: _safeQuote(data.quote)
     };
 
     // The complete localized plain-text body, built ONCE from safeData before
@@ -333,25 +986,100 @@ function doPost(e) {
     // retry below. One construction, two uses: the paths cannot drift.
     var plainBody = buildPlainBody(safeData, isEs, storeName);
 
+    // Always build HTML server-side. Client previously sent data.htmlBody but
+    // that path was deprecated in 5e - kiosk no longer ships pre-built HTML.
+    // A BUILD failure is the one HTML problem known to happen before any
+    // delivery, so it alone falls back to the plain-text-only email. A
+    // MailApp exception never triggers a second send (see below).
+    var htmlBody = null;
     try {
-      // Always build HTML server-side. Client previously sent data.htmlBody but
-      // that path was deprecated in 5e \u2014 kiosk no longer ships pre-built HTML.
-      var htmlBody = buildSimpleHtml(safeData, firstName, isEs, storeName);
+      htmlBody = buildSimpleHtml(safeData, firstName, isEs, storeName);
+    } catch (htmlErr) {
+      Logger.log('HTML email failed to build, sending plain text only: ' + htmlErr.toString());
+    }
 
-      var mailOptions = {
-        htmlBody: htmlBody,
-        name: senderName
-      };
-      if (RESULT_EMAIL_BCC) mailOptions.bcc = RESULT_EMAIL_BCC;
-      GmailApp.sendEmail(email, subject, plainBody, mailOptions);
+    // Quota, checked before the marker: an exhausted account sends nothing
+    // and leaves the sendId retryable. MailApp counts every recipient.
+    var recipientsNeeded = RESULT_EMAIL_BCC ? 2 : 1;
+    if (MailApp.getRemainingDailyQuota() < recipientsNeeded) {
+      Logger.log('doPost refused: quota_exhausted (nothing sent; the sendId stays retryable)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
-    } catch (emailErr) {
-      Logger.log('HTML email failed, trying plain text: ' + emailErr.toString());
-      var fallbackOptions = {
-        name: senderName
-      };
-      if (RESULT_EMAIL_BCC) fallbackOptions.bcc = RESULT_EMAIL_BCC;
-      GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);
+    // The durable 'sending' marker, carrying the lead row, written and
+    // flushed BEFORE the send. If this fails nothing has been sent (the outer
+    // catch answers send_failed). From here on this sendId never sends
+    // again, whatever happens to this execution.
+    var pendingLead = _pendingLeadJson(leadRow);
+    ledger.appendRow([SENDS_ID_PREFIX + sendId, SEND_STATE_SENDING, new Date(), pendingLead]);
+    SpreadsheetApp.flush();
+    var ledgerRow = ledger.getLastRow();
+
+    try {
+      if (htmlBody !== null) {
+        var mailOptions = {
+          htmlBody: htmlBody,
+          name: senderName
+        };
+        if (RESULT_EMAIL_BCC) mailOptions.bcc = RESULT_EMAIL_BCC;
+        if (REPLY_TO) mailOptions.replyTo = REPLY_TO;
+        MailApp.sendEmail(email, subject, plainBody, mailOptions);
+      } else {
+        var fallbackOptions = {
+          name: senderName
+        };
+        if (RESULT_EMAIL_BCC) fallbackOptions.bcc = RESULT_EMAIL_BCC;
+        if (REPLY_TO) fallbackOptions.replyTo = REPLY_TO;
+        MailApp.sendEmail(email, subject, plainBody, fallbackOptions);
+      }
+    } catch (mailErr) {
+      // Unknown outcome: MailApp may have handed the message over before it
+      // threw. No plain-text retry, and this sendId never sends again.
+      Logger.log('doPost: MailApp threw; delivery_unconfirmed, the sendId will not send again: ' + mailErr.toString());
+      try {
+        _setSendState(ledger, ledgerRow, SEND_STATE_UNCONFIRMED, pendingLead);
+      } catch (markErr) {
+        Logger.log('doPost: ledger not marked unconfirmed (stays sending): ' + markErr.toString());
+      }
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'delivery_unconfirmed' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Sent. Recorded at once - cache, then ledger - before the lead row. A
+    // failure here is logged, not surfaced: the email has gone, and the
+    // ledger's 'sending' marker already blocks any resend.
+    try {
+      sendCache.put(dedupeKey, SEND_STATE_SENT, SEND_DEDUPE_TTL_SECONDS);
+    } catch (cacheErr) {
+      Logger.log('doPost: dedupe cache not written (the ledger still blocks a resend): ' + cacheErr.toString());
+    }
+    try {
+      _setSendState(ledger, ledgerRow, SEND_STATE_SENT, pendingLead);
+    } catch (sentErr) {
+      Logger.log('doPost: ledger not marked sent (stays sending; never resent): ' + sentErr.toString());
+    }
+
+    // The lead row, now that the email has gone. A write failure is logged
+    // and the lead is KEPT in the ledger ('row_pending') for
+    // recoverPendingLeads(), never lost; the answer stays success (the email
+    // went, and the ledger refuses any resend anyway).
+    try {
+      sheet.appendRow(leadRow);
+      try {
+        _setSendState(ledger, ledgerRow, SEND_STATE_COMPLETE, '');
+      } catch (doneErr) {
+        Logger.log('doPost: ledger not marked complete (the lead row was written): ' + doneErr.toString());
+      }
+    } catch (rowErr) {
+      Logger.log('doPost: lead row not written (email was sent; kept as row_pending): ' + rowErr.toString());
+      try {
+        _setSendState(ledger, ledgerRow, SEND_STATE_ROW_PENDING, pendingLead);
+      } catch (pendErr) {
+        Logger.log('doPost: ledger not marked row_pending: ' + pendErr.toString());
+      }
     }
 
     return ContentService
@@ -364,6 +1092,10 @@ function doPost(e) {
     return ContentService
       .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
       .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    if (sendLock) {
+      try { sendLock.releaseLock(); } catch (lockErr) { Logger.log('doPost: lock release failed: ' + lockErr.toString()); }
+    }
   }
 }
 
@@ -389,6 +1121,9 @@ function buildPlainBody(data, isEs, storeName) {
     || 'Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your sleep specialist.';
   var financing = (data.financing && typeof data.financing === 'object') ? data.financing : null;
   var allMatches = _safeArray(data.allMatches);
+  // The purchase summary ("Your quote"), already projected by _safeQuote.
+  var quoteText = buildQuotePlain(data.quote || null, isEs);
+  var quoteBlock = quoteText ? '\n\n' + quoteText : '';
 
   var accessoryLines = _safeArray(data.accessories).map(function(a, i) {
     var qty = _safeQuantity(a.quantity);
@@ -496,6 +1231,7 @@ function buildPlainBody(data, isEs, storeName) {
           return (i+1) + '. ' + m.name + (lineText ? ' - ' + lineText : '');
         }).join('\n')
       + (accessoryLines ? '\n\nTu Sistema de Sue\u00f1o guardado:\n' + accessoryLines : '')
+      + quoteBlock
       + promoBlock
       + finBlock
       + '\n\n----------\n'
@@ -517,6 +1253,7 @@ function buildPlainBody(data, isEs, storeName) {
           return (i+1) + '. ' + m.name + (lineText ? ' - ' + lineText : '');
         }).join('\n')
       + (accessoryLines ? '\n\nYour saved Sleep System:\n' + accessoryLines : '')
+      + quoteBlock
       + promoBlock
       + finBlock
       + '\n\n----------\n'
@@ -874,6 +1611,8 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
         : '')
 
     + accSection
+
+    + buildQuoteHtml(data.quote || null, isEs, c, sans, serif)
 
     + '<tr><td style="padding:24px 32px 14px;text-align:center;border-top:1px solid ' + c.border + ';">'
     + '<div style="font-family:' + sans + ';font-size:13px;color:' + c.text + ';margin-bottom:8px;line-height:1.5;">' + L.ctaMain + '</div>'

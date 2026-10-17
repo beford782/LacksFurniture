@@ -272,7 +272,7 @@ $checks = @(
     # Payment-choice slice 1 (2026-09-27): the "Bring it home" workspace.
     @{ Name = 'payment workspace (rendered, EN/ES, both landscapes)'; Exe = $pythonExecutable; Args = @('tests/payment_workspace_check.py') },
     @{ Name = 'payment facts (rendered, governed calculation, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/payment_facts_check.py') },
-    @{ Name = 'payment demo (isolation, data, rendered studio, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/payment_demo_check.py') },
+    @{ Name = 'purchase flow (one application, offers, rendered studio, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/purchase_flow_check.py') },
     @{ Name = 'trust integrity'; Exe = $nodeExecutable; Args = @('tests/trust_integrity_check.mjs') },
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
@@ -283,6 +283,7 @@ $checks = @(
     # size-independent accessory key; "None" is never a size.
     @{ Name = 'pricing website admission (observation dates + size-independent skus)'; Exe = $pythonExecutable; Args = @('tests/pricing_website_admission_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
+    @{ Name = 'offers engine (exact promotions, fail-closed admission and stacking)'; Exe = $nodeExecutable; Args = @('tests/offers_engine_check.mjs') },
     @{ Name = 'pricing presentation (2.2a gate + drawer surface)'; Exe = $nodeExecutable; Args = @('tests/pricing_presentation_check.mjs') },
     @{ Name = 'pricing harness (2.2c localhost non-shipping preview + rendered pass)'; Exe = $pythonExecutable; Args = @('tests/pricing_harness_check.py') },
     @{ Name = 'daybreak demo server'; Exe = $pythonExecutable; Args = @('tests/daybreak_server_check.py') },
@@ -292,6 +293,8 @@ $checks = @(
     # modes, every failure path, and Code.gs replayed against the recorded
     # payload. Rendered; needs the same playwright Chromium as the layout check.
     @{ Name = 'delivery harness (send-nothing live path, rendered)'; Exe = $pythonExecutable; Args = @('tests/delivery_harness_check.py') },
+    # The controlled real-delivery probe, checked offline (no network).
+    @{ Name = 'gas delivery probe (offline)'; Exe = $pythonExecutable; Args = @('tests/gas_delivery_probe_check.py') },
     # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink - the
     # three .drawer-promotion tokens pinned in source and every rendered line's
     # contrast measured through Chromium with the illustrative scenario
@@ -322,6 +325,7 @@ if ($ListOnly) {
 $protectedFiles = @(
     'index.html',
     'Code.gs',
+    'appsscript.json',
     'manifest.json',
     'data/store-config.json',
     'data/quiz.json',

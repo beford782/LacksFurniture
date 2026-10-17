@@ -41,7 +41,35 @@ languages. It proves:
     file refuses it (`canspam_not_configured`, no row, no send) and logs
     shape only; with the CAN-SPAM values rebound in harness scope it appends
     one Sheet row and sends one email to the recorded address with the
-    payload's language, carrying the recorded lead and accessory.
+    payload's language, carrying the recorded lead and accessory; the same
+    recorded payload delivered again is a duplicate (no second row or email).
+
+One operable application (contract 2026-10-15, sections 3-5) adds:
+
+  * the send identity: every live POST carries a well-formed `sendId`; the
+    stub emulates Code.gs's dedupe and `invalid_request`; a rapid double tap
+    makes exactly ONE POST (button disabled + aria-busy while in flight); a
+    transport failure (HTTP 500, non-JSON body) is retried exactly once with
+    the SAME sendId, a server refusal never; `--respond flaky` (first POST of
+    each sendId fails) yields two POSTs with one sendId and a success; the
+    visible retry after a persistent failure reuses the sendId, even after a
+    language switch and a re-opened take-home screen; `--respond
+    lost_response` (sent, answer lost) ends as a duplicate shown as success;
+    `delivery_unconfirmed` shows its own check-your-inbox copy, never retried;
+  * the purchase summary: `quote` is in the closed key set and is null in the
+    shipped configuration (pricing is dark);
+  * Code.gs fixtures through the real doPost (with LockService/CacheService
+    stubs): missing/malformed sendId and non-object bodies -> invalid_request
+    with nothing written; duplicate sendId -> {success:true, duplicate:true}
+    with no row and no email, from the durable ledger even after the cache
+    evicted; the lock taken and released on every path; a refused send is not
+    recorded (retryable); a MailApp exception is delivery_unconfirmed and
+    never resent (one MailApp call, no plain-text resend); hand-built EN and ES
+    v:1 summaries render every figure VERBATIM in both MIME parts (including
+    the plain-text fallback), deliberately inconsistent figures prove there
+    is no server arithmetic, hostile text is escaped (HTML) or bracket-
+    stripped (plain), length caps hold, the log carries presence + line count
+    only, and every malformed summary drops the whole section.
 
 Requires the `playwright` package with Chromium installed for the rendered
 pass (`python -m pip install playwright && python -m playwright install
@@ -55,6 +83,7 @@ Run: python tests/delivery_harness_check.py
 import hashlib
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -117,7 +146,13 @@ PAYLOAD_KEYS = {
     "dreamCode", "passExpiration", "passScope", "passTerms", "rsa", "lang", "allMatches",
     "accessories", "lead", "matchesSource", "priorities", "consultation", "emailPromotions",
     "promoSpanishDraft", "promoScenario", "promoDisclosure", "branding", "financing",
+    # One operable application (contract 2026-10-15, sections 3-4): the send
+    # identity and the purchase summary. `quote` is null while
+    # pricing.surfaces.email is false (shipped: pricing is dark).
+    "sendId", "quote",
 }
+SEND_ID_RE = srv.SEND_ID_RE
+TRANSPORT_CODES = {"http_500", "malformed_response"}
 MATCH_KEYS = {"name", "brand", "matchPct", "meetsMatchThreshold", "line", "imageUrl"}
 LEAD_KEYS = {"kind", "name", "brand", "line", "imageUrl"}
 # The accessory packet: name, category, quantity and imageUrl are what Code.gs
@@ -128,7 +163,8 @@ ACCESSORY_REQUIRED = {"name", "category", "quantity", "imageUrl"}
 ACCESSORY_ALLOWED = ACCESSORY_REQUIRED | {"id", "reason"}
 PAYMENT_POSITION = {"payPref", "payExplored", "payOpen", "interest", "monthly", "apr"}
 
-# Copy the page owns (inline in index.html; not dictionary keys).
+# Copy the page owns (inline in index.html; not dictionary keys), plus the
+# dictionary's delivery_unconfirmed line (added below from data/dict-*.json).
 COPY = {
     "en": {
         "saved": "✓ Saved", "sent": "✓ Sent!",
@@ -149,6 +185,9 @@ COPY = {
         "note": "Modo de vista previa: la entrega de correo en vivo aún no está conectada.",
     },
 }
+
+for _lang in ("en", "es"):
+    COPY[_lang]["unconfirmed"] = load(f"data/dict-{_lang}.json")["email.delivery_unconfirmed"]
 
 # ---- the shipped state ----------------------------------------------------------
 print("Shipped state:")
@@ -225,10 +264,25 @@ try:
         with open(os.path.join(REPO, rel), "rb") as f:
             check(f"app server: {rel} is served from disk unchanged (byte-equal)", st == 200 and body == f.read())
 
-    st, hd, body = get(h.gas_url, method="POST", data=json.dumps({"email": TYPED["email"], "lang": "en"}).encode())
+    SID = "harnessSendId-0000000001"
+    first = {"email": TYPED["email"], "lang": "en", "sendId": SID}
+    st, hd, body = get(h.gas_url, method="POST", data=json.dumps(first).encode())
     check("stub: POST /exec answers 200 {success:true} with Access-Control-Allow-Origin * and no-store",
           st == 200 and json.loads(body) == {"success": True}
           and hd.get("Access-Control-Allow-Origin") == "*" and hd.get("Cache-Control") == "no-store")
+    st, _, body = get(h.gas_url, method="POST", data=json.dumps(first).encode())
+    check("stub: the SAME sendId again answers {success:true, duplicate:true} (Code.gs's dedupe)",
+          st == 200 and json.loads(body) == {"success": True, "duplicate": True})
+    bad_ids = [None, "", "short", "x" * 41, "has spaces in it 0123456789", 12345678901234567890123]
+    answers = []
+    for bad in bad_ids:
+        doc = {"email": TYPED["email"], "lang": "en"}
+        if bad is not None:
+            doc["sendId"] = bad
+        st, _, body = get(h.gas_url, method="POST", data=json.dumps(doc).encode())
+        answers.append((st, json.loads(body)))
+    check("stub: a missing, empty, short, long, non-charset or non-string sendId answers invalid_request",
+          all(a == (200, {"success": False, "error": "invalid_request"}) for a in answers), str(answers[:2]))
     st, hd, _ = get(h.gas_url, method="OPTIONS")
     check("stub: OPTIONS /exec is answered 204 (and recorded, so a preflight can be proved absent)",
           st == 204 and hd.get("Access-Control-Allow-Origin") == "*")
@@ -236,31 +290,74 @@ try:
     check("stub: a POST to any other path is 404", st == 404)
     st, hd, body = get(h.recorded_url)
     rec = json.loads(body)
+    n_bad = len(bad_ids)
     check("stub: /__delivery/recorded lists the /exec requests in order with the parsed JSON (the wrong-path POST is not one)",
-          st == 200 and [r["method"] for r in rec] == ["POST", "OPTIONS"]
-          and rec[0]["json"] == {"email": TYPED["email"], "lang": "en"} and rec[1]["body"] is None)
+          st == 200 and [r["method"] for r in rec] == ["POST"] * (2 + n_bad) + ["OPTIONS"]
+          and rec[0]["json"] == first and rec[-1]["body"] is None)
+    check("stub: each recorded POST names its outcome (sent, duplicate, invalid_request); the preflight none",
+          [r.get("outcome") for r in rec] == ["sent", "duplicate"] + ["invalid_request"] * n_bad + [None],
+          str([r.get("outcome") for r in rec]))
     shape = srv.shape_summary(rec[0]["json"])
     check("the console shape summary carries counts and set/unset flags, never a value",
-          shape["email"] == "set" and shape["fields"] == 2 and TYPED["email"] not in json.dumps(shape))
+          shape["email"] == "set" and shape["fields"] == 3 and shape["sendId"] == "valid"
+          and shape["quote"] == "absent" and shape["quote_lines"] == 0
+          and TYPED["email"] not in json.dumps(shape) and SID not in json.dumps(shape))
     check("shape summary of a non-JSON body is {json: false}", srv.shape_summary(None) == {"json": False})
 finally:
     h.stop()
 
 print("Stub answers:")
 EXPECT = {
+    "invalid_request": (200, {"success": False, "error": "invalid_request"}),
     "invalid_email": (200, {"success": False, "error": "invalid_email"}),
     "canspam_not_configured": (200, {"success": False, "error": "canspam_not_configured"}),
     "send_failed": (200, {"success": False, "error": "send_failed"}),
+    "delivery_unconfirmed": (200, {"success": False, "error": "delivery_unconfirmed"}),
     "http_500": (500, {"success": False, "error": "send_failed"}),
 }
 for mode, (status, doc) in EXPECT.items():
     hm = srv.DeliveryHarness(respond=mode).start()
     try:
-        st, hd, body = get(hm.gas_url, method="POST", data=b'{"email":"x@y.z"}')
+        st, hd, body = get(hm.gas_url, method="POST", data=b'{"email":"x@y.z","sendId":"stubModeSendId-000000001"}')
         check(f"stub --respond {mode}: HTTP {status} {json.dumps(doc)}",
               st == status and json.loads(body) == doc and hd.get("Access-Control-Allow-Origin") == "*")
+        if mode in srv.GAS_ERROR_CODES and mode != "invalid_request":
+            st, _, body = get(hm.gas_url, method="POST", data=b'{"email":"x@y.z","sendId":"stubModeSendId-000000001"}')
+            check(f"stub --respond {mode}: a refusal is not remembered as sent (the same sendId is refused again, never 'duplicate')",
+                  json.loads(body) == doc)
     finally:
         hm.stop()
+hm = srv.DeliveryHarness(respond="flaky").start()
+try:
+    seq = []
+    for sid in ("flakySendId-00000000001", "flakySendId-00000000001", "flakySendId-00000000001",
+                "flakySendId-00000000002", "flakySendId-00000000002"):
+        st, _, body = get(hm.gas_url, method="POST", data=json.dumps({"email": "x@y.z", "sendId": sid}).encode())
+        seq.append((st, json.loads(body)))
+    check("stub --respond flaky: per sendId the first POST is HTTP 500, the second succeeds, a third is a duplicate",
+          seq == [(500, {"success": False, "error": "send_failed"}), (200, {"success": True}),
+                  (200, {"success": True, "duplicate": True}),
+                  (500, {"success": False, "error": "send_failed"}), (200, {"success": True})], str(seq))
+    check("stub --respond flaky: the recorded outcomes are http_500, sent, duplicate, http_500, sent",
+          [r.get("outcome") for r in hm.recorder.snapshot()] == ["http_500", "sent", "duplicate", "http_500", "sent"])
+    st, _, body = get(hm.gas_url, method="POST", data=b'{"email":"x@y.z"}')
+    check("stub --respond flaky: a missing sendId is invalid_request (never a 500 to retry)",
+          (st, json.loads(body)) == (200, {"success": False, "error": "invalid_request"}))
+finally:
+    hm.stop()
+hm = srv.DeliveryHarness(respond="lost_response").start()
+try:
+    seq = []
+    for sid in ("lostRespSendId-00000000001", "lostRespSendId-00000000001", "lostRespSendId-00000000002"):
+        st, _, body = get(hm.gas_url, method="POST", data=json.dumps({"email": "x@y.z", "sendId": sid}).encode())
+        seq.append((st, json.loads(body)))
+    check("stub --respond lost_response: the first POST of a sendId is sent but answered HTTP 500; its retry is a duplicate",
+          seq == [(500, {"success": False, "error": "send_failed"}), (200, {"success": True, "duplicate": True}),
+                  (500, {"success": False, "error": "send_failed"})], str(seq))
+    check("stub --respond lost_response: recorded outcomes sent_response_lost, duplicate, sent_response_lost",
+          [r.get("outcome") for r in hm.recorder.snapshot()] == ["sent_response_lost", "duplicate", "sent_response_lost"])
+finally:
+    hm.stop()
 hm = srv.DeliveryHarness(respond="echo").start()
 try:
     st, _, body = get(hm.gas_url, method="POST", data=json.dumps({"email": TYPED["email"]}).encode())
@@ -345,16 +442,57 @@ async (ARGS) => {
   document.getElementById('emailNameInput').value = ARGS.name;
   document.getElementById('emailInput').value = ARGS.email;
   document.getElementById('emailPhoneInput').value = ARGS.phone;
-  window.sendResults();
-  out.inflight = txt('emailSendBtn');
   const btn = document.getElementById('emailSendBtn');
   const err = document.getElementById('emailError');
-  const t0 = Date.now();
-  while (Date.now() - t0 < 6000) {
-    if (btn.classList.contains('sent') || (err.textContent && err.textContent.trim())) break;
-    await wait(50);
+  if (ARGS.doubleTap) {
+    // A rapid double (triple) tap: the button's click path, the touchend path
+    // (which calls sendResults() without consulting `disabled`), and the click
+    // path again, all in the same task. Exactly one send may leave the page.
+    btn.click();
+    out.inflight = txt('emailSendBtn');
+    window.sendResults();
+    btn.click();
+    out.busy = { disabled: btn.disabled === true, ariaBusy: btn.getAttribute('aria-busy') };
+  } else {
+    window.sendResults();
+    out.inflight = txt('emailSendBtn');
   }
-  await wait(100);
+  const settle = async () => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10000) {
+      if (btn.classList.contains('sent') || (err.textContent && err.textContent.trim())) break;
+      await wait(50);
+    }
+    await wait(100);
+  };
+  await settle();
+  if (ARGS.retryAfterError && err.textContent && err.textContent.trim()) {
+    // The customer's (or salesperson's) retry after the visible error: the
+    // same content, so the same sendId.
+    out.firstError = err.textContent;
+    err.textContent = '';
+    if (ARGS.reopenBeforeRetry) {
+      await switchLanguage(ARGS.lang === 'es' ? 'en' : 'es');
+      await wait(150);
+      window.showSavedPicks();
+      await wait(50);
+      window.showEmailCapture();
+      await wait(50);
+      document.getElementById('emailNameInput').value = ARGS.name + ' Jr';
+      document.getElementById('emailInput').value = ARGS.email;
+      document.getElementById('emailPhoneInput').value = ARGS.phone;
+    }
+    window.sendResults();
+    await settle();
+    if (ARGS.reopenBeforeRetry) {
+      const kept = emailSendState.sendId;
+      err.textContent = '';
+      document.getElementById('emailInput').value = 'other.' + ARGS.email;
+      window.sendResults();
+      out.otherAddressNewId = typeof emailSendState.sendId === 'string' && emailSendState.sendId !== kept;
+      await settle();
+    }
+  }
   out.after = { sendBtn: txt('emailSendBtn'), sent: btn.classList.contains('sent'), error: err.textContent,
                 confirmVisible: document.getElementById('emailConfirmation').classList.contains('visible'),
                 captureShown: shown('emailCaptureView'), subtitle: txt('emailConfirmationSubtitle'),
@@ -364,7 +502,7 @@ async (ARGS) => {
 """
 
 
-def walk(browser, port, lang, typed):
+def walk(browser, port, lang, typed, **opts):
     page = browser.new_page(viewport={"width": 1194, "height": 748})
     errors, console, requests = [], [], []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -372,7 +510,7 @@ def walk(browser, port, lang, typed):
     page.on("request", lambda r: requests.append((r.method, r.url)))
     page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
     page.wait_for_selector("#startBtn")
-    r = page.evaluate(WALK_JS, dict(typed, lang=lang))
+    r = page.evaluate(WALK_JS, dict(typed, lang=lang, **opts))
     page.close()
     r["errors"], r["console"], r["requests"] = errors, console, requests
     return r
@@ -439,6 +577,12 @@ def expect_live_success(tag, r, lang, typed, recorded):
           str(sorted(set(p) ^ PAYLOAD_KEYS)) if isinstance(p, dict) else "not JSON")
     if not isinstance(p, dict):
         return None
+    check(f"{tag}: sendId is a 22-40 character [A-Za-z0-9_-] string (contract section 4)",
+          isinstance(p.get("sendId"), str) and SEND_ID_RE.match(p["sendId"]) is not None, repr(p.get("sendId"))[:60])
+    check(f"{tag}: the stub recorded the POST as sent (not a duplicate, not invalid_request)",
+          rec.get("outcome") == "sent", str(rec.get("outcome")))
+    check(f"{tag}: quote is null in the shipped configuration (pricing is dark; pricing.surfaces.email false)",
+          "quote" in p and p["quote"] is None, repr(p.get("quote"))[:80])
     check(f"{tag}: lang, name, email and phone are the walk's values as typed",
           p.get("lang") == lang and p.get("name") == typed["name"] and p.get("email") == typed["email"] and p.get("phone") == typed["phone"])
     check(f"{tag}: storeName is the configured store; branding derives from config",
@@ -477,7 +621,23 @@ def expect_declined(tag, r, lang, typed, recorded, code, copy_key):
           any(t == "error" and f"send failed: {code}" in x for t, x in r["console"]),
           console_text(r)[-200:])
     methods = [x["method"] for x in recorded]
-    check(f"{tag}: exactly one POST reached the stub", methods == ["POST"], str(methods))
+    if code in TRANSPORT_CODES:
+        # Contract section 4: a transport failure is retried ONCE automatically
+        # with the same sendId before the error copy appears.
+        ids = [(x.get("json") or {}).get("sendId") if isinstance(x.get("json"), dict) else None for x in recorded]
+        check(f"{tag}: a transport failure is retried exactly once: two POSTs, no preflight", methods == ["POST", "POST"],
+              str(methods))
+        check(f"{tag}: ...both carrying the SAME well-formed sendId",
+              len(ids) == 2 and ids[0] == ids[1] and isinstance(ids[0], str) and SEND_ID_RE.match(ids[0]) is not None,
+              str(ids))
+    else:
+        check(f"{tag}: exactly one POST reached the stub (a server refusal is never retried)", methods == ["POST"],
+              str(methods))
+
+
+def sent_ids(recorded):
+    return [(x.get("json") or {}).get("sendId") if isinstance(x.get("json"), dict) else None
+            for x in recorded if x["method"] == "POST"]
 
 
 def rendered():
@@ -522,6 +682,9 @@ def rendered():
             ("canspam_not_configured", "en", "canspam_not_configured", "declined"),
             ("invalid_email", "es", "invalid_email", "declined"),
             ("send_failed", "en", "send_failed", "declined"),
+            ("delivery_unconfirmed", "en", "delivery_unconfirmed", "unconfirmed"),
+            ("delivery_unconfirmed", "es", "delivery_unconfirmed", "unconfirmed"),
+            ("invalid_request", "es", "invalid_request", "declined"),
             ("echo", "en", "unclassified", "declined"),
             ("http_500", "en", "http_500", "network"),
             ("malformed", "es", "malformed_response", "network"),
@@ -533,6 +696,95 @@ def rendered():
                 expect_declined(f"live {lang}, stub answers {mode}", r, lang, TYPED, h_live.recorder.snapshot(), code, copy_key)
             finally:
                 h_live.stop()
+        # Rapid double tap (contract section 4, in-flight guard): click, the
+        # touchend path and click again in one task -> exactly ONE POST.
+        for lang in ("en", "es"):
+            h_live = srv.DeliveryHarness(respond="success").start()
+            try:
+                r = walk(browser, h_live.app_port, lang, TYPED, doubleTap=True)
+                rec = h_live.recorder.snapshot()
+                tag = f"live {lang}, rapid double tap"
+                common(tag, r, lang, TYPED)
+                check(f"{tag}: exactly ONE POST reached the stub", [x["method"] for x in rec] == ["POST"],
+                      str([x.get("outcome") for x in rec]))
+                check(f"{tag}: the page made exactly one POST", len(posts(r)) == 1, str(posts(r)))
+                check(f"{tag}: while in flight the button is disabled and aria-busy",
+                      (r.get("busy") or {}).get("disabled") is True and (r.get("busy") or {}).get("ariaBusy") == "true",
+                      str(r.get("busy")))
+                check(f"{tag}: the send completes and the button stays done",
+                      r["after"]["sent"] and r["after"]["sendBtn"] == COPY[lang]["sent"] and not r["after"]["error"],
+                      repr(r["after"]["sendBtn"]))
+            finally:
+                h_live.stop()
+        # Flaky endpoint (first POST of a sendId is HTTP 500): the client's one
+        # automatic retry carries the SAME sendId and succeeds.
+        h_live = srv.DeliveryHarness(respond="flaky").start()
+        try:
+            r = walk(browser, h_live.app_port, "en", TYPED)
+            rec = h_live.recorder.snapshot()
+            ids = sent_ids(rec)
+            tag = "live en, flaky endpoint"
+            common(tag, r, "en", TYPED)
+            check(f"{tag}: exactly TWO POSTs (one automatic retry), no preflight",
+                  [x["method"] for x in rec] == ["POST", "POST"], str([x["method"] for x in rec]))
+            check(f"{tag}: both carry the SAME well-formed sendId",
+                  len(ids) == 2 and ids[0] == ids[1] and isinstance(ids[0], str) and SEND_ID_RE.match(ids[0]) is not None,
+                  str(ids))
+            check(f"{tag}: the stub recorded http_500 then sent",
+                  [x.get("outcome") for x in rec] == ["http_500", "sent"], str([x.get("outcome") for x in rec]))
+            check(f"{tag}: the page reports success (Sent, live confirmation, no error)",
+                  r["after"]["sent"] and r["after"]["confirmVisible"] and not r["after"]["error"]
+                  and r["after"]["subtitle"] == COPY["en"]["live_sub"], repr(r["after"]))
+        finally:
+            h_live.stop()
+        # The send went out but its answer was lost (HTTP 500 after the send):
+        # the automatic retry carries the same sendId, the server answers
+        # duplicate, and the page reports success - one email.
+        h_live = srv.DeliveryHarness(respond="lost_response").start()
+        try:
+            r = walk(browser, h_live.app_port, "es", TYPED)
+            rec = h_live.recorder.snapshot()
+            ids = sent_ids(rec)
+            tag = "live es, sent but the answer was lost"
+            common(tag, r, "es", TYPED)
+            check(f"{tag}: two POSTs with the SAME sendId; the stub recorded sent_response_lost then duplicate",
+                  len(ids) == 2 and ids[0] == ids[1] and [x.get("outcome") for x in rec] == ["sent_response_lost", "duplicate"],
+                  str([x.get("outcome") for x in rec]))
+            check(f"{tag}: the duplicate answer renders as success (Sent, live confirmation, no error)",
+                  r["after"]["sent"] and r["after"]["confirmVisible"] and not r["after"]["error"], repr(r["after"]))
+        finally:
+            h_live.stop()
+        # After a persistent failure the customer switches language, leaves
+        # and re-opens the take-home screen, retypes and taps send: still the
+        # SAME sendId (the first attempt may have gone out).
+        h_live = srv.DeliveryHarness(respond="http_500").start()
+        try:
+            r = walk(browser, h_live.app_port, "en", TYPED, retryAfterError=True, reopenBeforeRetry=True)
+            ids = sent_ids(h_live.recorder.snapshot())
+            tag = "live en, HTTP 500, language switch + re-opened screen, then retry"
+            check(f"{tag}: four POSTs before the address changes, every one the SAME sendId",
+                  len(ids) == 6 and len(set(ids[:4])) == 1 and isinstance(ids[0], str) and SEND_ID_RE.match(ids[0]) is not None,
+                  str(ids))
+            check(f"{tag}: a different address afterwards gets a NEW sendId (its own two POSTs)",
+                  r.get("otherAddressNewId") is True and len(ids) == 6 and ids[4] == ids[5] and ids[4] != ids[0],
+                  repr(r.get("otherAddressNewId")))
+        finally:
+            h_live.stop()
+        # Persistent transport failure, then the visible retry: the retry
+        # action reuses the sendId (same content), so a late success could
+        # never mail twice.
+        h_live = srv.DeliveryHarness(respond="http_500").start()
+        try:
+            r = walk(browser, h_live.app_port, "en", TYPED, retryAfterError=True)
+            ids = sent_ids(h_live.recorder.snapshot())
+            tag = "live en, HTTP 500 then the visible retry"
+            check(f"{tag}: the first attempt showed the network copy after its one automatic retry",
+                  r.get("firstError") == COPY["en"]["network"], repr(r.get("firstError")))
+            check(f"{tag}: four POSTs in all (2 automatic + 2 after the retry tap), every one the SAME sendId",
+                  len(ids) == 4 and len(set(ids)) == 1 and isinstance(ids[0], str) and SEND_ID_RE.match(ids[0]) is not None,
+                  str(ids))
+        finally:
+            h_live.stop()
         h_live = srv.DeliveryHarness(unreachable=True).start()
         try:
             r = walk(browser, h_live.app_port, "en", TYPED)
@@ -549,35 +801,90 @@ def rendered():
 
 
 h_live = None
-payloads = rendered()
+try:
+    payloads = rendered()
+except Exception as exc:  # a page error mid-walk must not hide the replay results below
+    check("rendered pass: every walk ran to completion", False, f"{type(exc).__name__}: {str(exc)[:300]}")
+    payloads = {}
+    if h_live is not None:
+        try:
+            h_live.stop()
+        except Exception:
+            pass
 
-# ---- Code.gs against the recorded payload ---------------------------------------
-print("Code.gs replay (the recorded payload through the real doPost):")
+# ---- Code.gs replayed through the real doPost ------------------------------------
+# A generic scenario runner: each scenario is one fresh "deployment" (its own
+# script cache, lock, sheet and mailbox) that receives a sequence of POST
+# bodies. The whole Code.gs file is loaded with `new Function`, exactly like
+# tests/email_priorities_check.mjs; the CAN-SPAM values are set in the stub
+# Script Properties only (the source holds no deployment value).
 REPLAY_MJS = r"""
 import { readFileSync } from "node:fs";
-const [repo, payloadPath] = process.argv.slice(2);
+const [repo, scenariosPath] = process.argv.slice(2);
 const gs = readFileSync(repo + "/Code.gs", "utf8");
-const payload = readFileSync(payloadPath, "utf8");
-function build() {
-  const log = [], rows = [], sent = [];
+const scenarios = JSON.parse(readFileSync(scenariosPath, "utf8"));
+function build(gmailFailures, evict) {
+  const log = [], rows = [], sent = [], calls = [], ledger = [], lock = { waits: 0, releases: 0, held: 0 };
+  let failuresLeft = gmailFailures || 0;
+  const cache = new Map();
   const Logger = { log: (s) => log.push(String(s)) };
   const ContentService = { MimeType: { JSON: "json" },
     createTextOutput: (s) => ({ setMimeType: () => ({ getContent: () => s }), getContent: () => s }) };
-  const SpreadsheetApp = { getActiveSpreadsheet: () => ({ getActiveSheet: () => ({ appendRow: (r) => rows.push(r) }) }) };
-  const GmailApp = { sendEmail: (to, subject, body, opts) => sent.push({ to, subject, body, opts: opts || {} }) };
-  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "GmailApp", gs + `
+  // "Leads" exists (no header); the hidden send ledger is created by Code.gs.
+  const tabFor = (n) => (n === "Leads" ? rows : ledger);
+  const sheet = (n) => ({
+    appendRow: (r) => tabFor(n).push(r.slice()), setFrozenRows: () => {}, hideSheet: () => {},
+    getName: () => n, getLastRow: () => tabFor(n).length,
+    getRange: (r, c, nr = 1, nc = 1) => ({
+      getValues: () => tabFor(n).slice(r - 1, r - 1 + nr).map((row) => row.slice(c - 1, c - 1 + nc)),
+      setValues: (v) => v.forEach((vals, i) => vals.forEach((x, j) => { tabFor(n)[r - 1 + i][c - 1 + j] = x; })) }) });
+  let ledgerMade = false;
+  const SpreadsheetApp = { flush: () => {}, getActiveSpreadsheet: () => ({
+    getSheetByName: (n) => (n === "Leads" || (n === "DreamFinder Sends" && ledgerMade) ? sheet(n) : null),
+    insertSheet: (n) => { ledgerMade = true; return sheet(n); } }) };
+  // Every MailApp call is counted; a forced failure throws (outcome unknown).
+  const MailApp = { getRemainingDailyQuota: () => 97, sendEmail: (to, subject, body, opts) => {
+    calls.push(to);
+    if (failuresLeft > 0) { failuresLeft -= 1; throw new Error("forced MailApp failure"); }
+    sent.push({ to, subject, body, opts: opts || {} }); } };
+  const props = {};
+  const PropertiesService = { getScriptProperties: () => ({
+    getProperty: (k) => (Object.prototype.hasOwnProperty.call(props, k) ? props[k] : null) }) };
+  const LockService = { getScriptLock: () => ({
+    waitLock: (ms) => { lock.waits += 1; lock.held += 1; lock.lastWait = ms; },
+    releaseLock: () => { lock.releases += 1; lock.held -= 1; } }) };
+  const CacheService = { getScriptCache: () => ({
+    get: (k) => (evict ? null : (cache.has(k) ? cache.get(k).v : null)),
+    put: (k, v, ttl) => { cache.set(k, { v: String(v), ttl }); } }) };
+  const api = new Function("Logger", "ContentService", "SpreadsheetApp", "MailApp", "LockService", "CacheService",
+    "PropertiesService", gs + `
     ;return { doPost: function(e) { return doPost(e); },
-      approveCanSpam: function() { UNSUBSCRIBE_URL = 'https://example.test/unsubscribe'; POSTAL_ADDRESS = '1 Test St, Test TX 78501'; PRIVACY_CONTACT = 'privacy@example.test'; } };`)(Logger, ContentService, SpreadsheetApp, GmailApp);
-  return { api, log, rows, sent };
+      breakHtmlBuilder: function() { buildSimpleHtml = function() { throw new Error('forced HTML failure'); }; } };`)(
+    Logger, ContentService, SpreadsheetApp, MailApp, LockService, CacheService, PropertiesService);
+  api.approveCanSpam = () => Object.assign(props, { UNSUBSCRIBE_URL: "https://example.test/unsubscribe",
+    POSTAL_ADDRESS: "1 Test St, Test TX 78501", PRIVACY_CONTACT: "privacy@example.test" });
+  return { api, log, rows, sent, calls, ledger, lock, cache, setFailures: (n) => { failuresLeft = n; } };
 }
 const out = {};
-{ const g = build(); const res = JSON.parse(g.api.doPost({ postData: { contents: payload } }).getContent());
-  out.shipped = { res, rows: g.rows.length, sent: g.sent.length, log: g.log }; }
-{ const g = build(); g.api.approveCanSpam(); const res = JSON.parse(g.api.doPost({ postData: { contents: payload } }).getContent());
-  out.approved = { res, rows: g.rows.length, sent: g.sent.map((s) => ({ to: s.to, subject: s.subject, bodyLen: s.body.length,
-    htmlLen: (s.opts.htmlBody || "").length, html: s.opts.htmlBody || "", bcc: s.opts.bcc || "" })), log: g.log }; }
+for (const sc of scenarios) {
+  const g = build(0, sc.evict);
+  if (sc.approve) g.api.approveCanSpam();
+  if (sc.breakHtml) g.api.breakHtmlBuilder();
+  const responses = [];
+  for (const step of sc.posts) {
+    g.setFailures(step.gmailFailures || 0);
+    const contents = typeof step.raw === "string" ? step.raw : JSON.stringify(step.body);
+    responses.push(JSON.parse(g.api.doPost({ postData: { contents } }).getContent()));
+  }
+  out[sc.name] = { responses, rows: g.rows, log: g.log, lock: g.lock, calls: g.calls.length,
+    ledger: g.ledger.map((r) => [r[0], r[1]]),
+    cache: [...g.cache.entries()].map(([k, v]) => ({ k, ttl: v.ttl })),
+    sent: g.sent.map((s) => ({ to: s.to, subject: s.subject, body: s.body, html: s.opts.htmlBody || "",
+      hasHtml: "htmlBody" in s.opts, bcc: s.opts.bcc || "" })) };
+}
 process.stdout.write(JSON.stringify(out));
 """
+
 node = None
 for cand in ("node", "node.exe"):
     try:
@@ -587,43 +894,363 @@ for cand in ("node", "node.exe"):
     except (OSError, subprocess.CalledProcessError):
         continue
 check("node is available for the Code.gs replay", node is not None)
-if node and payloads:
+
+
+def replay(scenarios):
+    """Run scenarios through the real doPost; {name: result} or None."""
     tmpdir = tempfile.mkdtemp(prefix="df-delivery-")
-    script = os.path.join(tmpdir, "replay.mjs")
-    with open(script, "w", encoding="utf-8") as f:
-        f.write(REPLAY_MJS)
+    try:
+        script = os.path.join(tmpdir, "replay.mjs")
+        with open(script, "w", encoding="utf-8") as f:
+            f.write(REPLAY_MJS)
+        spath = os.path.join(tmpdir, "scenarios.json")
+        with open(spath, "w", encoding="utf-8") as f:
+            json.dump(scenarios, f)
+        proc = subprocess.run([node, script, REPO.replace("\\", "/"), spath], capture_output=True, text=True,
+                              encoding="utf-8")
+        if not check("the Code.gs replay executed (" + ", ".join(s["name"] for s in scenarios)[:120] + ")",
+                     proc.returncode == 0, (proc.stderr or "")[:300]):
+            return None
+        return json.loads(proc.stdout)
+    finally:
+        for name in os.listdir(tmpdir):
+            os.remove(os.path.join(tmpdir, name))
+        os.rmdir(tmpdir)
+
+
+SENT_OK = {"success": True}
+DUPLICATE = {"success": True, "duplicate": True}
+INVALID_REQUEST = {"success": False, "error": "invalid_request"}
+UNCONFIRMED = {"success": False, "error": "delivery_unconfirmed"}
+CANSPAM = {"success": False, "error": "canspam_not_configured"}
+
+# ---- (a) the recorded payload (rendered pass) through doPost ----------------------
+print("Code.gs replay (the recorded payload through the real doPost):")
+if node and payloads:
     for lang, p in payloads.items():
         if not p:
             check(f"{lang}: a recorded payload exists to replay", False)
             continue
-        ppath = os.path.join(tmpdir, f"payload-{lang}.json")
-        with open(ppath, "w", encoding="utf-8") as f:
-            json.dump(p, f)
-        proc = subprocess.run([node, script, REPO.replace("\\", "/"), ppath], capture_output=True, text=True, encoding="utf-8")
-        if not check(f"{lang}: Code.gs executed against the recorded payload", proc.returncode == 0, (proc.stderr or "")[:200]):
+        out = replay([
+            {"name": "shipped", "approve": False, "posts": [{"body": p}]},
+            {"name": "approved", "approve": True, "posts": [{"body": p}, {"body": p}]},
+        ])
+        if not out:
             continue
-        out = json.loads(proc.stdout)
         sh, ap = out["shipped"], out["approved"]
         check(f"{lang}: the SHIPPED Code.gs refuses it (canspam_not_configured), appends no row, sends nothing",
-              sh["res"] == {"success": False, "error": "canspam_not_configured"} and sh["rows"] == 0 and sh["sent"] == 0)
+              sh["responses"] == [CANSPAM] and not sh["rows"] and not sh["sent"])
         check(f"{lang}: the shipped log is shape-only (the recorded address, name and phone never logged)",
               all(TYPED["email"] not in line and TYPED["name"] not in line and TYPED["phone"] not in line for line in sh["log"])
-              and any("email=set" in line for line in sh["log"]))
+              and any("email=set" in line and "sendId=set" in line and "quote=absent" in line for line in sh["log"]))
         check(f"{lang}: with CAN-SPAM values rebound in harness scope, doPost succeeds, appends ONE row and sends ONE email to the recorded address",
-              ap["res"] == {"success": True} and ap["rows"] == 1 and len(ap["sent"]) == 1 and ap["sent"][0]["to"] == TYPED["email"],
-              str(ap["res"]))
+              ap["responses"][:1] == [SENT_OK] and len(ap["rows"]) == 1 and len(ap["sent"]) == 1
+              and ap["sent"][0]["to"] == TYPED["email"], str(ap["responses"]))
+        check(f"{lang}: the SAME recorded payload delivered again (same sendId) is a duplicate: no second row, no second email",
+              ap["responses"][1:] == [DUPLICATE] and len(ap["rows"]) == 1 and len(ap["sent"]) == 1, str(ap["responses"]))
         if len(ap["sent"]) == 1:
             s = ap["sent"][0]
             es = lang == "es"
             check(f"{lang}: the subject is in the payload's language",
                   ("Resumen" in s["subject"]) if es else ("Sleep Brief" in s["subject"]), s["subject"])
             check(f"{lang}: the HTML body carries the recorded lead and the recorded accessory",
-                  p["lead"]["name"] in s["html"] and p["accessories"][0]["name"] in s["html"] and s["bodyLen"] > 0)
+                  p["lead"]["name"] in s["html"] and p["accessories"][0]["name"] in s["html"] and len(s["body"]) > 0)
+            heading = "Tu cotizaci" if es else "Your quote"
+            check(f"{lang}: with quote null (pricing dark) no quote section renders in either part",
+                  heading not in s["html"] and heading not in s["body"])
             check(f"{lang}: the approved log is still shape-only",
                   all(TYPED["email"] not in line for line in ap["log"]))
-    for name in os.listdir(tmpdir):
-        os.remove(os.path.join(tmpdir, name))
-    os.rmdir(tmpdir)
+elif node:
+    check("Code.gs replay of the recorded payload: a rendered payload exists (rendered pass did not produce one)", False)
+
+# ---- (b) fixtures: sendId, dedupe, lock, the quote section ---------------------------
+print("Code.gs replay (fixtures: sendId, dedupe, lock, quote):")
+
+
+def base_payload(**over):
+    doc = {
+        "storeName": "Test Store", "name": "Fixture Customer", "email": "fixture.customer@example.test",
+        "phone": "9565550199", "sleepProfile": "The Balanced Sleeper", "mattressSize": "queen",
+        "discount": 0, "dreamCode": "", "passExpiration": "", "passScope": "", "passTerms": "",
+        "rsa": "", "lang": "en",
+        "allMatches": [{"name": "Fixture Mattress", "brand": "FB", "matchPct": "88",
+                        "meetsMatchThreshold": True, "line": "Gold - first pick", "imageUrl": ""}],
+        "accessories": [], "lead": {"kind": "chosen", "name": "Fixture Mattress", "brand": "FB", "line": "", "imageUrl": ""},
+        "matchesSource": "saved", "priorities": [], "consultation": {"context": "", "who": "", "profile": ""},
+        "emailPromotions": [], "promoSpanishDraft": "", "promoScenario": "", "promoDisclosure": "",
+        "branding": {"logoMain": "", "logoSub": "", "primary": "", "accent": ""}, "financing": None,
+        "sendId": "fixtureSendId-0000000001", "quote": None,
+    }
+    doc.update(over)
+    return doc
+
+
+# Hand-built purchase summaries matching contract section 3. The figures are
+# DELIBERATELY inconsistent (the subtotal is not the sum of the lines, the
+# minor-unit numbers disagree with the text) so a server that recomputed
+# anything would be caught: every figure must appear verbatim.
+QUOTE_EN = {
+    "v": 2, "complete": True, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
+    "lines": [
+        {"name": "Fixture Hybrid Plush", "detail": "Queen mattress", "quantity": 1, "priced": True, "listText": "$1,899.00",
+         "discounts": [{"label": "Fixture 10% off mattresses", "amountText": "−$189.90"},
+                       {"label": "Fixture pay-in-full 5%", "amountText": "−$85.46"}],
+         "netText": "$1,623.64"},
+        {"name": "Fixture Cloud Pillow", "detail": "Standard", "quantity": 2, "priced": True, "listText": "$198.00",
+         "discounts": [{"label": "Fixture $20 off each pillow", "amountText": "−$40.00"}], "netText": "$158.00"},
+        {"name": "Fixture <b>Bold</b> & \"Quoted\" Protector", "detail": "<script>alert(1)</script>", "quantity": 1, "priced": True,
+         "listText": "$89.99", "discounts": [], "netText": "$89.99"},
+    ],
+    "listSubtotalText": "$2,186.99", "discountText": "−$315.36", "merchandiseText": "$1,871.63",
+    "merchandiseMinor": 777777, "discountMinor": 888888,
+    "exclusionsText": "Before sales tax, delivery and setup",
+    "offerTerms": ["Fixture terms A: valid on qualifying mattresses through Nov 15.",
+                   "Fixture terms B: <img src=x onerror=alert(2)> per pillow."],
+    "payment": {"kind": "plan", "planLabel": "Fixture 24-month equal-payment plan", "aprText": "0% APR",
+                "termText": "24 months", "downText": "$0.00", "financedText": "$1,871.63",
+                "paymentText": "up to $77.99/mo", "paymentMinor": 666666, "totalPaidText": "up to $1,871.76",
+                "interestText": "$0.00", "upper": True,
+                "disclosure": "Fixture disclosure: subject to credit approval; minimum purchase applies."},
+    "provenance": "Terms verified Oct 3, 2026 · example.test",
+    "computedAt": "2026-10-15T12:00:00.000Z", "fingerprint": "fx-fingerprint-1",
+}
+QUOTE_ES = json.loads(json.dumps(QUOTE_EN))
+QUOTE_ES.update({
+    "sizeLabel": "Queen (matrimonial grande)", "exclusionsText": "Antes de impuestos, entrega e instalación",
+    "offerTerms": ["Términos de prueba A: válido en colchones participantes."],
+    "provenance": "Términos verificados el 3 oct 2026 · example.test",
+})
+QUOTE_ES["lines"][0]["detail"] = "Colchón queen"
+QUOTE_ES["lines"][0]["discounts"] = [{"label": "Prueba: 10% en colchones", "amountText": "−$189.90"}]
+QUOTE_ES["payment"] = {"kind": "plan", "planLabel": "Plan de prueba a 24 meses", "aprText": "0% APR",
+                       "termText": "24 meses", "downText": "$0.00", "financedText": "$1,871.63",
+                       "paymentText": "hasta $77.99/mes", "paymentMinor": 666666,
+                       "totalPaidText": "hasta $1,871.76", "interestText": "$0.00", "upper": True,
+                       "disclosure": "Divulgación de prueba: sujeto a aprobación de crédito."}
+QUOTE_FULL = json.loads(json.dumps(QUOTE_EN))
+QUOTE_FULL["payment"] = {"kind": "full", "totalText": "$1,871.63"}
+QUOTE_QUOTE_ONLY = json.loads(json.dumps(QUOTE_EN))
+QUOTE_QUOTE_ONLY["payment"] = {"kind": "quote-only", "planLabel": "Fixture lease-to-own option",
+                               "note": "Terms are quoted in store by the provider."}
+# An INCOMPLETE purchase (v2, complete:false; owner direction 2026-10-16): the
+# priced lines with their figures, the unpriced line marked by its status
+# text, the note - and NO subtotal, savings total, financed amount or payment.
+QUOTE_PARTIAL = {
+    "v": 2, "complete": False, "currency": "USD", "size": "queen", "sizeLabel": "Queen",
+    "lines": [
+        dict(QUOTE_EN["lines"][0]),
+        {"name": "Fixture Unpriced Base", "detail": "Queen", "quantity": 1, "priced": False,
+         "statusText": "Fixture price unavailable"},
+    ],
+    "incompleteText": "Fixture: no total yet; confirmed in store.",
+    "exclusionsText": "Before sales tax, delivery and setup",
+    "offerTerms": ["Fixture terms A: valid on qualifying mattresses through Nov 15."],
+    "provenance": "Prices verified Oct 3, 2026 · example.test",
+    "computedAt": "2026-10-15T12:00:00.000Z", "fingerprint": "fx-fingerprint-2",
+}
+
+
+def figures(q):
+    """Every *Text figure and label string the summary carries (the verbatim set)."""
+    vals = [q["merchandiseText"], q["listSubtotalText"], q["discountText"], q["exclusionsText"], q["provenance"],
+            q["sizeLabel"]]
+    for line in q["lines"]:
+        vals += [line["listText"], line["netText"]]
+        for d in line["discounts"]:
+            vals += [d["label"], d["amountText"]]
+    pay = q["payment"]
+    vals += [v for k, v in pay.items() if isinstance(v, str) and k != "kind"]
+    vals += q["offerTerms"]
+    return [v for v in vals if v]
+
+
+def safe_strings(q):
+    """The strings that carry no markup (hostile ones are checked separately)."""
+    return [v for v in figures(q) if "<" not in v and "&" not in v and '"' not in v]
+
+
+def html_escape(s):
+    return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            .replace('"', "&quot;").replace("'", "&#39;"))
+
+
+if node:
+    bad_quotes = {
+        "v1": dict(QUOTE_EN, v=1),
+        "complete-undeclared": {k: v for k, v in QUOTE_EN.items() if k != "complete"},
+        "line-priced-undeclared": dict(QUOTE_EN, lines=[{k: v for k, v in QUOTE_EN["lines"][0].items() if k != "priced"}]),
+        "complete-with-unpriced-line": dict(QUOTE_EN, lines=QUOTE_EN["lines"] + [QUOTE_PARTIAL["lines"][1]]),
+        "partial-with-subtotal": dict(QUOTE_PARTIAL, merchandiseText="$1,623.64"),
+        "partial-with-payment": dict(QUOTE_PARTIAL, payment={"kind": "full", "totalText": "$1,623.64"}),
+        "partial-with-savings": dict(QUOTE_PARTIAL, discountText=""),
+        "partial-unpriced-line-with-figure": dict(QUOTE_PARTIAL, lines=[QUOTE_PARTIAL["lines"][0],
+                                                  dict(QUOTE_PARTIAL["lines"][1], netText="$1.00")]),
+        "partial-without-unpriced-line": dict(QUOTE_PARTIAL, lines=[QUOTE_PARTIAL["lines"][0]]),
+        "partial-without-note": dict(QUOTE_PARTIAL, incompleteText=""),
+        "partial-unpriced-without-status": dict(QUOTE_PARTIAL, lines=[QUOTE_PARTIAL["lines"][0],
+                                                dict(QUOTE_PARTIAL["lines"][1], statusText="")]),
+        "eur": dict(QUOTE_EN, currency="EUR"),
+        "no-lines": dict(QUOTE_EN, lines=[]),
+        "21-lines": dict(QUOTE_EN, lines=[QUOTE_EN["lines"][1]] * 21),
+        "7-terms": dict(QUOTE_EN, offerTerms=["t"] * 7),
+        "line-without-net": dict(QUOTE_EN, lines=[dict(QUOTE_EN["lines"][0], netText="")]),
+        "quantity-zero": dict(QUOTE_EN, lines=[dict(QUOTE_EN["lines"][0], quantity=0)]),
+        "quantity-string": dict(QUOTE_EN, lines=[dict(QUOTE_EN["lines"][0], quantity="2")]),
+        "unknown-payment": dict(QUOTE_EN, payment={"kind": "lease", "planLabel": "x"}),
+        "plan-without-payment": dict(QUOTE_EN, payment=dict(QUOTE_EN["payment"], paymentText="")),
+        "no-merchandise": dict(QUOTE_EN, merchandiseText=""),
+        "figure-object": dict(QUOTE_EN, merchandiseText={"amount": 1}),
+        "array": [QUOTE_EN],
+        "string": "quote",
+    }
+    huge = "N" * 5000
+    scenarios = [
+        {"name": "missing", "approve": True, "posts": [{"body": {k: v for k, v in base_payload().items() if k != "sendId"}}]},
+        {"name": "malformed", "approve": True, "posts": [
+            {"body": base_payload(sendId=bad)} for bad in ("", "short", "x" * 41, "spaces are not allowed 0123", 1234567890123456789012345, None, ["fixtureSendId-0000000001"])]},
+        {"name": "non-object", "approve": True, "posts": [{"raw": "null"}, {"raw": "[]"}, {"raw": "\"text\""}]},
+        {"name": "dedupe", "approve": True, "posts": [{"body": base_payload()}, {"body": base_payload()},
+                                                       {"body": base_payload(sendId="fixtureSendId-0000000002")}]},
+        {"name": "shipped-refusal-not-recorded", "approve": False, "posts": [{"body": base_payload()}]},
+        {"name": "mail-throw-never-resent", "approve": True, "posts": [{"body": base_payload(), "gmailFailures": 2},
+                                                                        {"body": base_payload()}, {"body": base_payload()}]},
+        {"name": "lost-response-after-eviction", "approve": True, "evict": True, "posts": [
+            {"body": base_payload()}, {"body": base_payload()}]},
+        {"name": "invalid-email-not-recorded", "approve": True, "posts": [
+            {"body": base_payload(email="nope")}, {"body": base_payload()}]},
+        {"name": "quote-en", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_EN)}]},
+        {"name": "quote-es", "approve": True, "posts": [{"body": base_payload(lang="es", quote=QUOTE_ES)}]},
+        {"name": "quote-en-fallback", "approve": True, "breakHtml": True, "posts": [{"body": base_payload(quote=QUOTE_EN)}]},
+        {"name": "quote-full", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_FULL)}]},
+        {"name": "quote-only", "approve": True, "posts": [{"body": base_payload(lang="es", quote=QUOTE_QUOTE_ONLY)}]},
+        {"name": "quote-partial", "approve": True, "posts": [{"body": base_payload(quote=QUOTE_PARTIAL)}]},
+        {"name": "quote-huge", "approve": True, "posts": [{"body": base_payload(quote=dict(
+            QUOTE_EN, lines=[dict(QUOTE_EN["lines"][1], name=huge)], offerTerms=[huge]))}]},
+    ] + [{"name": "bad-" + k, "approve": True, "posts": [{"body": base_payload(quote=v)}]} for k, v in bad_quotes.items()]
+    out = replay(scenarios)
+    if out:
+        m = out["missing"]
+        check("missing sendId: invalid_request, no row, no email, lock never taken",
+              m["responses"] == [INVALID_REQUEST] and not m["rows"] and not m["sent"] and m["lock"]["waits"] == 0,
+              str(m["responses"]))
+        m = out["malformed"]
+        check("malformed sendId (empty, short, 41 chars, spaces, number, null, array): every one invalid_request, nothing written or sent",
+              m["responses"] == [INVALID_REQUEST] * 7 and not m["rows"] and not m["sent"], str(m["responses"]))
+        m = out["non-object"]
+        check("a JSON body that is not an object (null, array, string): invalid_request, nothing written or sent",
+              m["responses"] == [INVALID_REQUEST] * 3 and not m["rows"] and not m["sent"], str(m["responses"]))
+        d = out["dedupe"]
+        check("dedupe: the same sendId twice -> {success:true} then {success:true, duplicate:true}; a new sendId sends again",
+              d["responses"] == [SENT_OK, DUPLICATE, SENT_OK], str(d["responses"]))
+        check("dedupe: the duplicate appended NO row and sent NO email (2 rows, 2 emails for 3 POSTs)",
+              len(d["rows"]) == 2 and len(d["sent"]) == 2)
+        check("dedupe: the sendId record is cached under 'df-sent:<sendId>' for 21600 s (the CacheService maximum)",
+              sorted(c["k"] for c in d["cache"]) == ["df-sent:fixtureSendId-0000000001", "df-sent:fixtureSendId-0000000002"]
+              and all(c["ttl"] == 21600 for c in d["cache"]), str(d["cache"]))
+        check("dedupe: the script lock is taken (10000 ms wait) and released on every path, duplicates included",
+              d["lock"]["waits"] == 3 and d["lock"]["releases"] == 3 and d["lock"]["held"] == 0
+              and d["lock"].get("lastWait") == 10000, str(d["lock"]))
+        check("dedupe: the duplicate is logged shape-only (no address, no sendId value)",
+              any("duplicate" in line for line in d["log"])
+              and all("fixture.customer@example.test" not in line and "fixtureSendId" not in line for line in d["log"]))
+        r = out["shipped-refusal-not-recorded"]
+        check("the SHIPPED CAN-SPAM refusal still holds with a valid sendId: no row, no email, nothing cached",
+              r["responses"] == [CANSPAM] and not r["rows"] and not r["sent"] and not r["cache"])
+        r = out["mail-throw-never-resent"]
+        check("a MailApp exception is an UNKNOWN outcome: delivery_unconfirmed, and the same sendId is never sent again (ONE MailApp call for three POSTs, no plain-text resend)",
+              r["responses"] == [UNCONFIRMED] * 3 and r["calls"] == 1 and not r["sent"] and r["lock"]["held"] == 0,
+              str(r["responses"]))
+        check("...no lead row; the hidden ledger records the sendId as 'unconfirmed'",
+              not r["rows"] and r["ledger"][1:] == [["id:" + base_payload()["sendId"], "unconfirmed"]], str(r["ledger"]))
+        r = out["lost-response-after-eviction"]
+        check("a lost response retried after the cache evicted: the durable ledger answers duplicate (ONE email, ONE row)",
+              r["responses"] == [SENT_OK, DUPLICATE] and r["calls"] == 1 and len(r["rows"]) == 1
+              and r["ledger"][1:] == [["id:" + base_payload()["sendId"], "complete"]], str(r["responses"]))
+        r = out["invalid-email-not-recorded"]
+        check("an invalid_email refusal is not recorded: the corrected request with the same sendId sends",
+              r["responses"] == [{"success": False, "error": "invalid_email"}, SENT_OK] and len(r["sent"]) == 1)
+        for name, q, es in (("quote-en", QUOTE_EN, False), ("quote-es", QUOTE_ES, True)):
+            r = out[name]
+            ok_send = check(f"{name}: send succeeds with ONE email and ONE row", r["responses"] == [SENT_OK]
+                            and len(r["sent"]) == 1 and len(r["rows"]) == 1, str(r["responses"]))
+            if not ok_send:
+                continue
+            html, plain = r["sent"][0]["html"], r["sent"][0]["body"]
+            heading = "Tu cotización" if es else "Your quote"
+            check(f"{name}: the '{heading}' section is present in BOTH the HTML and the plain part",
+                  heading in html and heading in plain)
+            missing_html = [v for v in safe_strings(q) if v not in html]
+            missing_plain = [v for v in safe_strings(q) if v not in plain]
+            check(f"{name}: every figure and label string renders VERBATIM in the HTML part",
+                  not missing_html, str(missing_html[:3]))
+            check(f"{name}: every figure and label string renders VERBATIM in the plain part",
+                  not missing_plain, str(missing_plain[:3]))
+            check(f"{name}: every line name renders, quantities stated beside the name",
+                  all(html.find(l["name"] if "<" not in l["name"] else html_escape(l["name"])) != -1 for l in q["lines"])
+                  and "&times; 2" in html and "Fixture Cloud Pillow x 2" in plain)
+            check(f"{name}: the client-only minor-unit numbers are never rendered (no server arithmetic, no raw numbers)",
+                  all(n not in html and n not in plain for n in ("777777", "888888", "666666", "7,777.77", "8,888.88")))
+            labels = (["Plan", "APR", "Plazo", "Pago inicial", "Monto financiado", "Pago mensual", "Total pagado",
+                       "Interés", "Subtotal de mercancía", "Tu precio", "Precio de lista"] if es else
+                      ["Plan", "APR", "Term", "Down payment", "Amount financed", "Monthly payment", "Total paid",
+                       "Interest", "Merchandise subtotal", "Your price", "List price"])
+            check(f"{name}: the localized row labels render in both parts",
+                  all(lb in html and lb in plain for lb in labels), str([lb for lb in labels if lb not in html or lb not in plain]))
+            check(f"{name}: the quote sits after the Sleep System and before the CTA in the HTML part",
+                  html.find(heading) < html.find("Bring this email" if not es else "Lleva este correo"))
+            check(f"{name}: the quote never reaches the sheet row (10 cells, no figure)",
+                  len(r["rows"][0]) == 10 and q["merchandiseText"] not in json.dumps(r["rows"][0]))
+            check(f"{name}: the log records quote presence and line count only - no figure, no name",
+                  any(f"quote=present, quote_lines={len(q['lines'])}" in line for line in r["log"])
+                  and all(q["merchandiseText"] not in line and q["lines"][0]["name"] not in line for line in r["log"]))
+            if not es:
+                check(f"{name}: hostile markup is ESCAPED in the HTML part (name, detail, offer terms)",
+                      "<b>Bold</b>" not in html and "<script>alert(1)</script>" not in html
+                      and "<img src=x onerror=alert(2)>" not in html
+                      and html_escape("Fixture <b>Bold</b> & \"Quoted\" Protector") in html
+                      and "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+                      and "&lt;img src=x onerror=alert(2)&gt;" in html)
+                check(f"{name}: hostile markup arrives without angle brackets in the plain part",
+                      "<script>" not in plain and "<img" not in plain and "<b>" not in plain
+                      and "Fixture bBold/b & \"Quoted\" Protector" in plain and "scriptalert(1)/script" in plain)
+        r = out["quote-en-fallback"]
+        check("quote-en, HTML build failed (before any delivery): the plain-text fallback still carries the whole quote",
+              r["responses"] == [SENT_OK] and len(r["sent"]) == 1 and not r["sent"][0]["hasHtml"]
+              and all(v in r["sent"][0]["body"] for v in safe_strings(QUOTE_EN)))
+        r = out["quote-full"]
+        check("pay-in-full payment block: 'Pay in full' with the total, verbatim, both parts; no plan rows",
+              r["responses"] == [SENT_OK] and all("Pay in full" in x and "$1,871.63" in x
+                                                  for x in (r["sent"][0]["html"], r["sent"][0]["body"]))
+              and "Monthly payment" not in r["sent"][0]["html"] and "Amount financed" not in r["sent"][0]["body"])
+        r = out["quote-only"]
+        check("quote-only payment block (ES): the plan label and note render, no figures invented",
+              r["responses"] == [SENT_OK] and all("Fixture lease-to-own option" in x and "Terms are quoted in store by the provider." in x
+                                                  for x in (r["sent"][0]["html"], r["sent"][0]["body"]))
+              and "Pago mensual" not in r["sent"][0]["html"] and "Monto financiado" not in r["sent"][0]["body"])
+        r = out["quote-partial"]
+        if check("incomplete quote (complete:false): the send succeeds with ONE email", r["responses"] == [SENT_OK]
+                 and len(r["sent"]) == 1, str(r["responses"])):
+            ph, pp = r["sent"][0]["html"], r["sent"][0]["body"]
+            want = ["Your quote", "Fixture Hybrid Plush", "$1,899.00", "−$189.90", "$1,623.64", "Fixture Unpriced Base",
+                    "Fixture price unavailable", "Fixture: no total yet; confirmed in store.",
+                    "Before sales tax, delivery and setup", "Fixture terms A: valid on qualifying mattresses through Nov 15."]
+            check("incomplete quote: the priced line's list/discount/net, the unpriced line's status and the note render in BOTH parts",
+                  all(v in ph and v in pp for v in want), str([v for v in want if v not in ph or v not in pp]))
+            banned = ["Merchandise subtotal", "List subtotal", "Pay in full", "Monthly payment", "Amount financed",
+                      "Total paid", "Interest"]
+            check("incomplete quote: NO subtotal, savings total, payment or plan row in either part",
+                  all(b not in ph and b not in pp for b in banned), str([b for b in banned if b in ph or b in pp]))
+        r = out["quote-huge"]
+        runs = lambda text: sorted(len(x) for x in re.findall("N{50,}", text))
+        check("length caps: a 5000-character line name renders as exactly 200 characters, an offer term as 600 (both parts)",
+              r["responses"] == [SENT_OK] and runs(r["sent"][0]["body"]) == [200, 600]
+              and runs(r["sent"][0]["html"]) == [200, 600], str(runs(r["sent"][0]["body"])))
+        for k in bad_quotes:
+            r = out["bad-" + k]
+            check(f"malformed quote ({k}): the send still succeeds and the quote section is ABSENT from both parts (all-or-nothing)",
+                  r["responses"] == [SENT_OK] and len(r["sent"]) == 1
+                  and "Your quote" not in r["sent"][0]["html"] and "Your quote" not in r["sent"][0]["body"],
+                  str(r["responses"]))
 
 # ---- committed files untouched ------------------------------------------------
 print("Committed files:")

@@ -498,7 +498,11 @@ check("Code.gs's sanitized financing keys are exactly the known set",
   gsFinKeys.join(", "));
 check("the kiosk never populates financing.interest",
   !payloadFinKeys.includes("interest") && !/financing\.interest/.test(htmlCode));
-const gsInterestLines = gsCode.split("\n").filter((l) => /\binterest\b/i.test(l));
+// Narrowed (2026-10-15): Code.gs now renders the quote's "Interest" ROW
+// LABEL as display text, so the scan pins property ACCESS (`.interest`)
+// rather than the bare word. The single data.financing.interest read is
+// still the only one, so the residue still cannot grow a reader.
+const gsInterestLines = gsCode.split("\n").filter((l) => /\.interest\b/.test(l));
 check("Code.gs never reads or renders financing.interest (write-only residue)",
   gsInterestLines.length === 1
   && /^\s*interest:\s*_safeText\(data\.financing\.interest,\s*20\)\s*$/.test(gsInterestLines[0]),
@@ -769,6 +773,44 @@ check("...and the key scan flags a planted pricing payload key",
   ["pricingAmountMinor"].some((k) => PRICE_DERIVED_NAME.test(k)));
 check("...and the symbol scan flags a planted payload line",
   PRICING_SYMBOL.test("pricing: { amountMinor: 369900 },"));
+
+// ===========================================================================
+section("Governed quote (one application, 2026-10-15)");
+// ===========================================================================
+// The owner direction replaced "no pricing data ever enters the payload"
+// with a governed rule: the priced purchase travels ONLY as the shared
+// purchase summary, ONLY while pricing.surfaces.email is true, and the
+// shipped configuration sends quote:null. The only other new key is the
+// idempotency sendId. Pinned against the real code, executed against the
+// shipped config.
+check("the payload adds exactly sendId and quote beside the known keys",
+  payloadKeys.includes("sendId") && payloadKeys.includes("quote"));
+check("quote is the gated shared summary (emailQuoteGate over the summary the stale check recomputed)",
+  /\bquote:\s*emailQuoteGate\(_summaryNow\)/.test(payloadBlock));
+check("sendId comes from the take-home send state (crypto-made, reused for retries)",
+  /\bsendId:\s*emailSendState\.sendId/.test(payloadBlock));
+{
+  const gateSrc = (htmlCode.match(/function emailQuoteGate\(summary\) \{[\s\S]*?\n    \}/) || [""])[0];
+  check("emailQuoteGate() located", gateSrc.length > 0);
+  const shippedCfg = JSON.parse(fs.readFileSync(path.join(REPO, "data", "store-config.json"), "utf8"));
+  const run = (pricing, summary) => new Function("STORE_CONFIG", `
+    function getPricingConfig() { return (STORE_CONFIG && STORE_CONFIG.pricing) || null; }
+    function pricingSurfaceEnabled(name) { var p = getPricingConfig(); var s = p && p.surfaces;
+      if (!s || typeof s !== 'object') return false; return s[name] === true; }
+    ${gateSrc}
+    return emailQuoteGate;`)({ pricing })(summary);
+  check("shipped config: quote is null even for a complete (or incomplete) v2 summary",
+    shippedCfg.pricing.surfaces.email === false && run(shippedCfg.pricing, { v: 2, complete: true, lines: [] }) === null
+    && run(shippedCfg.pricing, { v: 2, complete: false, lines: [] }) === null);
+  const on = Object.assign({}, shippedCfg.pricing, { surfaces: Object.assign({}, shippedCfg.pricing.surfaces, { email: true }) });
+  const sum = { v: 2, complete: true, lines: [] };
+  const part = { v: 2, complete: false, lines: [] };
+  check("surfaces.email true: the summary itself is sent (no second computation), complete or incomplete",
+    run(on, sum) === sum && run(on, part) === part);
+  check("surfaces.email true but no v2 summary, or an incomplete one carrying a total: null",
+    run(on, null) === null && run(on, { v: 1, lines: [] }) === null && run(on, { v: 2 }) === null
+    && run(on, Object.assign({ merchandiseText: "$1" }, part)) === null);
+}
 
 // ===========================================================================
 section("Wiring (static)");

@@ -86,6 +86,12 @@ It applies to the whole tree.
   shipped data keeps every `paymentCalculationEnabled` and
   `exactPromotionsEnabled` false until Blake separately authorizes activation
   after final verification and recorded business/legal approval.
+- One operable application (Blake, 2026-10-15): pricing, payment calculation,
+  exact promotions/discounts (`pricing.offers`) and the emailed quote live in the
+  normal application under governed configuration; no separate demo path, demo
+  adapter or illustrative figures. Every surface reads the one purchase model
+  (`buildConsultationQuote` → `purchaseSummaryFor`). Required inputs and the
+  activation switch: `docs/one-application-2026-10-15.md`.
 - Exact financing claims require current allowlisted evidence and must fail closed
   when stale or incomplete.
 - Preserve English/Spanish behavioral parity, public-kiosk privacy, authoritative

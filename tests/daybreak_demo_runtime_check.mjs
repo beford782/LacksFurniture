@@ -217,13 +217,13 @@ check("production root retains its legacy historical-demo terminology unchanged"
 // Execute the REAL gate expressions from sendResults() and renderEmailChrome()
 // with a nonblank, production-like gasUrl: the scenario-level block must keep
 // the flow preview-only and the analytics event must stay 'email_previewed'.
+// Since the one-application integration (2026-10-15) sendResults() derives
+// its preview flag from the shared emailDeliveryLive() helper (one gate, no
+// restated copy) and posts to a gasUrl that is blank whenever that flag is
+// set - so both lines are extracted and executed together with the helper.
 const sendGate = extract(
-  /const _submitScenario = getActivePromotionScenario\(\);[\s\S]*?const isEmailPreview = [^\n]+/,
+  /const isEmailPreview = !emailDeliveryLive\(\);\s*const gasUrl = [^\n]+/,
   "sendResults() email gate");
-// Trust gate (2026-08-21): renderEmailChrome() derives preview mode from the
-// shared emailDeliveryLive() helper — the same two conditions (gasUrl
-// configured AND the scenario does not block submission) sendResults() gates
-// its POST on — so the REAL helper is extracted and executed with the gate.
 const liveHelper = extract(
   /function emailDeliveryLive\(\) \{[\s\S]*?\n    \}/,
   "emailDeliveryLive() shared mode helper");
@@ -233,17 +233,20 @@ const chromeGate = extract(
 check("analytics event is chosen by the preview flag",
   /analytics\.log\(isEmailPreview \? 'email_previewed' : 'email_submitted'/.test(html));
 
+const LIVE_LIKE_CFG = Object.assign({}, DEMO_CFG,
+  { gasUrl: 'https://script.google.com/macros/s/PRODUCTION-LIKE/exec' });
 const gateResult = new Function("STORE_CONFIG", `"use strict";
   ${SRC}
-  const gasUrl = 'https://script.google.com/macros/s/PRODUCTION-LIKE/exec';
+  ${liveHelper}
   ${sendGate}
   var _eventName = isEmailPreview ? 'email_previewed' : 'email_submitted';
-  ${liveHelper}
   ${chromeGate}
-  return { isEmailPreview: isEmailPreview, eventName: _eventName, isDemoMode: isDemoMode };
-`)(DEMO_CFG);
+  return { isEmailPreview: isEmailPreview, eventName: _eventName, isDemoMode: isDemoMode, postUrl: gasUrl };
+`)(LIVE_LIKE_CFG);
 check("nonblank gasUrl + demo scenario -> email stays preview-only",
   gateResult.isEmailPreview === true);
+check("...and the URL the send path would post to is blank (nothing can leave the tablet)",
+  gateResult.postUrl === "");
 check("the analytics/email payload records a preview, never a live submission",
   gateResult.eventName === "email_previewed");
 check("the email screen renders in demo mode under the scenario block",
