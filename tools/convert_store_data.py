@@ -74,7 +74,7 @@ STORE_CONFIG_KEY_ORDER = [
 
 # Per-accessory key order (committed Bel order) - readability only.
 ACCESSORY_KEY_ORDER = [
-    "id", "sku", "name", "category", "price", "image", "description",
+    "id", "sku", "accessorySkus", "name", "category", "price", "image", "description",
     "subType", "matchTags", "matchScores",
 ]
 
@@ -478,6 +478,18 @@ def build_accessories(wb):
                 # owns the grammar.
                 if not _blank(cell):
                     acc["sku"] = _s(cell)
+            elif key == "accessorySkus":
+                # Per-size identity, `size:SKU|size:SKU` -> {size: SKU};
+                # emitted only when populated (the validator owns the grammar).
+                if not _blank(cell):
+                    m = {}
+                    for part in _s(cell).split("|"):
+                        if ":" in part:
+                            z, v = part.split(":", 1)
+                            if z.strip() and v.strip():
+                                m[z.strip()] = v.strip()
+                    if m:
+                        acc["accessorySkus"] = m
             elif key == "price":
                 acc["price"] = cell  # numeric preserved
             elif key == "id":
@@ -942,13 +954,17 @@ def main(argv=None) -> int:
         # Phase 2.1 dark pricing framework — build-time admission. Product ids
         # are cross-checked against the catalog the same bundle ships, the
         # source allowlist is the price-specific canonical list, and the
-        # validator refuses displayEnabled=true until Phase 2.2 lifts it.
+        # validator admits an activated block (displayEnabled / a surface)
+        # only when every governance record is complete; offers' brand
+        # filters are checked against the catalog's brands.
         report.merge(validation.validate_pricing(
             config,
             allowed_source_hosts=source_hosts.get("priceSourceHosts"),
             financing_source_hosts=source_hosts.get("financingSourceHosts"),
             mattress_ids=promo_mids,
-            accessory_ids=[a.get("id") for a in accessories]))
+            accessory_ids=[a.get("id") for a in accessories],
+            accessory_skus=validation.accessory_skus_from_catalog(accessories),
+            mattress_brands=promo_brands))
         # Quiz definition — structural contract (pinned ids/types/options) plus
         # bilingual copy and score-tag checks; no-op when the tab is empty.
         # A4.2: the catalog's feature vocabulary rides along so the quiz's

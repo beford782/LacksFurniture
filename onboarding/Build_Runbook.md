@@ -330,10 +330,7 @@ A **blank** `App Icon File` skips both guards — an icon-less bundle is valid (
 
 1. Create a new Google Sheet under their Google account. Name it `<Retailer> DreamFinder Leads`.
 2. Tools → Apps Script. This opens a new project bound to the sheet.
-3. Delete the placeholder code. Paste the contents of the repo's `Code.gs` (with the Phase 3 retailer-specific text edits already applied). Then review the `RESULT_EMAIL_BCC` constant near the top of the file:
-   - Default: `'dreamfinderleads@gmail.com'` — the central DreamFinder lead backup inbox.
-   - Replace with a retailer-specific backup inbox if the retailer wants its own backup destination.
-   - Set to `''` only if BCC backup is intentionally disabled for this deployment.
+3. Delete the placeholder code. Paste the repo's `Code.gs` unchanged (it holds no deployment value) and, with Project Settings → "Show appsscript.json", the repo's `appsscript.json`. Set the deployment values as **Script Properties** (Project Settings → Script Properties): `UNSUBSCRIBE_URL`, `POSTAL_ADDRESS`, `PRIVACY_CONTACT` (required, retailer-approved; without them every send is refused `canspam_not_configured`), and optionally `RESULT_EMAIL_BCC` (lead backup inbox; blank = no BCC), `REPLY_TO` and `LEADS_SHEET_NAME` (default `Leads`). Run `checkDeployment` once from the editor to authorize and confirm `ready`. Full steps, including the clasp path: `docs/gas-activation-runbook.md`.
 4. Save. Click **Deploy → New deployment**.
 5. Gear icon → **Web app**.
 6. Configure:

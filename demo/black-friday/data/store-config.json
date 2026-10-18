@@ -523,7 +523,8 @@
       "results": false,
       "handoff": false,
       "sleepPlan": false,
-      "compare": false
+      "compare": false,
+      "email": false
     },
     "presentation": {
       "status": "unapproved",
@@ -549,7 +550,8 @@
       "states": {}
     },
     "products": [],
-    "formulas": []
+    "formulas": [],
+    "offers": []
   },
   "voice": {
     "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",

@@ -264,6 +264,14 @@ const UNADMITTED = (over = {}) => { const p = ACTIVE(over); p.currency = "XXX"; 
 const SURFACES = ["drawer", "sleepSystem", "results", "handoff", "sleepPlan"];
 const SIZES = ["twin", "twin_xl", "full", "queen", "king", "cal_king"];
 const isOff = (r) => r && r.state === "off" && r.amountMinor === null && r.text === "" && r.notes.length === 0;
+// Owner direction 2026-10-16: while the pricing block is ACTIVE, a product-size
+// with no SKU or no pricing entry says "price unavailable" (the governed state
+// copy, never a number) instead of silence.
+const UNAVAIL_EN = fx.pricing.presentation.states["price-unavailable"].en;
+const isUnavail = (r) => r && r.state === "price-unavailable" && r.amountMinor === null && r.currency === null
+  && r.text === UNAVAIL_EN && r.notes.length === 0;
+const slotUnavail = (h) => h.indexOf('data-price-state="price-unavailable"') !== -1 && h.indexOf(UNAVAIL_EN) !== -1
+  && !/\$\s?\d/.test(h) && h.indexOf("__note") === -1;
 const noNumeric = (s) => !/\$\s?\d/.test(s) && !/\d[.,]\d{3}/.test(s) && !/\/\s*(mo|month|mes|wk|week|sem)\b/i.test(s);
 
 // ---------------------------------------------------------------------------
@@ -397,13 +405,39 @@ section("Fixture, opened in memory: the consumption contract");
   noClear.products[0].clearance = { status: "not-cleared", attestedBy: "", attestedAt: null, scope: null };
   check("eligibility withheld (clearance not attested) -> OFF",
     isOff(makeEnv({ pricing: noClear, financing: F() }).api.gate("drawer", M(), "queen", null)));
-  // SKU identity from the catalog: no applicable record -> OFF (nothing to ask).
-  check("no skus map on the mattress -> OFF", isOff(env.api.gate("drawer", M({ skus: undefined }), "queen", null)));
-  check("wrong size (king asked, queen priced) -> OFF", isOff(env.api.gate("drawer", M(), "king", null)));
-  check("size absent -> OFF", isOff(env.api.gate("drawer", M(), undefined, null)));
-  check("mismatched SKU -> OFF", isOff(env.api.gate("drawer", M({ skus: { queen: "OTHER-SKU" } }), "queen", null)));
-  check("blank SKU -> OFF", isOff(env.api.gate("drawer", M({ skus: { queen: "   " } }), "queen", null)));
-  check("different product id -> OFF", isOff(env.api.gate("drawer", M({ id: "g7" }), "queen", null)));
+  // SKU identity from the catalog. With the pricing block ACTIVE (owner
+  // direction 2026-10-16) a product-size with no applicable SKU, or no
+  // pricing entry for its SKU, is "price unavailable" for that product: the
+  // governed copy, never a number, never silence.
+  check("ACTIVE: no skus map on the mattress -> price unavailable", isUnavail(env.api.gate("drawer", M({ skus: undefined }), "queen", null)));
+  check("ACTIVE: wrong size (king asked, queen priced) -> price unavailable", isUnavail(env.api.gate("drawer", M(), "king", null)));
+  check("ACTIVE: size absent -> price unavailable", isUnavail(env.api.gate("drawer", M(), undefined, null)));
+  check("ACTIVE: mismatched SKU (no entry for it) -> price unavailable", isUnavail(env.api.gate("drawer", M({ skus: { queen: "OTHER-SKU" } }), "queen", null)));
+  check("ACTIVE: blank SKU -> price unavailable", isUnavail(env.api.gate("drawer", M({ skus: { queen: "   " } }), "queen", null)));
+  check("ACTIVE: different product id (no entry) -> price unavailable", isUnavail(env.api.gate("drawer", M({ id: "g7" }), "queen", null)));
+  // ...and ONLY while active: every dark state keeps the no-SKU / no-entry
+  // product OFF, exactly as before.
+  {
+    const darkStates = [
+      ["displayEnabled false", (() => { const p = ACTIVE(); p.displayEnabled = false; return p; })()],
+      ["enabled false", ACTIVE({ enabled: false })],
+      ["the drawer surface off", ACTIVE({ surfaces: { drawer: false } })],
+      ["presentation unapproved", (() => { const p = ACTIVE(); p.presentation.status = "pending"; return p; })()],
+      ["legal approval missing", (() => { const p = ACTIVE(); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null }; return p; })()],
+      ["no named authority", (() => { const p = ACTIVE(); p.authority = { owner: "", role: "" }; return p; })()],
+      ["the shipped pricing block", shipped.pricing],
+    ];
+    for (const [label, pricing] of darkStates) {
+      const e = makeEnv({ pricing, financing: F() });
+      check(`DARK (${label}): no SKU and no entry stay OFF`,
+        isOff(e.api.gate("drawer", M({ skus: undefined }), "queen", null))
+        && isOff(e.api.gate("drawer", M({ id: "g7" }), "queen", null))
+        && isOff(e.api.gate("drawer", M(), "king", null)));
+    }
+    // An entry that EXISTS but is stale / uncleared stays off while active.
+    check("ACTIVE: an existing but stale entry stays OFF (not 'unavailable')",
+      isOff(makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.gate("drawer", M(), "queen", null)));
+  }
   check("a mattress without an id -> OFF (nothing to ask)", isOff(env.api.gate("drawer", M({ id: undefined }), "queen", null)));
   // The independently demonstrated price-unavailable state: fresh + eligible,
   // resolved by the resolver, refused by the runtime money admission.
@@ -576,10 +610,13 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
   }
   check("only the named surface opens: results on, sleepPlan off -> sleepPlan slot ''",
     makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F() }).api.slot("sleepPlan", M(), "x") === "");
-  check("the size comes from the customer's answer: no answer -> '' (no applicable SKU: OFF, never a number), even with the gate open",
-    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: {} }).api.slot("results", M(), "x") === "");
-  check("the size comes from the customer's answer: king answered, queen priced -> '' (OFF)",
-    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x") === "");
+  check("the size comes from the customer's answer: no answer -> price unavailable (no applicable SKU), never a number, with the gate open",
+    slotUnavail(makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: {} }).api.slot("results", M(), "x")));
+  check("the size comes from the customer's answer: king answered, queen priced -> price unavailable (never the queen number)",
+    slotUnavail(makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x")));
+  check("DARK: the same no-SKU slot is '' while display is disabled",
+    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.displayEnabled = false;
+      return makeEnv({ pricing: p, financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x") === ""; })());
   check("the slot carries the governed copy ONLY in the price-unavailable state (fresh + eligible, admission refused)",
     (() => { const h = makeEnv({ pricing: UNADMITTED({ surfaces: { results: true } }), financing: F() }).api.slot("results", M(), "x");
       return h.indexOf('data-price-state="price-unavailable"') !== -1 && h.indexOf(fx.pricing.presentation.states["price-unavailable"].en) !== -1 && noNumeric(h) && h.indexOf("__note") === -1; })());
@@ -594,11 +631,11 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
     check("projection without skus resolves through the catalog record of the same id",
       withIndex.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="available"') !== -1);
     const noIndex = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: null } });
-    check("projection without skus and no catalog index -> '' (OFF)",
-      noIndex.api.slot("sleepSystem", projection, "x") === "");
+    check("projection without skus and no catalog index -> price unavailable (no number)",
+      slotUnavail(noIndex.api.slot("sleepSystem", projection, "x")));
     const wrongId = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: { g6: { m: M({ id: "g7" }) } } } });
-    check("an index entry whose record id disagrees is ignored (no SKU borrowed across ids) -> ''",
-      wrongId.api.slot("sleepSystem", projection, "x") === "");
+    check("an index entry whose record id disagrees is ignored (no SKU borrowed across ids) -> price unavailable, no number",
+      slotUnavail(wrongId.api.slot("sleepSystem", projection, "x")));
     check("a projection that carries its own skus map is used as-is (index not consulted)",
       makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: { g6: { m: M({ skus: { queen: "OTHER" } }) } } } })
         .api.slot("sleepSystem", M(), "x").indexOf('data-price-state="available"') !== -1);
@@ -635,11 +672,14 @@ section("Accessory records (provenance): a string sku, no size, the same gate");
       return h.indexOf('data-price-state="available"') !== -1 && h.indexOf("$149") !== -1 && (h.match(/__note/g) || []).length === 2; })());
   check("accessory: the customer's mattress size is ignored (king answered, still available)",
     makeEnv({ pricing: withAccessory(), financing: F(), answers: { mattress_size: "king" } }).api.slot("sleepSystem", ACC(), "x").indexOf('data-price-state="available"') !== -1);
-  check("accessory without a sku -> '' (OFF: the catalog ships none, so nothing renders and the legacy line stays)",
-    env.api.slot("sleepSystem", ACC({ sku: undefined }), "x") === "");
-  check("accessory with a mismatched sku -> ''", env.api.slot("sleepSystem", ACC({ sku: "OTHER" }), "x") === "");
-  check("accessory with a blank or untrimmed sku -> ''",
-    env.api.slot("sleepSystem", ACC({ sku: "  " }), "x") === "" && env.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x") === "");
+  check("ACTIVE: accessory without a sku -> price unavailable (no number)",
+    slotUnavail(env.api.slot("sleepSystem", ACC({ sku: undefined }), "x")));
+  check("ACTIVE: accessory with a mismatched sku -> price unavailable", slotUnavail(env.api.slot("sleepSystem", ACC({ sku: "OTHER" }), "x")));
+  check("ACTIVE: accessory with a blank or untrimmed sku -> price unavailable, never the entry's number",
+    slotUnavail(env.api.slot("sleepSystem", ACC({ sku: "  " }), "x")) && slotUnavail(env.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x")));
+  check("DARK: accessory without a sku -> '' (nothing renders and the legacy line stays)",
+    (() => { const p = withAccessory(); p.displayEnabled = false;
+      return makeEnv({ pricing: p, financing: F() }).api.slot("sleepSystem", ACC({ sku: undefined }), "x") === ""; })());
   check("accessory, fresh + eligible, currency XXX -> the governed unavailable copy (the one state that shows it), no number",
     (() => { const p = withAccessory(); p.currency = "XXX"; for (const e of p.products) e.price.currency = "XXX";
       const h = makeEnv({ pricing: p, financing: F() }).api.slot("sleepSystem", ACC(), "x");
@@ -650,7 +690,7 @@ section("Accessory records (provenance): a string sku, no size, the same gate");
       const cat = JSON.parse(readFileSync(join(root, "data", "accessories.json"), "utf8"));
       return cat.length > 0 && cat.every((a) => !("sku" in a) && e.api.slot("sleepSystem", a, "x") === ""); })());
   check("a mattress record is never treated as an accessory (the skus map wins over a stray sku string)",
-    isOff(env.api.gate("sleepSystem", M({ sku: ACC_SKU, skus: { queen: "WRONG" } }), "queen", null))
+    isUnavail(env.api.gate("sleepSystem", M({ sku: ACC_SKU, skus: { queen: "WRONG" } }), "queen", null))
     && makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F() }).api.gate("sleepSystem", M({ sku: "x" }), "queen", null).state === "available");
   globalThis.__ACC = { withAccessory, ACC, ACC_SKU };
 }
@@ -718,7 +758,7 @@ section("Consultation quote model (slice 2.2e): one purchase, fail-closed, unkno
     (() => { const q = Q({ win: cart("pillow-flow") });
       const ln = q.lines.find((l) => l.productId === "pillow-flow");
       return ln && ln.resolved === false && ln.unitAmountMinor === null && ln.extendedAmountMinor === null
-        && ln.currency === null && ln.sku === null && ln.reason === "not-resolved"; })());
+        && ln.currency === null && ln.sku === null && ln.reason === "price-unavailable" && ln.state === "price-unavailable"; })());
   check("a partial sum is never reachable: the resolved subset total appears nowhere in the record",
     (() => { const q = Q({ win: cart(A_ID, "pillow-flow") });
       return numericFields(q).indexOf(String(M_MINOR + A_MINOR)) === -1
@@ -1030,7 +1070,9 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
 // pricingSkuFor chose the customer's size of a per-size accessory, and
 // quoteLineFor then discarded that size, so a Queen and a King protector -
 // different products at different prices - read identically on the itemised
-// quote. The size is presentation metadata: the resolver query stays sizeless.
+// quote. Since the one-application contract (2026-10-15) the size is also
+// the resolver's: a per-size accessory is queried AT the customer's size and
+// each pricing entry carries the size it prices.
 {
   const S_ID = "protector-dritec", Q_SKU = "FIXTURE-DRITEC-Q", K_SKU = "FIXTURE-DRITEC-K";
   const Q_MINOR = 8900, K_MINOR = 10900;
@@ -1038,11 +1080,11 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
   const CHOSE = { kind: "chosen", item: M() };
   const SP = (over = {}) => {
     const p = ACTIVE(Object.assign({ surfaces: { handoff: true, results: true } }, over));
-    for (const [id, sku, minor] of [[S_ID, Q_SKU, Q_MINOR], [S_ID, K_SKU, K_MINOR], [P_ID, P_SKU, P_MINOR]]) {
+    for (const [id, sku, minor, size] of [[S_ID, Q_SKU, Q_MINOR, "queen"], [S_ID, K_SKU, K_MINOR, "king"], [P_ID, P_SKU, P_MINOR, null]]) {
       const e = JSON.parse(JSON.stringify(p.products[0]));
-      e.productId = id; e.productKind = "accessory"; e.sku = sku; e.size = null;
+      e.productId = id; e.productKind = "accessory"; e.sku = sku; e.size = size;
       e.price.amountMinor = minor;
-      Object.assign(e.clearance.scope, { productId: id, productKind: "accessory", sku: sku, size: null, amountMinor: minor });
+      Object.assign(e.clearance.scope, { productId: id, productKind: "accessory", sku: sku, size: size, amountMinor: minor });
       p.products.push(e);
     }
     return p;
@@ -1086,13 +1128,14 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
       return !!ln && ln.size === null && ln.reason === "no-catalog-record"; })());
   check("the mattress line is unchanged: it carries the customer's size",
     env().api.quote("handoff", "queen").lines[0].kind === "mattress" && env().api.quote("handoff", "queen").lines[0].size === "queen");
-  // The accessory resolver's size contract is untouched: the query is sizeless.
-  check("the resolver query for an accessory still carries NO size (the contract the validator pins)",
-    /size: accessory \? undefined : size,/.test(gateBlock));
-  check("the gate itself is unchanged for a sized accessory: available at the customer's size, off at any other",
+  // The accessory query carries the size ONLY for a per-size accessory.
+  check("the resolver query carries the customer's size for a per-size accessory, none for a size-independent one",
+    /size: accessory \? \(sizedAccessory \? size : null\) : size,/.test(gateBlock));
+  check("the gate for a sized accessory: available at the customer's size; at a size it is not sold in, price unavailable (no number)",
     env().api.gate("handoff", CAT[0], "king", null).state === "available"
     && env().api.gate("handoff", CAT[0], "king", null).amountMinor === K_MINOR
-    && env().api.gate("handoff", CAT[0], "full", null).state === "off");
+    && env().api.gate("handoff", CAT[0], "full", null).state === "price-unavailable"
+    && env().api.gate("handoff", CAT[0], "full", null).amountMinor === null);
 
   // Rendered: the itemised Summary names the size beside the sized accessory.
   const itemsOf = (b) => (b.innerHTML.match(/<li class="hf2-system-total__item">.*?<\/li>/g) || []);
@@ -1126,6 +1169,52 @@ section("Accessory size on quote lines (PR #132 review repair): a sized variant 
   }
   check("LANGUAGE: the quote record (size included) is byte-identical in EN and ES",
     JSON.stringify(env({ lang: "en" }).api.quote("handoff", "queen")) === JSON.stringify(env({ lang: "es" }).api.quote("handoff", "queen")));
+
+  // --- per-size accessory entries (one-application contract, 2026-10-15) ---
+  {
+    const only = (entries) => { const p = SP(); p.products = p.products.filter((e) => e.productKind === "mattress").concat(entries); return p; };
+    const accE = (id, sku, size, minor) => { const p = SP(); const e = JSON.parse(JSON.stringify(p.products.find((x) => x.productId === id && x.sku === sku)));
+      e.size = size; e.clearance.scope.size = size; if (minor) { e.price.amountMinor = minor; e.clearance.scope.amountMinor = minor; } return e; };
+    const ln = (pricing, size) => lineOf(env({ pricing }).api.quote("handoff", size), S_ID);
+    check("per-size accessory: a King customer resolves ONLY the king entry (the queen entry is never borrowed)",
+      (() => { const l = ln(only([accE(S_ID, Q_SKU, "queen"), accE(P_ID, P_SKU, null)]), "king");
+        return !!l && l.resolved === false && l.unitAmountMinor === null; })());
+    check("per-size accessory: a SIZELESS entry carrying that size's sku resolves nothing (sized query)",
+      (() => { const l = ln(only([accE(S_ID, Q_SKU, null), accE(P_ID, P_SKU, null)]), "queen");
+        return !!l && l.resolved === false; })());
+    check("per-size accessory: an entry at ANOTHER size with this size's sku resolves nothing",
+      (() => { const l = ln(only([accE(S_ID, Q_SKU, "king"), accE(P_ID, P_SKU, null)]), "queen");
+        return !!l && l.resolved === false; })());
+    check("per-size accessory: a wildcard-size entry resolves nothing",
+      ["*", "all", "any", "default", " ALL "].every((w) => { const l = ln(only([accE(S_ID, Q_SKU, w), accE(P_ID, P_SKU, null)]), "queen");
+        return !!l && l.resolved === false; }));
+    check("size-independent accessory: a SIZED entry resolves nothing (its query is sizeless)",
+      (() => { const q = env({ pricing: only([accE(S_ID, Q_SKU, "queen"), accE(P_ID, P_SKU, "queen")]) }).api.quote("handoff", "queen");
+        const l = lineOf(q, P_ID); return !!l && l.resolved === false; })());
+    check("size-independent accessory: the sizeless entry resolves for EVERY customer size",
+      SIZES.every((z) => { const l = lineOf(env().api.quote("handoff", z), P_ID); return !!l && l.resolved === true && l.unitAmountMinor === P_MINOR; }));
+  }
+  // --- split King base: two Twin XL units, resolved at twin_xl -------------
+  {
+    const B_ID = "base-split", B_TXL = "FIXTURE-BASE-TXL", B_K = "FIXTURE-BASE-K", TXL_MINOR = 79900, K_MINOR_B = 149900;
+    const BCAT = [{ id: B_ID, name: "Split Base", subType: "adjustable", accessorySkus: { twin_xl: B_TXL, king: B_K } }];
+    const BP = (entries) => { const p = ACTIVE({ surfaces: { handoff: true, results: true } });
+      for (const [sku, minor, size] of entries) { const e = JSON.parse(JSON.stringify(p.products[0]));
+        Object.assign(e, { productId: B_ID, productKind: "accessory", sku, size }); e.price.amountMinor = minor;
+        Object.assign(e.clearance.scope, { productId: B_ID, productKind: "accessory", sku, size, amountMinor: minor }); p.products.push(e); }
+      return p; };
+    const splitWin = { _accCart: { [B_ID]: { id: B_ID, quantity: 2, split: true } } };
+    const bl = (pricing, win) => lineOf(makeEnv({ pricing, financing: F(), finalist: CHOSE, accessories: BCAT, win }).api.quote("handoff", "king"), B_ID);
+    check("split King base: resolves the twin_xl entry, two units, and states twin_xl",
+      (() => { const l = bl(BP([[B_TXL, TXL_MINOR, "twin_xl"], [B_K, K_MINOR_B, "king"]]), splitWin);
+        return !!l && l.resolved === true && l.split === true && l.sku === B_TXL && l.size === "twin_xl"
+          && l.unitAmountMinor === TXL_MINOR && l.extendedAmountMinor === 2 * TXL_MINOR; })());
+    check("split King base: without a twin_xl entry it is unresolved (never priced at King)",
+      (() => { const l = bl(BP([[B_K, K_MINOR_B, "king"]]), splitWin); return !!l && l.resolved === false && l.unitAmountMinor === null; })());
+    check("one King base (not split): resolves the king entry",
+      (() => { const l = bl(BP([[B_TXL, TXL_MINOR, "twin_xl"], [B_K, K_MINOR_B, "king"]]), { _accCart: { [B_ID]: { id: B_ID } } });
+        return !!l && l.resolved === true && l.split === false && l.sku === B_K && l.unitAmountMinor === K_MINOR_B; })());
+  }
 }
 
 section("Plan status copy beside Payment Choice (slice 2.2d): status only, never a figure");
@@ -1262,7 +1351,7 @@ function mutate(find, replace) {
 }
 {
   const GATE_OFF = "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;";
-  const VISIBLE = "      if (!fresh || !eligible) return off;";
+  const VISIBLE = "      if (!fresh || !eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;";
   const ADMISSION = "      if (!priceMoneyValid(amountMinor, currency)) return '';";
   const lf = (s) => s.replace(/\r\n/g, "\n");
   const withLf = (m) => (src) => m(lf(src));
@@ -1299,14 +1388,14 @@ function mutate(find, replace) {
   // M4: stale reaches a surface (freshness no longer gates visibility).
   {
     const e = makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000,
-      mutate: withLf(mutate(VISIBLE, "      if (!eligible) return off;")) });
+      mutate: withLf(mutate(VISIBLE, "      if (!eligible) return pricingEntryFor(p, m.id, sku) ? off : unpriced;")) });
     check("M4 stale visible -> the stale OFF probe FAILS on the mutant (a number appears)", e.api.gate("drawer", M(), "queen", null).state === "available");
   }
   // M5: activation-unapproved reaches a surface (eligibility no longer gates visibility).
   {
     const ne = ACTIVE(); ne.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
     const e = makeEnv({ pricing: ne, financing: F(),
-      mutate: withLf(mutate(VISIBLE, "      if (!fresh) return off;")) });
+      mutate: withLf(mutate(VISIBLE, "      if (!fresh) return pricingEntryFor(p, m.id, sku) ? off : unpriced;")) });
     check("M5 unapproved visible -> the eligibility OFF probe FAILS on the mutant (a number appears)", e.api.gate("drawer", M(), "queen", null).state === "available");
   }
   // M14: the runtime money admission is dropped (Intl formats 'XXX').
@@ -1339,14 +1428,34 @@ function mutate(find, replace) {
     check("M17 safe-integer admission dropped -> the fractional admission probe FAILS on the mutant",
       e.api.money(1234.5, "USD") === true && e.api.money(0.5, "USD") === true);
   }
-  // M18: the no-record OFF rule dropped: masked by the resolver (an absent SKU
-  // resolves nothing -> not-judgeable -> OFF), so it is source-pinned for the
-  // sweep like M1/M3; asserted here as defence in depth.
+  // M18: the no-SKU rule dropped: masked by the no-entry rule below it (an
+  // absent SKU resolves nothing and matches no entry -> the same "price
+  // unavailable"; dark -> the same OFF), so it is source-pinned for the sweep
+  // like M1/M3; asserted here as defence in depth.
   {
     const e = makeEnv({ pricing: ACTIVE(), financing: F(),
-      mutate: withLf(mutate("      if (!sku) return off;", "      if (false) return off;")) });
-    check("M18 no-record OFF rule dropped -> still OFF through the resolver (defence in depth; source-pinned for the sweep)",
-      isOff(e.api.gate("drawer", M({ skus: undefined }), "queen", null)));
+      mutate: withLf(mutate("      if (!sku) return unpriced;", "      if (false) return unpriced;")) });
+    const d = makeEnv({ pricing: (() => { const p = ACTIVE(); p.displayEnabled = false; return p; })(), financing: F(),
+      mutate: withLf(mutate("      if (!sku) return unpriced;", "      if (false) return unpriced;")) });
+    check("M18 no-SKU rule dropped -> still 'price unavailable' active and OFF dark, never a number (defence in depth; source-pinned for the sweep)",
+      isUnavail(e.api.gate("drawer", M({ skus: undefined }), "queen", null)) && isOff(d.api.gate("drawer", M({ skus: undefined }), "queen", null)));
+  }
+  // M19: the unavailable state stops requiring the WHOLE pricing block's
+  // approval (a dark-but-displayEnabled block with an unapproved
+  // presentation would say "price unavailable" for every unpriced product).
+  {
+    const p = ACTIVE(); p.presentation.status = "pending";
+    const e = makeEnv({ pricing: p, financing: F(),
+      mutate: withLf(mutate("      var unpriced = pricingPresentationApproved(p)\n", "      var unpriced = true\n")) });
+    check("M19 unavailable without approval -> the DARK no-SKU OFF probe FAILS on the mutant",
+      e.api.gate("drawer", M({ skus: undefined }), "queen", null).state === "price-unavailable");
+  }
+  // M20: an EXISTING stale entry says "unavailable" (the entry check dropped).
+  {
+    const e = makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000,
+      mutate: withLf(mutate(VISIBLE, "      if (!fresh || !eligible) return unpriced;")) });
+    check("M20 entry check dropped -> the stale-entry OFF probe FAILS on the mutant",
+      e.api.gate("drawer", M(), "queen", null).state === "price-unavailable");
   }
   // M6: the renderer prints while off.
   {
@@ -1402,7 +1511,7 @@ function mutate(find, replace) {
   {
     const { withAccessory, ACC } = globalThis.__ACC;
     const e = makeEnv({ pricing: withAccessory(), financing: F(),
-      mutate: withLf(mutate("        size: accessory ? undefined : size,", "        size: size,")) });
+      mutate: withLf(mutate("        size: accessory ? (sizedAccessory ? size : null) : size,", "        size: size,")) });
     check("MA1 accessory query carries the mattress size -> the accessory-available probe FAILS on the mutant",
       e.api.slot("sleepSystem", ACC(), "x").indexOf('data-price-state="available"') === -1);
   }

@@ -27,13 +27,36 @@ assumed) and still never leaves this machine.
                                         the automated check and for a person
                                         rehearsing the flow on this machine.
 
+Send identity and duplicates (emulating Code.gs's doPost, 2026-10-15):
+  every POST must carry a `sendId` matching ^[A-Za-z0-9_-]{22,40}$. Under
+  every Code.gs-shaped answer (success, flaky's second attempt and each
+  server refusal) a missing or malformed sendId is answered
+  {"success": false, "error": "invalid_request"} and recorded with outcome
+  `invalid_request`. A sendId that already produced a success is answered
+  {"success": true, "duplicate": true} and recorded with outcome `duplicate`
+  (Code.gs appends no row and sends no email for it). Every recorded POST
+  carries an `outcome`: sent, sent_response_lost, duplicate,
+  invalid_request, refused:<code>, echo, http_500, malformed.
+
 Responses (`--respond`):
   success                 {"success": true}                      (the live happy path)
+  flaky                   the FIRST POST of each sendId answers HTTP 500 (a
+                          transport failure the client retries once with the
+                          same sendId); the next POST of that sendId succeeds
+  invalid_request         {"success": false, "error": "invalid_request"} for
+                          every POST (a server refusal the client never retries)
   invalid_email           {"success": false, "error": "invalid_email"}
   canspam_not_configured  {"success": false, "error": "canspam_not_configured"}
                           (what the SHIPPED Code.gs returns: its CAN-SPAM
                           values are still sentinels, so it sends nothing)
   send_failed             {"success": false, "error": "send_failed"}
+  delivery_unconfirmed    {"success": false, "error": "delivery_unconfirmed"}
+                          (Code.gs: an earlier attempt of this sendId may
+                          already have gone out; it is never resent)
+  lost_response           the FIRST POST of each sendId is SENT (remembered,
+                          outcome `sent_response_lost`) but answered HTTP 500,
+                          as if the answer was lost on the way back; the
+                          client's retry of that sendId is then a duplicate
   echo                    {"success": false, "error": "rejected: <the address
                           the page sent>"} — a hostile endpoint that echoes
                           its input; the page must classify it, never print it
@@ -80,6 +103,7 @@ import copy
 import ipaddress
 import json
 import os
+import re
 import socket
 import sys
 import threading
@@ -93,11 +117,15 @@ import validation  # noqa: E402
 INTERCEPT_CONFIG = "/data/store-config.json"
 STUB_PATH = "/exec"
 RECORDED_PATH = "/__delivery/recorded"
-RESPONSES = ("success", "invalid_email", "canspam_not_configured", "send_failed",
-             "echo", "http_500", "malformed")
+RESPONSES = ("success", "flaky", "lost_response", "invalid_request", "invalid_email",
+             "canspam_not_configured", "send_failed", "delivery_unconfirmed", "echo", "http_500",
+             "malformed")
 # The closed set Code.gs can answer with; the page classifies anything else
 # as `unclassified` (index.html EMAIL_FAILURE_CODES).
-GAS_ERROR_CODES = ("invalid_email", "canspam_not_configured", "send_failed")
+GAS_ERROR_CODES = ("invalid_request", "invalid_email", "canspam_not_configured", "send_failed",
+                   "delivery_unconfirmed")
+# Code.gs SEND_ID_PATTERN.
+SEND_ID_RE = re.compile(r"^[A-Za-z0-9_-]{22,40}$")
 
 
 def _loopback(bind: str) -> bool:
@@ -154,7 +182,64 @@ def shape_summary(payload) -> dict:
         "name": "set" if payload.get("name") else "unset",
         "email": "set" if payload.get("email") else "unset",
         "phone": "set" if payload.get("phone") else "unset",
+        "sendId": "valid" if valid_send_id(payload.get("sendId")) else "invalid",
+        "quote": "present" if isinstance(payload.get("quote"), dict) else "absent",
+        "quote_lines": len(payload["quote"]["lines"]) if isinstance(payload.get("quote"), dict)
+        and isinstance(payload["quote"].get("lines"), list) else 0,
     }
+
+
+def valid_send_id(value) -> bool:
+    return isinstance(value, str) and SEND_ID_RE.match(value) is not None
+
+
+class StubState:
+    """What the emulated doPost remembers between POSTs (in memory only): the
+    sendIds that produced a success (Code.gs's script-cache record) and how
+    many POSTs each sendId has made (for `flaky`)."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.sent = set()
+        self.attempts = {}
+
+    def answer(self, respond: str, payload):
+        """(status, content_type, body_bytes, outcome) for one POST. The whole
+        decision runs under one lock, like Code.gs's script lock."""
+        with self._lock:
+            if respond == "echo":
+                sent = payload.get("email", "") if isinstance(payload, dict) else ""
+                return (200, "application/json",
+                        encode({"success": False, "error": "rejected: " + str(sent)}), "echo")
+            if respond == "http_500":
+                return 500, "application/json", encode({"success": False, "error": "send_failed"}), "http_500"
+            if respond == "malformed":
+                return (200, "text/html; charset=utf-8",
+                        b"<html><body>Sign in to continue</body></html>", "malformed")
+            if respond not in RESPONSES:
+                raise ValueError(f"unknown response mode {respond!r}")
+            send_id = payload.get("sendId") if isinstance(payload, dict) else None
+            if respond == "flaky" and valid_send_id(send_id):
+                n = self.attempts.get(send_id, 0) + 1
+                self.attempts[send_id] = n
+                if n == 1:
+                    return (500, "application/json",
+                            encode({"success": False, "error": "send_failed"}), "http_500")
+            # Code.gs order: body shape and sendId first, then the duplicate
+            # check, then the address/CAN-SPAM refusals the mode stands for.
+            if not isinstance(payload, dict) or not valid_send_id(send_id) or respond == "invalid_request":
+                return (200, "application/json",
+                        encode({"success": False, "error": "invalid_request"}), "invalid_request")
+            if send_id in self.sent:
+                return 200, "application/json", encode({"success": True, "duplicate": True}), "duplicate"
+            if respond in GAS_ERROR_CODES:
+                return (200, "application/json",
+                        encode({"success": False, "error": respond}), "refused:" + respond)
+            self.sent.add(send_id)
+            if respond == "lost_response":
+                return (500, "application/json",
+                        encode({"success": False, "error": "send_failed"}), "sent_response_lost")
+            return 200, "application/json", encode({"success": True}), "sent"
 
 
 class Recorder:
@@ -212,32 +297,27 @@ def make_app_handler(config_bytes: bytes):
     return AppHandler
 
 
-def stub_response(respond: str, payload):
-    """(status, content_type, body_bytes) the stub answers a POST with."""
-    if respond == "success":
-        return 200, "application/json", encode({"success": True})
-    if respond in GAS_ERROR_CODES:
-        return 200, "application/json", encode({"success": False, "error": respond})
-    if respond == "echo":
-        sent = payload.get("email", "") if isinstance(payload, dict) else ""
-        return 200, "application/json", encode({"success": False, "error": "rejected: " + str(sent)})
-    if respond == "http_500":
-        return 500, "application/json", encode({"success": False, "error": "send_failed"})
-    if respond == "malformed":
-        return 200, "text/html; charset=utf-8", b"<html><body>Sign in to continue</body></html>"
-    raise ValueError(f"unknown response mode {respond!r}")
+def stub_response(respond: str, payload, state: StubState | None = None):
+    """(status, content_type, body_bytes) the stub answers a POST with. Without
+    a `state` the answer is judged against a fresh, empty memory."""
+    status, ctype, body, _outcome = (state or StubState()).answer(respond, payload)
+    return status, ctype, body
 
 
-def make_stub_handler(recorder: Recorder, respond: str, verbose: bool):
+def make_stub_handler(recorder: Recorder, respond: str, verbose: bool, state: StubState | None = None):
+    state = state or StubState()
+
     class StubHandler(BaseHTTPRequestHandler):
-        def _record(self, body_text: str | None):
-            parsed = None
-            if body_text is not None:
-                try:
-                    parsed = json.loads(body_text)
-                except ValueError:
-                    parsed = None
-            recorder.add({
+        def _parse(self, body_text: str | None):
+            if body_text is None:
+                return None
+            try:
+                return json.loads(body_text)
+            except ValueError:
+                return None
+
+        def _record(self, body_text: str | None, parsed=None, outcome=None):
+            record = {
                 "method": self.command,
                 "path": self.path,
                 "received_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -245,7 +325,10 @@ def make_stub_handler(recorder: Recorder, respond: str, verbose: bool):
                 "origin": self.headers.get("Origin", ""),
                 "body": body_text,
                 "json": parsed,
-            })
+            }
+            if outcome is not None:
+                record["outcome"] = outcome
+            recorder.add(record)
             return parsed
 
         def _headers(self, status, content_type, length):
@@ -263,17 +346,19 @@ def make_stub_handler(recorder: Recorder, respond: str, verbose: bool):
                 return
             length = int(self.headers.get("Content-Length") or 0)
             text = self.rfile.read(length).decode("utf-8", "replace")
-            parsed = self._record(text)
+            parsed = self._parse(text)
+            status, ctype, body, outcome = state.answer(respond, parsed)
+            self._record(text, parsed, outcome)
             if verbose:
-                print("  received POST " + STUB_PATH + ": " + json.dumps(shape_summary(parsed)), flush=True)
-            status, ctype, body = stub_response(respond, parsed)
+                print("  received POST " + STUB_PATH + ": " + json.dumps(dict(shape_summary(parsed), outcome=outcome)),
+                      flush=True)
             self._headers(status, ctype, len(body))
             self.wfile.write(body)
 
         def do_OPTIONS(self):
             # A preflight. The page's POST carries no Content-Type header, so a
             # browser never sends one; recording it is how the check proves that.
-            self._record(None)
+            self._record(None, None)
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -310,7 +395,9 @@ class DeliveryHarness:
         self.respond = respond
         self.unreachable = unreachable
         self.recorder = Recorder()
-        self.stub = ThreadingHTTPServer((bind, stub_port), make_stub_handler(self.recorder, respond, verbose))
+        self.state = StubState()
+        self.stub = ThreadingHTTPServer((bind, stub_port),
+                                        make_stub_handler(self.recorder, respond, verbose, self.state))
         self.stub_port = self.stub.server_address[1]
         target_port = closed_loopback_port() if unreachable else self.stub_port
         self.gas_url = f"http://{bind}:{target_port}{STUB_PATH}"
@@ -395,7 +482,9 @@ def main(argv=None):
         harness.stop()
         recorded = harness.recorder.snapshot()
         posts = [r for r in recorded if r["method"] == "POST"]
-        print(f"  recorded: {len(posts)} POST(s), {len(recorded) - len(posts)} other request(s); nothing was written.")
+        dupes = sum(1 for r in posts if r.get("outcome") == "duplicate")
+        print(f"  recorded: {len(posts)} POST(s) ({dupes} duplicate), {len(recorded) - len(posts)} other "
+              "request(s); nothing was written.")
     return 0
 
 

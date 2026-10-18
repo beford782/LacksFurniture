@@ -326,6 +326,8 @@ def main():
         ("termMonths", lambda v: True),
         ("minimumPurchase", lambda v: True),
         ("publishedPaymentFactor", lambda v: True),
+        # one-app integration (2026-10-15): the plan's declared qualifying basis
+        ("qualifyingBasis", lambda v: True),
     ]
     for field, _bad in PLAN_FIELDS:
         for lbl, val in JSON_VALUES:

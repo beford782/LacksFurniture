@@ -737,6 +737,8 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     # scenario panel and the retailer commercial-policy copy are injected in
     # memory by tools/serve_pricing_preview.py and must never reach shipped
     # configuration through the workbook or the store values.
+    # `illustrativeDemo` (the retired payment demo's block, 2026-10-15) stays
+    # refused so the retired path can never be revived through configuration.
     for review_only in ("reviewTools", "salesPolicies", "illustrativeDemo"):
         if review_only in config:
             r.add_error(f"{review_only} is review-build only and must not appear in shipped "
@@ -2518,9 +2520,10 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                     f"({fin_headline.short_repr(plans_raw)})")
         plan_list = []
 
-    # Payment-demo fields (tools/serve_pricing_preview.py --state demo) are
-    # refused by name: an example plan is never a governed plan, whatever
-    # else it carries.
+    # Payment-demo fields are refused by name: an example plan is never a
+    # governed plan, whatever else it carries. The demo itself was retired on
+    # 2026-10-15 (one operable application); the refusal STAYS so unverified
+    # example terms can never enter production.
     for _di, _dp in enumerate(plan_list):
         if isinstance(_dp, dict):
             for _dk in DEMO_ONLY_PLAN_KEYS:
@@ -3342,16 +3345,26 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
 #     is narrowed to unsafe numeric-result / formula-value / transaction fields;
 #   * freshness is evaluated against an INJECTED clock (`now`), so the gate is
 #     deterministic under test; production passes no clock and gets UTC now;
-#   * displayEnabled=true is refused outright: customer-visible price or
-#     payment output is a Phase 2.2 activation output (Blake + written
-#     business/legal approval recorded on the item). The CI operating-state
-#     lock names the same switch. Neither relaxes without the other.
+#   * ACTIVATION IS A CONFIGURATION DECISION (owner direction 2026-10-15, one
+#     operable application): displayEnabled=true or any enabled surface
+#     validates only when EVERY governance record is complete - pricing
+#     enabled, authority named, freshness and source policies approved, the
+#     presentation contract approved with business, legal AND native-language
+#     approvals signed, every product entry cleared - and no record carries a
+#     non-attestation marker (FIXTURE / placeholder / review-build /
+#     pending-owner-verification text: see PRICING_NON_ATTESTATION_MARKERS).
+#     Anything short of that is refused with an error naming the missing
+#     record. CI's "Shipped operating state unchanged" lock stays the owner's
+#     activation switch: the shipped block remains dark until Blake lifts it.
+#   * exact store promotions/discounts are `offers` (schema below), admitted
+#     at runtime only inside an open pricing gate with current, allowlisted,
+#     approved evidence; shipped [] until a governed offer exists.
 
 PRICING_SCHEMA_VERSION = 1
 PRICING_KEYS = frozenset({
     "schemaVersion", "enabled", "displayEnabled", "currency", "authority",
     "freshness", "sourcePolicy", "purchaseAssessment", "sizes", "surfaces",
-    "presentation", "products", "formulas",
+    "presentation", "products", "formulas", "offers",
 })
 PRICING_AUTHORITY_KEYS = frozenset({"owner", "role"})
 PRICING_APPROVAL_STATUSES = frozenset({"unapproved", "approved"})
@@ -3361,8 +3374,10 @@ PRICING_CURRENCIES = frozenset({"USD"})
 # `compare` added 2026-09-20: the finalist comparison shows a same-size
 # purchase-price difference, which is its own customer-visible surface and
 # gets its own flag. A surface flag governs exactly the surface it names.
+# `email` added 2026-10-15 (one operable application): the take-home email's
+# quote section is its own customer-visible surface with its own flag.
 PRICING_SURFACES = frozenset({"drawer", "sleepSystem", "results", "handoff",
-                              "sleepPlan", "compare"})
+                              "sleepPlan", "compare", "email"})
 # The qualifying purchase amount is a TRANSACTION fact supplied at runtime.
 # The policy object carries exactly one key, and there is deliberately no
 # product-price policy: one product's price is not the purchase, and deriving
@@ -3409,8 +3424,10 @@ PRICING_PRICE_KEYS = frozenset({"amountMinor", "currency", "kind"})
 PRICING_PRICE_KINDS = frozenset({"regular", "promotional"})
 PRICING_AMOUNT_MINOR_MAX = 10 ** 9          # $10,000,000.00 — a sanity ceiling, not a business rule
 PRICING_EVIDENCE_KEYS = frozenset({"status", "verified", "verifiedAt", "verifiedBy", "sourceUrl"})
-# Payment-demo only (owner demo-first direction 2026-10-05): provenance the
-# demo labels honestly and production refuses by name.
+# Payment-demo provenance (the demo was retired 2026-10-15 - one operable
+# application - but these refusals STAY): historical-snapshot and
+# illustrative values are never current evidence, so production refuses them
+# by name and they can never enter shipped data.
 DEMO_PRICE_STATUSES = frozenset({"historical-snapshot", "illustrative"})
 DEMO_ONLY_PLAN_KEYS = ("demo", "demoCalculation", "verificationStatus")
 # Price-specific evidence taxonomy: CURRENT, FIRST-PARTY retail sources only.
@@ -3464,6 +3481,34 @@ PRICING_FORBIDDEN_KEYS = frozenset({
     "purchaseamount", "cartamountminor", "carttotal", "subtotal",
 })
 _PRICING_SIZE_WILDCARDS = frozenset({"*", "all", "any", "default"})
+
+# A signature is an attestation by a person. Text that says it is NOT one -
+# the harness fixtures ("FIXTURE - placeholder ..."), the launch-review build
+# ("REVIEW BUILD - ..."), automated extraction awaiting the owner
+# ("... PENDING OWNER VERIFICATION") - can sign nothing that goes live. These
+# markers are refused in every governance signature at activation, which is
+# what keeps every harness document unshippable now that a complete,
+# genuinely signed activation validates. Case-insensitive substring match.
+PRICING_NON_ATTESTATION_MARKERS = ("fixture", "placeholder", "review build",
+                                   "pending owner verification", "not a real",
+                                   "illustrative")
+
+# -- offers: exact store promotions and discounts (contract section 2) --------
+PRICING_OFFER_KEYS = frozenset({
+    "id", "label", "terms", "effect", "eligibility", "exclusions", "startsAt",
+    "endsAt", "stacking", "priority", "minimumMerchandiseMinor", "payment",
+    "evidence", "approval",
+})
+PRICING_OFFER_REQUIRED = tuple(sorted(PRICING_OFFER_KEYS - {"exclusions"}))
+PRICING_OFFER_ID_RE = re.compile(r"[a-z0-9-]{3,64}")
+PRICING_OFFER_EFFECTS = {"percent-off": "basisPoints", "amount-off": "amountMinor"}
+PRICING_OFFER_ELIGIBILITY_KEYS = frozenset({"productKinds", "productIds", "brands", "sizes"})
+PRICING_OFFER_EXCLUSION_KEYS = frozenset({"productIds", "brands"})
+PRICING_OFFER_STACKING = frozenset({"exclusive", "combinable"})
+PRICING_OFFER_PAYMENT = frozenset({"any", "pay-in-full-only"})
+PRICING_OFFER_EVIDENCE_KEYS = frozenset({"status", "sourceUrl", "verifiedAt", "verifiedBy"})
+PRICING_OFFER_EVIDENCE_STATUSES = frozenset({"retailer-promotion-current"})
+PRICING_OFFER_APPROVAL_KEYS = frozenset({"by", "at"})
 
 
 def _pricing_enum(v, options) -> bool:
@@ -3667,6 +3712,54 @@ def _pricing_ids_arg(r, name, value):
     return set()
 
 
+def accessory_skus_from_catalog(accessories):
+    """The catalog's accessory price identities, as validate_pricing's
+    `accessory_skus` argument: {id: {size: sku}} for an accessory sold per
+    mattress size (an `accessorySkus` map), {id: sku} for a size-independent
+    one (a string `sku`), {id: None} for an accessory with neither. Records
+    that are not objects with a string id are skipped."""
+    out = {}
+    for a in accessories if isinstance(accessories, (list, tuple)) else []:
+        if not isinstance(a, dict) or not isinstance(a.get("id"), str):
+            continue
+        by_size = a.get("accessorySkus")
+        if isinstance(by_size, dict):
+            out[a["id"]] = dict(by_size)
+        elif isinstance(a.get("sku"), str):
+            out[a["id"]] = a["sku"]
+        else:
+            out[a["id"]] = None
+    return out
+
+
+def _pricing_accessory_skus_arg(r, value):
+    """`accessory_skus` argument sanity: None means "catalog identities not
+    supplied" (an accessory price must then be sizeless - nothing can say
+    which sizes the accessory is sold in). Otherwise a mapping of accessory id
+    -> {size: sku} (sold per size), a sku string (size-independent) or None.
+    A malformed argument, or a malformed identity, is reported or treated as
+    NO identity, so the price it would admit is refused (fail closed)."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        r.add_error(f"accessory_skus must be a mapping of accessory id -> catalog "
+                    f"sku identity (got {_type_name(value)}) - treating it as empty, "
+                    f"so no accessory price can be admitted")
+        return {}
+    out = {}
+    for aid, ident in value.items():
+        if not isinstance(aid, str):
+            continue
+        if isinstance(ident, dict):
+            out[aid] = {z: v for z, v in ident.items()
+                        if isinstance(z, str) and isinstance(v, str)}
+        elif isinstance(ident, str):
+            out[aid] = ident
+        else:
+            out[aid] = None
+    return out
+
+
 def _pricing_canonical_sizes():
     for qid, _qtype, opts in QUIZ_CANONICAL:
         if qid == "mattress_size":
@@ -3733,8 +3826,219 @@ def _pricing_copy_list(r, tag, items, *, required_nonempty):
                             f"presentation item ships EN and ES together")
 
 
+def _pricing_marker(value):
+    """The non-attestation marker a signature string carries, or None."""
+    if not isinstance(value, str):
+        return None
+    low = value.lower()
+    for m in PRICING_NON_ATTESTATION_MARKERS:
+        if m in low:
+            return m
+    return None
+
+
+def _pricing_signature_records(p):
+    """(path, value) for every governance SIGNATURE in a pricing block: the
+    strings that name who owns, approved, verified, attested or signed off a
+    record. Total over JSON: malformed containers contribute nothing (their
+    own errors are reported by the structural checks)."""
+    out = []
+
+    def _get(obj, *keys):
+        for k in keys:
+            if not isinstance(obj, dict):
+                return None
+            obj = obj.get(k)
+        return obj
+
+    out.append(("pricing.authority.owner", _get(p, "authority", "owner")))
+    out.append(("pricing.freshness.approvedBy", _get(p, "freshness", "approvedBy")))
+    out.append(("pricing.sourcePolicy.approvedBy", _get(p, "sourcePolicy", "approvedBy")))
+    appr = _get(p, "presentation", "approvals")
+    if isinstance(appr, dict):
+        for k in sorted(PRICING_PRESENTATION_APPROVAL_KEYS):
+            out.append((f"pricing.presentation.approvals.{k}.by", _get(appr, k, "by")))
+    for i, e in enumerate(p.get("products") if isinstance(p.get("products"), list) else []):
+        out.append((f"pricing.products[{i}].evidence.verifiedBy", _get(e, "evidence", "verifiedBy")))
+        out.append((f"pricing.products[{i}].clearance.attestedBy", _get(e, "clearance", "attestedBy")))
+    for i, f in enumerate(p.get("formulas") if isinstance(p.get("formulas"), list) else []):
+        out.append((f"pricing.formulas[{i}].approvedBy", _get(f, "approvedBy")))
+    for i, o in enumerate(p.get("offers") if isinstance(p.get("offers"), list) else []):
+        out.append((f"pricing.offers[{i}].evidence.verifiedBy", _get(o, "evidence", "verifiedBy")))
+        out.append((f"pricing.offers[{i}].approval.by", _get(o, "approval", "by")))
+    return out
+
+
+def _pricing_id_list(r, tag, value, *, known=None, known_name="", allowed=None):
+    """An optional non-empty list of unique, trimmed, non-blank strings.
+    `known` (a set) names the admissible values; `allowed` is a closed enum.
+    Returns the list or None when absent/malformed."""
+    if value is None:
+        return None
+    if not isinstance(value, list) or not value:
+        r.add_error(f"{tag} must be a non-empty array of strings when present - "
+                    f"omit the key rather than ship an empty filter (an empty "
+                    f"list is ambiguous between 'nothing' and 'everything')")
+        return None
+    seen = set()
+    for i, v in enumerate(value):
+        if not isinstance(v, str) or not v.strip() or v != v.strip():
+            r.add_error(f"{tag}[{i}] {fin_headline.short_repr(v)} must be a trimmed, "
+                        f"non-blank string")
+            continue
+        if v in seen:
+            r.add_error(f"{tag}[{i}] {fin_headline.short_repr(v)} is listed twice")
+        seen.add(v)
+        if allowed is not None and v not in allowed:
+            r.add_error(f"{tag}[{i}] {fin_headline.short_repr(v)} must be one of {sorted(allowed)}")
+        elif known is not None and v not in known:
+            r.add_error(f"{tag}[{i}] {fin_headline.short_repr(v)} is not {known_name} - an offer must "
+                        f"name what exists")
+    return value
+
+
+def _validate_pricing_offers(r, offers, *, enabled, now, mad, canonical_hosts,
+                             shipped_hosts, mids, aids, brands, size_set):
+    """pricing.offers - exact store promotions and discounts (one-app
+    integration contract, section 2). Structure, references and governance;
+    the runtime re-judges window, freshness and approval on its own clock and
+    admits nothing malformed (fail closed)."""
+    if offers is None:
+        return
+    if not isinstance(offers, list):
+        r.add_error("pricing.offers must be an array of governed offers (empty until "
+                    "an approved store promotion exists)")
+        return
+    if offers and not enabled:
+        r.add_error("pricing.offers must be empty while pricing is disabled - an offer "
+                    "applies only to governed prices inside an enabled contract")
+    seen = {}
+    for i, o in enumerate(offers):
+        tag = f"pricing.offers[{i}]"
+        if not _pricing_object(r, tag, o, PRICING_OFFER_KEYS):
+            continue
+        for key in PRICING_OFFER_REQUIRED:
+            if key not in o:
+                r.add_error(f"{tag}.{key} is required - an offer is complete or it "
+                            f"is not admitted")
+        oid = o.get("id")
+        if not isinstance(oid, str) or not PRICING_OFFER_ID_RE.fullmatch(oid):
+            r.add_error(f"{tag}.id {fin_headline.short_repr(oid)} must match "
+                        f"[a-z0-9-]{{3,64}}")
+        else:
+            if oid in seen:
+                r.add_error(f"{tag}.id {oid!r} duplicates offers[{seen[oid]}] - an "
+                            f"offer id is unique")
+            seen.setdefault(oid, i)
+        for key in ("label", "terms"):
+            if key in o and not _bilingual_ok(o.get(key)):
+                r.add_error(f"{tag}.{key} must be a bilingual object with non-blank en "
+                            f"and es strings - the terms are shown wherever the "
+                            f"discount is shown, in the customer's language")
+        eff = o.get("effect")
+        if "effect" in o:
+            if not isinstance(eff, dict):
+                r.add_error(f"{tag}.effect must be an object")
+            else:
+                et = eff.get("type")
+                if not _pricing_enum(et, PRICING_OFFER_EFFECTS):
+                    r.add_error(f"{tag}.effect.type {fin_headline.short_repr(et)} must be "
+                                f"one of {sorted(PRICING_OFFER_EFFECTS)}")
+                else:
+                    field_ = PRICING_OFFER_EFFECTS[et]
+                    _pricing_object(r, f"{tag}.effect", eff, frozenset({"type", field_}))
+                    v = eff.get(field_)
+                    hi = 10000 if et == "percent-off" else PRICING_AMOUNT_MINOR_MAX
+                    if type(v) is not int or not 1 <= v <= hi:
+                        r.add_error(f"{tag}.effect.{field_} {fin_headline.short_repr(v)} "
+                                    f"must be an integer between 1 and {hi} (not a "
+                                    f"float, boolean or string)")
+        el = o.get("eligibility")
+        if "eligibility" in o and _pricing_object(r, f"{tag}.eligibility", el,
+                                                  PRICING_OFFER_ELIGIBILITY_KEYS):
+            if "productKinds" not in el:
+                r.add_error(f"{tag}.eligibility.productKinds is required")
+            kinds = _pricing_id_list(r, f"{tag}.eligibility.productKinds",
+                                     el.get("productKinds"), allowed=PRICING_PRODUCT_KINDS)
+            known = None
+            if mids is not None or aids is not None:
+                ks = set(k for k in (kinds or []) if isinstance(k, str)) & PRICING_PRODUCT_KINDS
+                known = set()
+                if "mattress" in ks or not ks:
+                    known |= (mids or set())
+                if "accessory" in ks or not ks:
+                    known |= (aids or set())
+            _pricing_id_list(r, f"{tag}.eligibility.productIds", el.get("productIds"),
+                             known=known, known_name="a catalog id of an eligible kind")
+            _pricing_id_list(r, f"{tag}.eligibility.brands", el.get("brands"),
+                             known=brands, known_name="a catalog brand")
+            _pricing_id_list(r, f"{tag}.eligibility.sizes", el.get("sizes"),
+                             allowed=size_set)
+        ex = o.get("exclusions")
+        if "exclusions" in o and _pricing_object(r, f"{tag}.exclusions", ex,
+                                                 PRICING_OFFER_EXCLUSION_KEYS):
+            known = None
+            if mids is not None or aids is not None:
+                known = (mids or set()) | (aids or set())
+            _pricing_id_list(r, f"{tag}.exclusions.productIds", ex.get("productIds"),
+                             known=known, known_name="a catalog id")
+            _pricing_id_list(r, f"{tag}.exclusions.brands", ex.get("brands"),
+                             known=brands, known_name="a catalog brand")
+        starts = _pricing_instant(o.get("startsAt"))
+        ends = _pricing_instant(o.get("endsAt"))
+        if "startsAt" in o and starts is None:
+            r.add_error(f"{tag}.startsAt {fin_headline.short_repr(o.get('startsAt'))} must "
+                        f"be ISO-8601 with a timezone offset (inclusive start)")
+        if "endsAt" in o and ends is None:
+            r.add_error(f"{tag}.endsAt {fin_headline.short_repr(o.get('endsAt'))} must be "
+                        f"ISO-8601 with a timezone offset (exclusive end)")
+        if starts is not None and ends is not None:
+            if ends <= starts:
+                r.add_error(f"{tag}.endsAt must be after startsAt")
+            elif ends <= now:
+                r.add_warning(f"{tag} ended at {fin_headline.short_repr(o.get('endsAt'))} - it is inert at "
+                              f"runtime; remove it from the configuration")
+        if "stacking" in o and not _pricing_enum(o.get("stacking"), PRICING_OFFER_STACKING):
+            r.add_error(f"{tag}.stacking {fin_headline.short_repr(o.get('stacking'))} must "
+                        f"be one of {sorted(PRICING_OFFER_STACKING)}")
+        pr_ = o.get("priority")
+        if "priority" in o and (type(pr_) is not int or pr_ < 0):
+            r.add_error(f"{tag}.priority {fin_headline.short_repr(pr_)} must be an integer "
+                        f">= 0 (lower applies first)")
+        mm = o.get("minimumMerchandiseMinor")
+        if mm is not None and (type(mm) is not int or not 1 <= mm <= PRICING_AMOUNT_MINOR_MAX):
+            r.add_error(f"{tag}.minimumMerchandiseMinor {fin_headline.short_repr(mm)} must "
+                        f"be null or a positive integer of minor units at most "
+                        f"{PRICING_AMOUNT_MINOR_MAX}")
+        if "payment" in o and not _pricing_enum(o.get("payment"), PRICING_OFFER_PAYMENT):
+            r.add_error(f"{tag}.payment {fin_headline.short_repr(o.get('payment'))} must be "
+                        f"one of {sorted(PRICING_OFFER_PAYMENT)}")
+        ev = o.get("evidence")
+        if "evidence" in o and _pricing_object(r, f"{tag}.evidence", ev,
+                                               PRICING_OFFER_EVIDENCE_KEYS):
+            st = ev.get("status")
+            if not _pricing_enum(st, PRICING_OFFER_EVIDENCE_STATUSES):
+                r.add_error(f"{tag}.evidence.status {fin_headline.short_repr(st)} must be "
+                            f"one of {sorted(PRICING_OFFER_EVIDENCE_STATUSES)} - only a "
+                            f"current retailer promotion evidences an exact discount "
+                            f"(historical, archived and illustrative material never does)")
+            d = _pricing_stamp(r, f"{tag}.evidence", ev.get("verifiedAt"), now,
+                               what="verifiedAt")
+            _pricing_freshness(r, f"{tag}.evidence", d, mad, now, enabled,
+                               what="verifiedAt")
+            _pricing_str(r, f"{tag}.evidence", ev, "verifiedBy", required=True)
+            _pricing_source_url(r, f"{tag}.evidence", ev.get("sourceUrl"),
+                                canonical_hosts, shipped_hosts, policy="price")
+        ap = o.get("approval")
+        if "approval" in o and _pricing_object(r, f"{tag}.approval", ap,
+                                               PRICING_OFFER_APPROVAL_KEYS):
+            _pricing_str(r, f"{tag}.approval", ap, "by", required=True)
+            _pricing_stamp(r, f"{tag}.approval", ap.get("at"), now, what="at")
+
+
 def validate_pricing(config, *, allowed_source_hosts=None, financing_source_hosts=None,
-                     mattress_ids=None, accessory_ids=None, now=None) -> ValidationReport:
+                     mattress_ids=None, accessory_ids=None, now=None,
+                     mattress_brands=None, accessory_skus=None) -> ValidationReport:
     """Validate store-config `pricing` — the Phase 2.1 dark framework.
 
     TOTAL over JSON: for any value json.loads can produce, at the top level or
@@ -3747,7 +4051,14 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     canonical FINANCING allowlist, used for formula artifacts and the plans
     they reference — never the price list. `mattress_ids` / `accessory_ids`:
     the catalog ids the same bundle ships; when supplied, every product entry
-    must name one. `now`: an offset-bearing datetime for deterministic
+    (and every offer filter) must name one. `mattress_brands`: the catalog's
+    brands; when supplied, an offer's brand filters must name one.
+    `accessory_skus`: the catalog's accessory price identities
+    (accessory_skus_from_catalog). When supplied, an accessory sold per size
+    is priced per size - each entry names one of its accessorySkus sizes and
+    exactly that size's sku, and a sizeless entry for it is refused - while a
+    size-independent accessory keeps one sizeless entry carrying its catalog
+    sku. When absent, every accessory entry must be sizeless. `now`: an offset-bearing datetime for deterministic
     freshness under test; production passes nothing and is judged against
     UTC now."""
     r = ValidationReport()
@@ -3779,12 +4090,15 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
 
     enabled = _pricing_bool(r, "pricing", p, "enabled") is True
     display = _pricing_bool(r, "pricing", p, "displayEnabled")
-    if display is True:
-        r.add_error("pricing.displayEnabled must be false — customer-visible price or "
-                    "payment output is a Phase 2.2 activation output (Blake plus "
-                    "written business/legal approval, recorded on the item); Phase "
-                    "2.1 ships the framework DARK, and CI's operating-state lock "
-                    "names this same switch")
+    # Activation is a configuration decision (owner direction 2026-10-15): an
+    # activated block validates when every governance record below is
+    # complete, and is refused - naming each missing record - otherwise. CI's
+    # "Shipped operating state unchanged" lock remains the owner's switch for
+    # the SHIPPED block.
+    if display is True and not enabled:
+        r.add_error("pricing.displayEnabled requires pricing.enabled true - missing "
+                    "governance record: the technical admission of the pricing "
+                    "contract (a displayed price needs an enabled resolver)")
     # The ACTIVATION predicate (owner ruling 2026-08-28): the live-output
     # approvals below bind to displayEnabled or any enabled surface — both
     # refused throughout Phase 2.1 — never to `enabled`, which is the
@@ -3804,7 +4118,11 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     auth = p.get("authority")
     if _pricing_object(r, "pricing.authority", auth, PRICING_AUTHORITY_KEYS):
         for key in ("owner", "role"):
-            _pricing_str(r, "pricing.authority", auth, key, required=activation)
+            v = _pricing_str(r, "pricing.authority", auth, key, required=activation)
+            if activation and v is None:
+                r.add_error(f"pricing.authority.{key}: missing governance record at "
+                            f"activation - the price owner must be named before "
+                            f"anything is shown")
 
     # ---- freshness policy: UNAPPROVED and unset in production, no silent default
     mad = None
@@ -3839,8 +4157,10 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
             _pricing_str(r, "pricing.freshness", fr, "approvedBy", required=False)
         if enabled and not approved:
             r.add_error("pricing.freshness.status must be 'approved' (with maxAgeDays, "
-                        "approvedBy and approvedAt) when pricing is enabled — a "
-                        "freshness cadence is a business decision, not a default")
+                        "approvedBy and approvedAt) when pricing is enabled (and so "
+                        "at every activation) — missing governance record: the "
+                        "freshness policy approval; a freshness cadence is a "
+                        "business decision, not a default")
 
     # ---- source policy: UNAPPROVED and empty in production; shipped ⊆ canonical
     shipped_hosts = []
@@ -3894,8 +4214,10 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
         if enabled and not sapproved:
             r.add_error("pricing.sourcePolicy.status must be 'approved' (with a "
                         "non-empty allowlist, approvedBy and approvedAt) when pricing "
-                        "is enabled — the approved retail price source is a business "
-                        "input, and lacks.com is a candidate until someone approves it")
+                        "is enabled (and so at every activation) — missing governance "
+                        "record: the source policy approval; the approved retail price "
+                        "source is a business input, and lacks.com is a candidate until "
+                        "someone approves it")
 
     # ---- purchase-threshold policy: runtime input only, never configuration
     pa = p.get("purchaseAssessment")
@@ -3919,7 +4241,7 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                     f"contract, and a price is keyed by it")
     size_set = set(want_sizes)
 
-    # ---- surfaces: every surface declared, every one off (dark)
+    # ---- surfaces: every surface declared; a surface opens only under display
     surfaces = p.get("surfaces")
     if _pricing_object(r, "pricing.surfaces", surfaces, PRICING_SURFACES):
         for name in sorted(PRICING_SURFACES):
@@ -3928,10 +4250,10 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                             f"(false) — a missing surface reads as enabled at runtime")
                 continue
             v = _pricing_bool(r, "pricing.surfaces", surfaces, name)
-            if v is True:
+            if v is True and display is not True:
                 r.add_error(f"pricing.surfaces.{name} must be false while "
-                            f"displayEnabled is false — no surface may render a "
-                            f"price before Phase 2.2")
+                            f"displayEnabled is false — a surface renders only "
+                            f"under an activated display switch")
 
     # ---- presentation contract: governed, bilingual, NON-RENDERED, separately approved
     pres = p.get("presentation")
@@ -4013,6 +4335,7 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     # ---- products
     mids = _pricing_ids_arg(r, "mattress_ids", mattress_ids)
     aids = _pricing_ids_arg(r, "accessory_ids", accessory_ids)
+    acc_skus = _pricing_accessory_skus_arg(r, accessory_skus)
     products = p.get("products")
     seen_identity = {}
     seen_sku = {}
@@ -4062,11 +4385,46 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                                 f"mattress price without a verified size is "
                                 f"price-unavailable, never inferred from another size")
             elif kind == "accessory":
-                if size is not None:
-                    r.add_error(f"{tag}.size must be null for an accessory (got "
-                                f"{fin_headline.short_repr(size)})")
+                # Per-size accessories (owner direction 2026-10-15): a base or
+                # protector sold in each mattress size is one product PER SIZE,
+                # each with its own catalog sku (accessorySkus) and its own
+                # price. Which form an accessory takes is the CATALOG's call,
+                # never the price entry's.
+                ident_cat = acc_skus.get(pid) if (acc_skus is not None and pid) else None
+                if isinstance(ident_cat, dict):
+                    if size is None:
+                        r.add_error(f"{tag}.size must name one of accessory "
+                                    f"{fin_headline.short_repr(pid)}'s accessorySkus sizes "
+                                    f"{sorted(ident_cat)} - it is sold per mattress size, "
+                                    f"and a sizeless price for it is refused (never "
+                                    f"inferred from another size)")
+                    elif isinstance(size, str) and size.strip().lower() in _PRICING_SIZE_WILDCARDS:
+                        r.add_error(f"{tag}.size {size!r} is a wildcard - an accessory "
+                                    f"sold per size is priced for ONE size; never infer "
+                                    f"another size's price")
+                    elif type(size) is not str or size not in size_set or size not in ident_cat:
+                        r.add_error(f"{tag}.size {fin_headline.short_repr(size)} is not one "
+                                    f"of accessory {fin_headline.short_repr(pid)}'s "
+                                    f"accessorySkus sizes {sorted(ident_cat)} - a price "
+                                    f"names a size the catalog sells")
+                    elif sku and sku != ident_cat[size]:
+                        r.add_error(f"{tag}.sku {fin_headline.short_repr(sku)} must be "
+                                    f"exactly accessorySkus[{size!r}] "
+                                    f"{fin_headline.short_repr(ident_cat[size])} - a "
+                                    f"per-size price is bound to that size's own sku")
+                else:
+                    if size is not None:
+                        r.add_error(f"{tag}.size must be null for an accessory without "
+                                    f"accessorySkus in the catalog (got "
+                                    f"{fin_headline.short_repr(size)})")
+                    if acc_skus is not None and pid and sku and sku != ident_cat:
+                        r.add_error(f"{tag}.sku {fin_headline.short_repr(sku)} must be "
+                                    f"exactly the catalog sku "
+                                    f"{fin_headline.short_repr(ident_cat)} of accessory "
+                                    f"{fin_headline.short_repr(pid)} - a price attaches "
+                                    f"only to the identity the catalog names")
             if pid and (kind == "mattress" and isinstance(size, str) or kind == "accessory"):
-                ident = (pid, size if kind == "mattress" else None)
+                ident = (pid, size if isinstance(size, str) else None)
                 if ident in seen_identity:
                     r.add_error(f"{tag} duplicates products[{seen_identity[ident]}] for "
                                 f"productId {fin_headline.short_repr(pid)} size "
@@ -4139,7 +4497,7 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                             "productId": pid,
                             "productKind": kind,
                             "sku": sku,
-                            "size": size if kind == "mattress" else None,
+                            "size": size if kind in ("mattress", "accessory") else None,
                             "amountMinor": amt,
                             "currency": pc,
                             "kind": pk,
@@ -4327,6 +4685,26 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
         # price allowlist: a formula is a fact about a plan, not about a price.
         _pricing_source_url(r, tag, f.get("sourceUrl"), canonical_fin_hosts, fin_hosts,
                             policy="financing")
+
+    # ---- offers: exact store promotions and discounts
+    _validate_pricing_offers(
+        r, p.get("offers"), enabled=enabled, now=now_dt, mad=mad,
+        canonical_hosts=canonical_hosts, shipped_hosts=shipped_hosts, mids=mids,
+        aids=aids, brands=_pricing_ids_arg(r, "mattress_brands", mattress_brands),
+        size_set=size_set)
+
+    # ---- non-attestation markers: nothing that says it is not a signature
+    # can sign anything that goes live (keeps every harness document
+    # unshippable now that complete activation validates).
+    if activation:
+        for path, value in _pricing_signature_records(p):
+            m = _pricing_marker(value)
+            if m:
+                r.add_error(f"{path} {fin_headline.short_repr(value)} carries the "
+                            f"non-attestation marker {m!r} - missing governance "
+                            f"record at activation: a fixture, placeholder, "
+                            f"review-build or pending signature is not an "
+                            f"approval, verification or clearance")
 
     _scan_pricing_forbidden_keys(r, "pricing", p)
     return r
@@ -4631,6 +5009,12 @@ _SKU_GRAMMAR = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 def _validate_mattress_skus(r, tag, raw):
+    _validate_size_skus(r, f"Mattresses {tag}: skus", raw)
+
+
+def _validate_size_skus(r, label, raw):
+    # One grammar for every per-size SKU map (mattress `skus`, accessory
+    # `SKUs by Size`): `size:SKU|size:SKU`, sizes from the quiz's own ids.
     text = _s(raw)
     if not text:
         return
@@ -4640,19 +5024,19 @@ def _validate_mattress_skus(r, tag, raw):
         if not p:
             continue
         if ":" not in p:
-            r.add_error(f"Mattresses {tag}: skus entry {p!r} must be size:SKU")
+            r.add_error(f"{label} entry {p!r} must be size:SKU")
             continue
         size, sku = p.split(":", 1)
         size, sku = size.strip(), sku.strip()
         if size not in _MATTRESS_SIZE_IDS:
-            r.add_error(f"Mattresses {tag}: skus size {size!r} is not a mattress_size id "
+            r.add_error(f"{label} size {size!r} is not a mattress_size id "
                         f"{list(_MATTRESS_SIZE_IDS)}")
         elif size in seen:
-            r.add_error(f"Mattresses {tag}: skus duplicate size {size!r}")
+            r.add_error(f"{label} duplicate size {size!r}")
         else:
             seen.add(size)
         if not sku or len(sku) > PRICING_SKU_MAX or not _SKU_GRAMMAR.fullmatch(sku):
-            r.add_error(f"Mattresses {tag}: skus value {sku!r} for {size!r} must be an "
+            r.add_error(f"{label} value {sku!r} for {size!r} must be an "
                         f"identifier of at most {PRICING_SKU_MAX} chars ([A-Za-z0-9._-])")
 
 
@@ -4807,6 +5191,14 @@ def validate_accessories(raw_tabs, *, source_images=None, skip_images=False,
                     or not _SKU_GRAMMAR.fullmatch(sku_raw)):
                 r.add_error(f"Accessories {tag}: SKU {sku_raw!r} must be a trimmed identifier "
                             f"of at most {PRICING_SKU_MAX} chars ([A-Za-z0-9._-])")
+        # Per-size identity for an accessory sold in each mattress size (a
+        # base, a protector): each size is its own product with its own SKU.
+        # A product carries one identity form, never both.
+        sizes_cell = row.get("SKUs by Size")
+        _validate_size_skus(r, f"Accessories {tag}: SKUs by Size", sizes_cell)
+        if sku_raw and _s(sizes_cell):
+            r.add_error(f"Accessories {tag}: SKU and SKUs by Size are both set; "
+                        "a size-independent product uses SKU, a per-size product uses SKUs by Size")
         if _blank(img):
             r.add_error(f"Accessories {tag}: Image File Name is empty")
         else:
@@ -5899,6 +6291,15 @@ def _self_test() -> int:
     check("accessory SKU with a space -> error", any("must be a trimmed identifier" in e for e in _asku_errs("bad sku")))
     check("accessory SKU untrimmed -> error", any("must be a trimmed identifier" in e for e in _asku_errs(" SKU1")))
     check("accessory SKU over-long -> error", any("must be a trimmed identifier" in e for e in _asku_errs("X" * 65)))
+    def _asizes_errs(value, sku=""):
+        tt = _good_tabs(); tt["Accessories"][1][0]["SKUs by Size"] = value; tt["Accessories"][1][0]["SKU"] = sku
+        return [e for e in validate_accessories(tt, languages=langs).errors if "SKU" in e]
+    check("accessory SKUs by Size blank -> no error", _asizes_errs("") == [] and _asizes_errs(None) == [])
+    check("accessory SKUs by Size well-formed -> no error", _asizes_errs("queen:PROT-Q|king:PROT-K|twin_xl:PROT-TXL") == [])
+    check("accessory SKUs by Size unknown size -> error", any("is not a mattress_size id" in e for e in _asizes_errs("queenish:A")))
+    check("accessory SKUs by Size duplicate size -> error", any("duplicate size" in e for e in _asizes_errs("queen:A|queen:B")))
+    check("accessory SKUs by Size bad value -> error", any("must be an identifier" in e for e in _asizes_errs("queen:bad sku")))
+    check("accessory SKU and SKUs by Size together -> error", any("both set" in e for e in _asizes_errs("queen:A", sku="B")))
 
     # accessory image basename != id is accepted when the cell is a full
     # images/accessories/<file>.jpg path
@@ -8214,7 +8615,8 @@ def _self_test() -> int:
         "purchaseAssessment": {"policy": "runtime-transaction-amount"},
         "sizes": ["twin", "twin_xl", "full", "queen", "king", "cal_king"],
         "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
-                     "handoff": False, "sleepPlan": False, "compare": False},
+                     "handoff": False, "sleepPlan": False, "compare": False,
+                     "email": False},
         "presentation": {
             "status": "approved",
             "approvals": {
@@ -8274,7 +8676,8 @@ def _self_test() -> int:
         "purchaseAssessment": {"policy": "runtime-transaction-amount"},
         "sizes": ["twin", "twin_xl", "full", "queen", "king", "cal_king"],
         "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
-                     "handoff": False, "sleepPlan": False, "compare": False},
+                     "handoff": False, "sleepPlan": False, "compare": False,
+                     "email": False},
         "presentation": {
             "status": "unapproved",
             "approvals": {"business": {"status": "unapproved", "by": "", "at": None},
@@ -8335,10 +8738,63 @@ def _self_test() -> int:
     check("pricing formula factor value -> forbidden-key error names the rule",
           _perr(pu, "never computed before Phase 2.2"))
 
-    # the 2.2 lock
-    pu = _pmut(); pu["displayEnabled"] = True
-    check("pricing displayEnabled true -> REFUSED, names Phase 2.2",
-          _perr(pu, "Phase 2.2 activation output"))
+    # Activation is a configuration decision (owner direction 2026-10-15):
+    # a COMPLETE, genuinely signed activation validates; anything short of
+    # it is refused naming the missing record. CI's operating-state lock is
+    # the owner's switch for the shipped block.
+    def _activated():
+        a = _pmut(); a["displayEnabled"] = True
+        a["surfaces"] = {k: True for k in a["surfaces"]}
+        a["offers"] = [json.loads(json.dumps(good_offer))]
+        return a
+    good_offer = {
+        "id": "spring-sale-10", "label": {"en": "Spring sale", "es": "Venta de primavera"},
+        "terms": {"en": "10% off mattresses.", "es": "10% de descuento en colchones."},
+        "effect": {"type": "percent-off", "basisPoints": 1000},
+        "eligibility": {"productKinds": ["mattress"], "productIds": ["g6"],
+                        "brands": ["Restonic"], "sizes": ["queen"]},
+        "exclusions": {"productIds": ["g7"], "brands": ["Tempur-Pedic"]},
+        "startsAt": "2026-08-20T00:00:00-05:00", "endsAt": "2026-09-15T00:00:00-05:00",
+        "stacking": "combinable", "priority": 0, "minimumMerchandiseMinor": 50000,
+        "payment": "any",
+        "evidence": {"status": "retailer-promotion-current",
+                     "sourceUrl": "https://www.lacks.com/promotions",
+                     "verifiedAt": _PSTAMP, "verifiedBy": "Test"},
+        "approval": {"by": "Test", "at": "2026-08-26T09:00:00-05:00"},
+    }
+    _PBRANDS = {"Restonic", "Tempur-Pedic"}
+    ra_ok = _pv(_activated(), mattress_brands=_PBRANDS)
+    check("pricing COMPLETE activation (display + every surface + an offer, every record signed) -> ADMITTED",
+          ra_ok.ok)
+    pu = _pmut(); pu["displayEnabled"] = True; pu["enabled"] = False; pu["formulas"] = []
+    check("pricing displayEnabled true with pricing disabled -> refused, names the missing record",
+          _perr(pu, "displayEnabled requires pricing.enabled"))
+    pu = _activated(); pu["freshness"] = {"status": "unapproved", "maxAgeDays": None,
+                                          "approvedBy": "", "approvedAt": None}
+    check("pricing activation with freshness unapproved -> refused naming the freshness policy approval",
+          _perr(pu, "missing governance record: the freshness policy approval"))
+    pu = _activated(); pu["sourcePolicy"] = {"status": "unapproved", "allowedSourceHosts": [],
+                                             "approvedBy": "", "approvedAt": None}
+    check("pricing activation with source policy unapproved -> refused naming the source policy approval",
+          _perr(pu, "missing governance record: the source policy approval"))
+    for _who, _path in (("authority", ("authority", "owner")),
+                        ("legal", ("presentation", "approvals", "legal", "by")),
+                        ("evidence", ("products", 0, "evidence", "verifiedBy")),
+                        ("clearance", ("products", 0, "clearance", "attestedBy")),
+                        ("formula", ("formulas", 0, "approvedBy")),
+                        ("offer approval", ("offers", 0, "approval", "by")),
+                        ("offer evidence", ("offers", 0, "evidence", "verifiedBy"))):
+        for _mark in ("FIXTURE - placeholder", "REVIEW BUILD - pending",
+                      "automated-extraction (PENDING OWNER VERIFICATION)"):
+            pu = _activated(); _t = pu
+            for _k in _path[:-1]:
+                _t = _t[_k]
+            _t[_path[-1]] = _mark
+            check(f"pricing activation with a {_who} signature {_mark!r} -> refused (non-attestation marker)",
+                  _perr(pu, "non-attestation marker", mattress_brands=_PBRANDS))
+    pu = _pmut(); pu["presentation"]["approvals"]["legal"]["by"] = "FIXTURE - placeholder"
+    check("pricing DARK with a FIXTURE-marked signature -> ADMITTED (markers bind to activation only)",
+          _pv(pu).ok)
     pu = _pmut(); pu["displayEnabled"] = "false"
     check("pricing displayEnabled string -> error (strict boolean)",
           _perr(pu, "displayEnabled must be a JSON boolean"))
@@ -8350,12 +8806,116 @@ def _self_test() -> int:
     pu = _pmut(); del pu["surfaces"]["sleepPlan"]
     check("pricing surface missing -> error (missing reads as enabled)",
           _perr(pu, "surfaces.sleepPlan must be declared"))
-    # `compare` became a REAL surface in 2026-09-20's finalist price-difference
-    # work, so the unknown-surface probe needs a name that is genuinely not one.
-    pu = _pmut(); pu["surfaces"]["email"] = False
-    check("pricing unknown surface -> error", _perr(pu, "'email'"))
-    check("pricing KNOWN compare surface -> admitted",
-          _pv(_pmut()).ok and "compare" in PRICING_SURFACES)
+    # `compare` (2026-09-20) and `email` (2026-10-15) are REAL surfaces, so
+    # the unknown-surface probe needs a name that is genuinely not one.
+    pu = _pmut(); pu["surfaces"]["sms"] = False
+    check("pricing unknown surface -> error", _perr(pu, "'sms'"))
+    check("pricing KNOWN compare and email surfaces -> admitted",
+          _pv(_pmut()).ok and "compare" in PRICING_SURFACES and "email" in PRICING_SURFACES)
+    pu = _pmut(); del pu["surfaces"]["email"]
+    check("pricing email surface missing -> error (missing reads as enabled)",
+          _perr(pu, "surfaces.email must be declared"))
+    pu = _pmut(); pu["surfaces"]["email"] = True
+    check("pricing email surface on while display is off -> error",
+          _perr(pu, "surfaces.email must be false while displayEnabled is false"))
+
+    # ---- offers (integration contract section 2) ----
+    def _ofr(**kw):
+        a = _pmut(); o = json.loads(json.dumps(good_offer)); o.update(kw)
+        a["offers"] = [o]
+        return a
+    _ro = _pv(_ofr(), mattress_brands=_PBRANDS)
+    check("offers: a complete dark offer -> ok", _ro.ok)
+    check("offers: absent key -> ok (absent is no offers)", "offers" not in _pmut() and _pv(_pmut()).ok)
+    check("offers: non-array -> error", _perr(_ofr() | {"offers": {}}, "pricing.offers must be an array"))
+    pu = _ofr(); pu["enabled"] = False; pu["formulas"] = []
+    check("offers: non-empty while pricing disabled -> error", _perr(pu, "offers must be empty while pricing is disabled"))
+    for _k in ("id", "label", "terms", "effect", "eligibility", "startsAt", "endsAt", "stacking",
+               "priority", "minimumMerchandiseMinor", "payment", "evidence", "approval"):
+        pu = _ofr(); del pu["offers"][0][_k]
+        check(f"offers: missing {_k} -> error", _perr(pu, f".{_k} is required"))
+    pu = _ofr(); del pu["offers"][0]["exclusions"]
+    check("offers: exclusions optional -> ok", _pv(pu, mattress_brands=_PBRANDS).ok)
+    pu = _ofr(note="x")
+    check("offers: unknown key -> error", _perr(pu, "'note'"))
+    for _bad in ("AB", "Spring_Sale", "x" * 65, 5):
+        check(f"offers: id {_bad!r} -> error", _perr(_ofr(id=_bad), "must match [a-z0-9-]{3,64}"))
+    pu = _ofr(); pu["offers"].append(json.loads(json.dumps(pu["offers"][0])))
+    check("offers: duplicate id -> error", _perr(pu, "duplicates offers[0]"))
+    check("offers: label missing ES -> error", _perr(_ofr(label={"en": "x", "es": ""}), ".label must be a bilingual"))
+    check("offers: terms not bilingual -> error", _perr(_ofr(terms="10% off"), ".terms must be a bilingual"))
+    for _eff, _ok in (({"type": "percent-off", "basisPoints": 1}, True),
+                      ({"type": "percent-off", "basisPoints": 10000}, True),
+                      ({"type": "percent-off", "basisPoints": 0}, False),
+                      ({"type": "percent-off", "basisPoints": 10001}, False),
+                      ({"type": "percent-off", "basisPoints": 10.5}, False),
+                      ({"type": "percent-off", "basisPoints": True}, False),
+                      ({"type": "amount-off", "amountMinor": 10000}, True),
+                      ({"type": "amount-off", "amountMinor": 0}, False),
+                      ({"type": "amount-off", "basisPoints": 100}, False),
+                      ({"type": "bogo", "amountMinor": 1}, False),
+                      ("10%", False)):
+        check(f"offers: effect {_eff!r} -> {'ok' if _ok else 'error'}",
+              _pv(_ofr(effect=_eff), mattress_brands=_PBRANDS).ok == _ok)
+    _el = lambda **kw: dict(good_offer["eligibility"], **kw)
+    check("offers: productKinds outside the enum -> error",
+          _perr(_ofr(eligibility=_el(productKinds=["frame"])), "must be one of ['accessory', 'mattress']"))
+    check("offers: productKinds missing -> error",
+          _perr(_ofr(eligibility={"productIds": ["g6"]}), "eligibility.productKinds is required"))
+    check("offers: empty productIds list -> error (omit instead)",
+          _perr(_ofr(eligibility=_el(productIds=[])), "omit the key"))
+    check("offers: unknown catalog productId -> error",
+          _perr(_ofr(eligibility=_el(productIds=["zzz"])), "is not a catalog id of an eligible kind"))
+    check("offers: an accessory id under a mattress-only offer -> error",
+          _perr(_ofr(eligibility=_el(productIds=["pillow-flow"])), "is not a catalog id of an eligible kind"))
+    check("offers: accessory id with an accessory kind -> ok",
+          _pv(_ofr(eligibility={"productKinds": ["accessory"], "productIds": ["pillow-flow"]}),
+              mattress_brands=_PBRANDS).ok)
+    check("offers: unknown brand (catalog brands supplied) -> error",
+          _perr(_ofr(eligibility=_el(brands=["Acme"])), "is not a catalog brand", mattress_brands=_PBRANDS))
+    check("offers: brand unchecked when catalog brands not supplied",
+          _pv(_ofr(eligibility=_el(brands=["Acme"]))).ok)
+    check("offers: size outside pricing.sizes -> error",
+          _perr(_ofr(eligibility=_el(sizes=["olympic"])), "must be one of"))
+    check("offers: exclusion of an unknown product -> error",
+          _perr(_ofr(exclusions={"productIds": ["zzz"]}), "exclusions.productIds[0]"))
+    check("offers: unknown exclusion key -> error",
+          _perr(_ofr(exclusions={"sizes": ["queen"]}), "'sizes'"))
+    check("offers: startsAt without an offset -> error",
+          _perr(_ofr(startsAt="2026-08-20T00:00:00"), "startsAt"))
+    check("offers: endsAt not after startsAt -> error",
+          _perr(_ofr(endsAt="2026-08-20T00:00:00-05:00"), "endsAt must be after startsAt"))
+    _rx = _pv(_ofr(startsAt="2026-08-01T00:00:00-05:00", endsAt="2026-08-02T00:00:00-05:00"),
+              mattress_brands=_PBRANDS)
+    check("offers: an ENDED offer -> warning (inert at runtime), not error",
+          _rx.ok and any("ended at" in w for w in _rx.warnings))
+    check("offers: stacking outside the enum -> error", _perr(_ofr(stacking="stack"), ".stacking"))
+    check("offers: negative priority -> error", _perr(_ofr(priority=-1), ".priority"))
+    check("offers: boolean priority -> error", _perr(_ofr(priority=True), ".priority"))
+    check("offers: minimum as a float -> error", _perr(_ofr(minimumMerchandiseMinor=500.0), "minimumMerchandiseMinor"))
+    check("offers: null minimum -> ok", _pv(_ofr(minimumMerchandiseMinor=None), mattress_brands=_PBRANDS).ok)
+    check("offers: payment outside the enum -> error", _perr(_ofr(payment="cash"), ".payment"))
+    check("offers: pay-in-full-only -> ok", _pv(_ofr(payment="pay-in-full-only"), mattress_brands=_PBRANDS).ok)
+    _ev = lambda **kw: dict(good_offer["evidence"], **kw)
+    for _st in ("historical-snapshot", "illustrative", "retailer-product-page-current", "lender-page"):
+        check(f"offers: evidence status {_st!r} -> error",
+              _perr(_ofr(evidence=_ev(status=_st)), "retailer-promotion-current"))
+    check("offers: evidence host off the shipped allowlist -> error",
+          _perr(_ofr(evidence=_ev(sourceUrl="https://www.synchrony.com/x")), "not allowed by"))
+    check("offers: archived evidence -> error",
+          _perr(_ofr(evidence=_ev(sourceUrl="https://web.archive.org/web/2026/https://www.lacks.com/x")),
+                "web.archive.org"))
+    check("offers: blank verifiedBy -> error", _perr(_ofr(evidence=_ev(verifiedBy=" ")), "verifiedBy is required"))
+    check("offers: future verifiedAt -> error",
+          _perr(_ofr(evidence=_ev(verifiedAt="2026-09-30T00:00:00-05:00")), "materially in the future"))
+    check("offers: stale evidence while enabled -> error",
+          _perr(_ofr(), "older than maxAgeDays", now=_PNOW + _ptd(days=30)))
+    check("offers: approval without a signer -> error",
+          _perr(_ofr(approval={"by": "", "at": "2026-08-26T09:00:00-05:00"}), "approval.by is required"))
+    check("offers: approval with an unparseable at -> error",
+          _perr(_ofr(approval={"by": "Test", "at": "yesterday"}), "approval.at"))
+    check("offers: offer keys never trip the forbidden-key scan",
+          not any("may not exist anywhere" in e for e in _pv(_ofr()).errors))
 
     # scalars and ownership
     pu = _pmut(); pu["schemaVersion"] = True
@@ -8373,8 +8933,8 @@ def _self_test() -> int:
     check("pricing ENABLED dark with blank owner -> ADMITTED (ownership re-bound to activation)",
           _pv(pu).ok)
     pu["displayEnabled"] = True
-    check("pricing displayEnabled true with blank owner -> ownership error fires alongside the lock",
-          _perr(pu, "authority.owner") and _perr(pu, "Phase 2.2 activation output"))
+    check("pricing displayEnabled true with blank owner -> refused, naming the owner record",
+          _perr(pu, "authority.owner") and _perr(pu, "missing governance record"))
     pu = _pmut(); pu["authority"]["owner"] = ""; pu["surfaces"]["drawer"] = True
     check("pricing enabled surface with blank owner -> ownership error fires alongside the surface error",
           _perr(pu, "authority.owner") and _perr(pu, "surfaces.drawer must be false"))
@@ -8550,6 +9110,66 @@ def _self_test() -> int:
     check("pricing accessory with a size -> error", _perr(pu, "size must be null for an accessory"))
     pu["products"][0]["size"] = None
     check("pricing accessory entry with null size -> ok", _pv(pu).ok)
+
+    # Per-size accessories (owner direction 2026-10-15): with the catalog's
+    # accessory identities supplied, an accessory carrying accessorySkus is
+    # priced per size (size = one of its sizes, sku = exactly that size's);
+    # one without keeps the sizeless entry and its catalog sku.
+    _ASK = {"base-a": {"queen": "B-Q", "twin_xl": "B-TXL"}, "pillow-flow": "P-1"}
+
+    def _acc(pid, sku, size):
+        e = json.loads(json.dumps(good_pricing["products"][0]))
+        e.update({"productKind": "accessory", "productId": pid, "sku": sku, "size": size})
+        e["clearance"]["scope"].update({"productId": pid, "productKind": "accessory",
+                                        "sku": sku, "size": size})
+        return e
+
+    def _accdoc(*entries):
+        pu = _pmut(); pu["products"] = list(entries)
+        return pu
+
+    def _apv(pu, **kw):
+        kw.setdefault("accessory_ids", {"base-a", "pillow-flow"})
+        kw.setdefault("accessory_skus", _ASK)
+        return _pv(pu, **kw)
+
+    rq = _apv(_accdoc(_acc("base-a", "B-Q", "queen"), _acc("base-a", "B-TXL", "twin_xl"),
+                      _acc("pillow-flow", "P-1", None)))
+    check("pricing per-size accessory: one entry per accessorySkus size + a sizeless pillow -> ok",
+          rq.ok)
+    if not rq.ok:
+        print("    " + "; ".join(rq.errors[:2]))
+    check("pricing per-size accessory: a sizeless entry for a sized accessory -> error",
+          any("sold per mattress size" in e for e in _apv(_accdoc(_acc("base-a", "B-Q", None))).errors))
+    check("pricing per-size accessory: a size the catalog does not sell -> error",
+          any("is not one of accessory" in e for e in _apv(_accdoc(_acc("base-a", "B-Q", "king"))).errors))
+    check("pricing per-size accessory: a wildcard size -> error",
+          any("is a wildcard" in e for e in _apv(_accdoc(_acc("base-a", "B-Q", "*"))).errors))
+    check("pricing per-size accessory: another size's sku -> error (sku = exactly accessorySkus[size])",
+          any("must be exactly accessorySkus['queen']" in e
+              for e in _apv(_accdoc(_acc("base-a", "B-TXL", "queen"))).errors))
+    rd2 = _apv(_accdoc(_acc("base-a", "B-Q", "queen"), _acc("base-a", "B-Q2", "queen")))
+    check("pricing per-size accessory: duplicate (productId, size) -> error",
+          any("duplicates products[0]" in e and "'queen'" in e for e in rd2.errors))
+    check("pricing size-independent accessory: a sized entry -> error",
+          any("size must be null for an accessory without accessorySkus" in e
+              for e in _apv(_accdoc(_acc("pillow-flow", "P-1", "queen"))).errors))
+    check("pricing size-independent accessory: a sku other than the catalog's -> error",
+          any("exactly the catalog sku" in e for e in _apv(_accdoc(_acc("pillow-flow", "P-9", None))).errors))
+    pc = _accdoc(_acc("base-a", "B-Q", "queen")); pc["products"][0]["clearance"]["scope"]["size"] = None
+    check("pricing per-size accessory: clearance scope must carry the same size -> error",
+          any("clearance.scope.size" in e for e in _apv(pc).errors))
+    check("pricing per-size accessory: without accessory_skus a sized accessory entry is refused (fail closed)",
+          any("size must be null for an accessory" in e
+              for e in _pv(_accdoc(_acc("base-a", "B-Q", "queen")),
+                           accessory_ids={"base-a", "pillow-flow"}).errors))
+    check("pricing malformed accessory_skus argument -> reported, fails closed",
+          any("accessory_skus must be a mapping" in e
+              for e in _apv(_accdoc(_acc("pillow-flow", "P-1", None)), accessory_skus=["x"]).errors))
+    check("accessory_skus_from_catalog: per-size map, single sku, none",
+          accessory_skus_from_catalog([{"id": "a", "accessorySkus": {"queen": "Q"}}, {"id": "b", "sku": "S"},
+                                       {"id": "c"}, "junk", {"id": 5}])
+          == {"a": {"queen": "Q"}, "b": "S", "c": None})
     pu = _pmut(); pu["products"][0]["productId"] = "g99"; pu["products"][0]["clearance"]["scope"]["productId"] = "g99"
     check("pricing unknown productId -> error when catalog ids supplied", _perr(pu, "not a mattress id"))
     check("pricing productId unchecked when catalog ids not supplied",
@@ -8767,8 +9387,8 @@ def _self_test() -> int:
           _pv(ua).ok)
     ua["displayEnabled"] = True
     ra = _pv(ua)
-    check("same document at activation -> every re-bound approval error fires alongside the lock",
-          any("Phase 2.2 activation output" in e for e in ra.errors)
+    check("same document at activation -> refused, every re-bound approval error fires",
+          not ra.ok
           and any("authority.owner" in e for e in ra.errors)
           and any("clearance.status must be 'cleared'" in e for e in ra.errors)
           and any("presentation.status must be 'approved' at activation" in e for e in ra.errors)

@@ -157,22 +157,15 @@ accessory identity, so the moment a family had **two** admissible sizes the
 second entry was refused as a duplicate and `--state website` would not start.
 It had never happened only because one size per family survived admission.
 
-The validator is **unchanged** and its duplicate rule is not relaxed. The
-preview judges the served document the way it is consumed: **once per customer
-size** (`size_projections`). Each projection holds every mattress entry, every
-size-independent accessory and only that size's variant of each sized family,
-and each must satisfy the unchanged validator. Two entries one customer could
-both resolve are still a duplicate; one sku serving two products is refused
-across the whole document; two sizes naming one sku price nothing
-(`sku-shared-across-sizes`). Every other drill state has one projection, the
-whole document, exactly as before.
-
-**What this does not settle.** A *shipped* `store-config.pricing` carrying two
-sizes of one accessory family is still refused by `validate_pricing`, because
-the production contract has no way to say "one entry per size" for an
-accessory. That is fail-closed and is an owner decision for activation
-(a contract change to the validator and the resolver's mirror), not something
-the preview should pre-empt.
+**Superseded 2026-10-15 (one operable application).** The production contract
+now says "one entry per size": an accessory carrying `accessorySkus` in the
+catalog is priced by one entry per size (`size` = one of its sizes, `sku` =
+exactly `accessorySkus[size]`, identity `(productId, size)`), a sizeless entry
+for it is refused, and the gate queries the resolver at the customer's size (a
+split King base at `twin_xl`). A size-independent accessory keeps one sizeless
+entry with its catalog `sku`. `validate_pricing` receives the catalog's
+identities (`accessory_skus`), so the preview validates the whole served
+document once, through the production lookup; `size_projections` is retired.
 
 ### 5b. The size on a quote line
 

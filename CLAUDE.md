@@ -98,6 +98,21 @@ applications happen only on approved external Lacks/lender pages — the kiosk
 collects no financial data. Facts verified against live lacks.com pages:
 `docs/financing-verification-2026-07-30.md` (includes the discrepancy log).
 
+**One operable application (Blake, 2026-10-15).** There is no separate payment
+demo. Pricing, payment calculation, exact promotions/discounts (`pricing.offers`)
+and email delivery of the priced quote all live in the normal application,
+driven only by governed configuration, and only one version is maintained. The
+purchase studio on the Consultation Summary, compare, Bring It Home, the
+take-home preview and the email all read one purchase model
+(`buildConsultationQuote` → `purchaseSummaryFor`). Do not reintroduce a demo
+adapter, demo-only admission or illustrative figures; verify with the governed
+harness state `python tools/serve_pricing_preview.py --state purchase
+--gas-stub success` (fixture values, loopback only). Shipped data stays dark
+until Blake authorizes activation — the CI "Shipped operating state unchanged"
+lock is the activation switch — and the exact inputs still required are listed
+in `docs/one-application-2026-10-15.md`. `docs/payment-demo-2026-10-05.md` is
+historical.
+
 This is Lacks Furniture's instance (South Texas / Rio Grande Valley, family-owned
 since 1935; EN+ES). Everything in `data/` is Lacks-specific and generated from the
 build inputs in `incoming/` (lacks_store_values.json, lacks_mattresses.json,
