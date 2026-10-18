@@ -535,3 +535,28 @@ payload and EN/ES parity were confirmed unchanged or intact.
 - a fresh screenshot set after the cleanup passes. The earlier screenshots
   predate them; Summary layout is unchanged apart from the neutral workspace
   pickup note, which sits in the dark pricing workspace.
+
+## Update after PR #139's CI fix (2026-10-18)
+
+#139's required CI failed in the mutation sweep:
+- entry 881 survived as an equivalent mutant;
+- entry 871 timed out.
+
+#139 received a test-only fix, `4027199`:
+- entry 881 retired;
+- the purchase-flow stale-figures click fails fast;
+- the per-observer limit raised to 300s.
+
+This branch merged it in `4bfac10`, a clean merge that touched only
+`tests/mutation_sweep.mjs` and `tests/purchase_flow_check.py`.
+
+**Sweep numbering:** every entry number above 881 cited in this document uses
+the earlier numbering. Since the merge, each is ONE LOWER:
+- this branch's entries 899-939 are now 898-938;
+- for example, the pickup payment-fact entries 928-930 are now 927-929;
+- entries 813, 814 and 824 are unchanged.
+
+All 938 entries apply after the merge (anchor check). The application code
+and the shipped data are unchanged by the merge, so the verification record
+above still stands for them. This branch's PR CI runs the full sweep on the
+merged head.
