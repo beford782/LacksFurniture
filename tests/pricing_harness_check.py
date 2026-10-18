@@ -460,9 +460,19 @@ check("purchase: every offer's evidence and approval are FIXTURE placeholders on
       all("FIXTURE" in o["evidence"]["verifiedBy"] and "FIXTURE" in o["approval"]["by"]
           and o["evidence"]["sourceUrl"] == srv.PURCHASE_OFFER_SOURCE
           and o["evidence"]["status"] == "retailer-promotion-current" for o in _offers.values()))
-check("purchase: every non-pricing, non-financing key deep-equals production (no review-only blocks)",
-      {k: v_ for k, v_ in PCFG.items() if k not in ("pricing", "financing")}
-      == {k: v_ for k, v_ in PROD.items() if k not in ("pricing", "financing")})
+check("purchase: every non-pricing, non-financing, non-policy key deep-equals production (no review-only blocks)",
+      {k: v_ for k, v_ in PCFG.items() if k not in ("pricing", "financing", "customerPolicies")}
+      == {k: v_ for k, v_ in PROD.items() if k not in ("pricing", "financing", "customerPolicies")})
+# Governed customer policies (2026-10-17): the drill approves the SHIPPED copy
+# in memory with FIXTURE signatures (refused at build time) - the wording is
+# production's, only the governance fields differ.
+_gov = ("status", "spanishReview", "verifiedAt", "approval")
+check("purchase: customerPolicies is production's copy, approved in memory with FIXTURE signatures only",
+      PCFG.get("customerPolicies") == srv.review_customer_policies(PROD)
+      and all({k: v_ for k, v_ in PCFG["customerPolicies"][s].items() if k not in _gov}
+              == {k: v_ for k, v_ in PROD["customerPolicies"][s].items() if k not in _gov}
+              and "FIXTURE" in PCFG["customerPolicies"][s]["approval"]["approvedBy"]
+              for s in ("comfortPromise", "fulfillment", "afterPurchase", "mexicoDelivery")))
 
 
 def expected_purchase(lines, payment="full"):

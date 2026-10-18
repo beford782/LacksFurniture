@@ -327,8 +327,23 @@ def main():
               for v in ("Synchrony", "SYNCHRONY", "synchrony")))
     check("shipped operating state: no reviewTools block (the assumption scenario panel is review-build only)",
           "reviewTools" not in cfg)
-    check("shipped operating state: no salesPolicies block (retailer commercial copy is review-build only)",
+    check("shipped operating state: no salesPolicies block (the retired ungoverned policy copy)",
           "salesPolicies" not in cfg)
+    # Governed customer policies (2026-10-17): the copy ships, but every
+    # section is a DRAFT with no approval record, so the app renders none of
+    # it. Approving a section is the activation change (Lacks approval,
+    # native-Spanish review), never a side effect of a rebuild.
+    _cpol = cfg.get("customerPolicies")
+    check("shipped operating state: every customerPolicies section is a draft with approval null",
+          isinstance(_cpol, dict) and all(
+              isinstance(_cpol.get(_s), dict) and _cpol[_s].get("status") == "draft"
+              and _cpol[_s].get("approval") is None
+              for _s in ("comfortPromise", "fulfillment", "afterPurchase", "mexicoDelivery")))
+    check("shipped operating state: productVisuals ships empty (no recorded image-use permission)",
+          cfg.get("productVisuals") == [])
+    check("shipped operating state: the pickup no-charge payment fact ships a draft",
+          ((cfg.get("customerPolicies") or {}).get("fulfillment") or {}).get("pickupChargeFact")
+          == {"status": "draft", "approval": None})
     check("publishedPaymentFactor stripped from shipped config",
           "publishedPaymentFactor" not in json.dumps(cfg))
     # PRIVACY HALF OF THE BOUNDARY (trust gate, 2026-08-21). A privacy promise

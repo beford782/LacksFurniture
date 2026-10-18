@@ -258,6 +258,11 @@ def build_workbook(config: dict, manifest: dict,
     # carries no `pricing` key (converter build_pricing returns None on an
     # empty payload), chunked envelope {"pricing": ...} otherwise so the golden
     # round-trip regenerates an identical store-config `pricing` block.
+    # Guide - optional-payload canonical-JSON tab, same round-trip contract:
+    # header-only when the committed config carries neither `customerPolicies`
+    # nor `productVisuals`.
+    _write_sheet(wb, "Guide", guide_rows(config))
+
     _write_sheet(wb, "Pricing", pricing_rows(config))
 
     return wb
@@ -287,6 +292,16 @@ def pricing_rows(config: dict) -> List[List[Any]]:
         return []
     payload = json.dumps({"pricing": pricing}, ensure_ascii=False,
                          separators=(",", ":"))
+    return [[payload[i:i + _PROMO_CHUNK]]
+            for i in range(0, len(payload), _PROMO_CHUNK)]
+
+
+def guide_rows(config: dict) -> List[List[Any]]:
+    """Chunked Guide-tab payload for the committed config ([] when none)."""
+    envelope = {k: config[k] for k in ("customerPolicies", "productVisuals") if k in config}
+    if not envelope:
+        return []
+    payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
     return [[payload[i:i + _PROMO_CHUNK]]
             for i in range(0, len(payload), _PROMO_CHUNK)]
 
@@ -370,6 +385,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "SalesNotes": len(sales_notes_rows(config)),
         "Promotions": len(promotions_rows(config)),
         "Quiz": len(quiz_rows(quiz)),
+        "Guide": len(guide_rows(config)),
         "Pricing": len(pricing_rows(config)),
     }
 

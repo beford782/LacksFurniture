@@ -1,0 +1,41 @@
+URL: https://www.lacks.com/return-and-store-policies
+Page title: Return & Store Policies | Lacks Furniture | Brownsville, Laredo, McAllen, Alice, Corpus Christi, Harlingen, Rio Grande City, Victoria, Pharr, TX
+Capture time: 2026-10-17 (afternoon, America/Chicago)
+Store context: header "My Store: Brownsville Galleria" (observed on same session pages), no ZIP entered
+Method: Claude in Chrome extension (Blake's Chrome), get_page_text of <main>; agent's own tab; no clicks, no forms, cookie banner left untouched
+Language: English (EN toggle default)
+---
+Exchanges & Returns
+
+Our goal of having the most satisfied customers in Texas includes making sure you’re happy with your purchase. We understand that sometimes, what you thought would work in your home doesn’t quite fit the way you wanted. If you’re unsatisfied with your purchase, you may exchange or return your item(s) under the following guidelines:
+
+General Guidelines
+
+All exchanges and returns must be authorized by Lacks before they can be processed.
+Item(s) must be inspected prior to authorization and must be in showroom condition—free of damage, stains, or odors.
+Upholstery, casegoods, and accessories may be exchanged or returned within 5 days of purchase.
+Delivery fees are non-refundable, and new delivery charges will apply for redelivery or exchanged merchandise.
+Returns made after 5 days are subject to a 25% restocking fee, deducted from the refund amount.
+No exchanges or returns are accepted after 30 days from the purchase date.
+Refunds are issued to the original payment method. Cash transactions will be refunded by check within 7–14 business days, less applicable fees.
+
+Non-Returnable or Final Sale Items
+
+The following items are not eligible for return or exchange:
+
+Merchandise that has been damaged, abused, stained, mishandled, or used for commercial purposes
+Items sold as Clearance, As-Is, or Final Sale
+Special-order merchandise
+Appliances (see manufacturer’s warranty or extended service policy)
+Pillows, sheets, bedspreads, comforters, and bedding accessories
+Mattresses, which are not covered under our 90-Day Comfort Promise or the manufacturer’s factory warranty
+
+Mattresses – Our 90-Day Comfort Promise
+
+Your comfort matters to us. That’s why every new mattress purchase is backed by our 90-Day Comfort Promise.
+
+Because it takes time for your body to adjust, we ask that you sleep on your new mattress for at least 30 nights before requesting an exchange. If after 30 nights (and within 90 days of delivery) you’re not completely satisfied, you may exchange your mattress once for another of equal or greater value. If the new mattress costs more, you’ll simply pay the difference.
+
+To qualify, your purchase must include a bed guard (mattress protector) and at least one pillow. All exchanges are subject to a local delivery fee, and your mattress must be returned in good condition—free of stains, odors, or damage—and must have been used with the purchased protector.
+
+Refunds are not offered under this program. Pillows, bed guards, and protectors are non-refundable and non-exchangeable.

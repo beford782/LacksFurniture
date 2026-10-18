@@ -1,0 +1,18 @@
+URL: https://www.lacks.com/promotions/mexico-ads  (footer link "Beneficios Que Lacks Te Ofrece")
+Page title: Beneficios Que Lacks Te Ofrece | Lacks Furniture | ...
+Capture time: 2026-10-17 (afternoon, America/Chicago)
+Store context: Brownsville Galleria, no ZIP
+Method: Claude in Chrome extension, get_page_text of <main>. Native Spanish page (not the translator widget).
+--- (relevant sections, verbatim)
+2. CRÉDITO DISPONIBLE PARA CLIENTES DE MÉXICO
+Lacks facilita la compra de tus muebles al ofrecerte crédito hasta 24 meses. Debido a que Lacks cuenta con financiamiento propio, para abrir una cuenta, simplemente visita la tienda o realiza tu solicitud en línea. Los requisitos incluyen mostrar una identificación oficial, 3 referencias personales y verificación de ingresos.
+
+3. ENTREGA A TU HOGAR
+Contamos con entrega hasta tu hogar a través de un agente de importación, experto en la transportación de mercancía, con cargo adicional. El servicio incluye: la importación de tus muebles, el acomodo de éstos en tu hogar, el armado de las piezas y el retiro de material sobrante.
+
+4. GRAN SERVICIO
+Lacks Furniture se complace en ofrecer gran servicio a nuestros clientes del sur de Texas y norte de México. ...
+
+(Also lists McAllen, Laredo and Brownsville Galleria addresses/phones/hours - volatile, not imported.)
+NOTE conflict: this page says "una identificación oficial"; FAQ says "dos identificaciones oficiales" (financing - flag only, not researched).
+NOTE: this page adds "con cargo adicional" (additional charge) for Mexico delivery; the FAQ answer does not mention a charge.

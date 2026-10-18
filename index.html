@@ -7506,6 +7506,20 @@
       color: #2F271E;
       font: 600 clamp(24px, 3vw, 32px)/1.1 var(--font-serif);
     }
+    /* Foundation or adjustable base explainer (base step): an optional,
+       closed disclosure; static art, text carries the meaning. */
+    .edu-base { margin: 12px 0; padding: 0 14px; border: 1px solid #DDD3C4; border-radius: 10px; background: #FFFDF8; }
+    .edu-base summary { display: flex; align-items: center; min-height: 44px; font: 600 14px/1.3 var(--font-sans); color: #2F271E; cursor: pointer; touch-action: manipulation; }
+    .edu-base summary:focus-visible { outline: 3px solid #2F271E; outline-offset: 2px; }
+    .edu-base__panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 4px 0 8px; }
+    .edu-base__panel { margin: 0; min-width: 0; }
+    .edu-base__art { display: block; width: 100%; max-width: 180px; height: auto; }
+    .edu-base__mattress { fill: #EFE6D6; stroke: #2F271E; stroke-width: 1.5; }
+    .edu-base__base { fill: #C9BBA4; stroke: #2F271E; stroke-width: 1.5; }
+    .edu-base__leg { fill: none; stroke: #2F271E; stroke-width: 2; stroke-linecap: round; }
+    .edu-base__panel figcaption { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font: 500 13px/1.45 var(--font-sans); color: #4A4033; }
+    .edu-base__panel figcaption strong { color: #2F271E; font-size: 14px; }
+    .edu-base__note { margin: 0 0 12px; font: 500 13px/1.45 var(--font-sans); color: #4A4033; }
     .sleep-system__section-copy {
       max-width: 350px;
       margin: 2px 0 0;
@@ -9129,6 +9143,13 @@
       color: var(--cream);
       font: 500 14px/1.45 var(--font-sans);
     }
+    .drawer-visuals { margin: 0 0 14px; }
+    .drawer-visuals__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .drawer-visual { margin: 0; min-width: 0; }
+    .drawer-visual img { display: block; width: 100%; height: auto; border-radius: 8px; background: #FFFFFF; object-fit: contain; }
+    .drawer-visual figcaption { margin-top: 6px; font-size: 0.88rem; line-height: 1.4; }
+    .drawer-visual__scope { display: block; margin-top: 3px; font-size: 0.8rem; }
+    .drawer-visual__chip { display: inline-block; margin-right: 4px; padding: 1px 8px; border: 1px solid currentColor; border-radius: 999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
     .drawer-differentiators {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -11085,6 +11106,59 @@
     .fin-ws-line__ext { font-weight: 600; font-size: 1rem; color: #17140F; }
     .fin-ws-line__unit { font-size: 0.8rem; color: #5A5446; }
     .fin-ws-line__price.is-unpriced { font-size: 0.85rem; color: #6B3A00; font-weight: 500; max-width: 12em; }
+    /* Governed retailer policies on the Consultation Summary (comfort
+       exchange, getting home). Same warm paper and inks as the workspace's
+       policy card; every state is carried by text, never color alone. */
+    .cpol-title { margin: 0 0 6px; font: 400 1.35rem/1.25 var(--font-serif); color: #17140F; }
+    .cpol-intro { margin: 0 0 14px; font-size: 1rem; line-height: 1.5; color: #2F271E; }
+    .cpol-kicker { display: block; margin: 16px 0 6px; font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1.1px; text-transform: uppercase; color: #5A4E3F; }
+    .cpol-note { margin: 8px 0 0; font-size: 0.92rem; line-height: 1.45; color: #4A4033; }
+    .cpol-confirm { margin: 14px 0 0; font-size: 0.95rem; font-weight: 600; color: #211E19; }
+    .cpol-timeline { margin: 6px 0 4px; }
+    .cpol-track { position: relative; height: 10px; border-radius: 999px; background: #E6DFCF; overflow: hidden; }
+    .cpol-track__wait { position: absolute; left: 0; top: 0; bottom: 0; background: #C9C1AF; }
+    .cpol-track__window { position: absolute; top: 0; bottom: 0; background: #6B5A3E; }
+    .cpol-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 10px 0 0; padding: 0; list-style: none; }
+    .cpol-step { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .cpol-step:nth-child(2) { text-align: center; }
+    .cpol-step:nth-child(3) { text-align: right; }
+    .cpol-step__when { font-weight: 600; font-size: 1rem; color: #17140F; }
+    .cpol-step__what { font-size: 0.88rem; line-height: 1.35; color: #4A4033; }
+    .cpol-req { margin: 0; padding: 0; list-style: none; }
+    .cpol-req__item { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #E6DFCF; font-size: 1rem; color: #211E19; }
+    .cpol-req__state { flex-shrink: 0; font-size: 0.92rem; color: #4A4033; }
+    .cpol-req__state::before { content: "\25CB  "; content: "\25CB  " / ""; }
+    .cpol-req__item.is-in .cpol-req__state { color: #17140F; font-weight: 600; }
+    .cpol-req__item.is-in .cpol-req__state::before { content: "\25CF  "; content: "\25CF  " / ""; }
+    .cpol-more { margin: 14px 0 0; }
+    .cpol-more summary { display: flex; align-items: center; min-height: 44px; font-weight: 600; color: #211E19; cursor: pointer; touch-action: manipulation; }
+    .cpol-more ul { margin: 4px 0 0; padding-left: 1.2em; }
+    .cpol-more li, .cpol-points li, .cpol-confirms li { margin: 0 0 6px; line-height: 1.45; color: #2F271E; }
+    .cpol-link { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 44px; margin-top: 8px; color: #211E19; text-decoration: underline; text-underline-offset: 3px; touch-action: manipulation; }
+    .cpol-link__dest { font-weight: 600; overflow-wrap: anywhere; }
+    .cpol-links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+    .cpol-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+    .cpol-card { padding: 14px 16px; border: 1px solid #C9C1AF; border-radius: 8px; background: #FFFDF8; }
+    .cpol-card.is-preferred { border: 2px solid #211E19; padding: 13px 15px; }
+    .cpol-card__title { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font: 600 1.05rem/1.3 var(--font-sans); color: #17140F; }
+    .cpol-icon { width: 28px; height: 28px; flex-shrink: 0; color: #6B5A3E; }
+    .cpol-points, .cpol-confirms ul { margin: 0; padding-left: 1.2em; }
+    .cpol-pref { margin: 14px 0 0; }
+    .cpol-after { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid #E6DFCF; }
+    .cpol-after__title { margin: 0 0 4px; font: 600 1rem/1.3 var(--font-sans); color: #17140F; }
+    .cpol-after p, .cpol-mexico p { margin: 6px 0; line-height: 1.45; color: #2F271E; }
+    .cpol a:focus-visible, .cpol summary:focus-visible, .cpol button:focus-visible { outline: 3px solid #211E19; outline-offset: 3px; }
+    @media (forced-colors: active) {
+      .edu-base { border-color: CanvasText; background: Canvas; }
+      .edu-base__mattress, .edu-base__base { fill: Canvas; stroke: CanvasText; }
+      .edu-base__leg { stroke: CanvasText; }
+      .drawer-visual__chip { border-color: CanvasText; }
+      .cpol-card, .cpol-card.is-preferred { border-color: CanvasText; background: Canvas; }
+      .cpol-track { background: Canvas; border: 1px solid CanvasText; }
+      .cpol-track__wait { background: GrayText; }
+      .cpol-track__window { background: CanvasText; }
+      .cpol-icon { color: CanvasText; }
+    }
     .fin-pb { margin: 16px 0 0; padding: 16px 18px; border: 1px solid #C9C1AF; border-radius: 6px; background: #FFFDF8; }
     .fin-pb__label { font-size: 0.95rem; color: #3E3A31; }
     .fin-pb__notice { margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid #6B3A00; background: #F7F2E8; font-size: 0.9rem; color: #211E19; }
@@ -12616,6 +12690,12 @@
              the reason-led redesign remains gated and unauthorized. -->
         <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>
         <div class="drawer-differentiators" id="drawerDifferentiators"></div>
+        <!-- Exact-product visuals (store-config productVisuals, governed by
+             validate_product_visuals). Rendered by renderDrawerVisuals() only
+             for approved entries whose id AND name match this model; hidden
+             and empty otherwise (every shipped state). A photo that fails to
+             load removes itself, and the section hides when none is left. -->
+        <section class="drawer-visuals" id="drawerVisuals" hidden aria-labelledby="drawerVisualsLabel"></section>
         <!-- Price (Phase 2.2, disabled implementation). Rendered by
              renderDrawerPrice() through the price presentation gate; hidden and
              empty whenever the gate is off — which is every production state
@@ -12893,6 +12973,25 @@
            It sits AFTER the item list (the items justify the figure) and
            BEFORE Payment Choice (payment follows the total, never leads it). -->
       <div class="hf2-system-total" id="hf2SystemTotal" hidden></div>
+    </section>
+
+    <!-- The retailer's published comfort-exchange policy, beside the Sleep
+         System it checks against (customerPolicies.comfortPromise). Rendered
+         by renderHf2CustomerPolicies() only for an APPROVED, fresh,
+         allowlisted section; hidden and empty otherwise (every shipped state)
+         and emptied by the session wipe. Never a price surface. -->
+    <section class="hf2-review-section cpol" id="hf2ComfortSection" hidden
+             aria-labelledby="hf2ComfortTitle">
+      <div id="hf2ComfortBody"></div>
+    </section>
+
+    <!-- Getting the purchase home, Mexico delivery and after-purchase help
+         (customerPolicies.fulfillment / mexicoDelivery / afterPurchase).
+         Each part renders only when its own section is approved; the
+         preference toggle books nothing and is wiped with the session. -->
+    <section class="hf2-review-section cpol" id="hf2HomeSection" hidden
+             aria-labelledby="hf2HomeTitle">
+      <div id="hf2HomeBody"></div>
     </section>
 
 
@@ -15125,8 +15224,7 @@
       if (!complete) return { show: true, complete: false };
       var merch = quote.merchandiseMinor;
       var i = (input && typeof input === 'object') ? input : {};
-      var fp = paySalesPolicy('fulfillment');
-      var pickup = !!(fp && fp.pickupNoCharge === true) && _payFulfil === 'pickup';
+      var pickup = pickupNoChargeFact() && _payFulfil === 'pickup';
       var tax = payParsePercentMilli(i.tax);
       var del = pickup ? { state: 'ok', minor: 0 } : payParseAmountMinor(i.delivery, 200000);
       var down = payParseAmountMinor(i.down, merch);
@@ -15293,8 +15391,7 @@
       // and delivery locations and is never known here. Delivery is known
       // only in one published case: the retailer's free warehouse pickup,
       // when the customer has chosen it - said in words, never as "$0".
-      var fp = paySalesPolicy('fulfillment');
-      var pickupFree = !!(fp && fp.pickupNoCharge === true) && _payFulfil === 'pickup';
+      var pickupFree = pickupNoChargeFact() && _payFulfil === 'pickup';
       row('tax', 'pay.fx.tax', TC, t('pay.fx.tax_note'));
       row('fulfillment', 'pay.fx.fulfillment', pickupFree ? t('pay.fx.fulfil_pickup') : TC,
         pickupFree ? t('pay.fx.fulfil_pickup_note') : t('pay.fx.fulfil_delivery_note'));
@@ -15334,21 +15431,33 @@
       var excludes = calculated ? t(pickupFree ? 'pay.fx.excludes_tax' : 'pay.fx.excludes_all') : '';
       return { show: true, calculated: calculated, rows: rows, notes: notes, excludes: excludes };
     }
-    // Retailer sales policies (comfort promise, fulfillment). Config-driven
-    // and absent from shipped data; a review build injects them. Absent or
-    // malformed means nothing renders and nothing is assumed.
+    // The Bring It Home workspace reads the same governed sections, but only
+    // beside governed prices: there, choosing published free pickup changes a
+    // payment fact, so the price gate must be open too. The Consultation
+    // Summary reads customerPolicy() directly - its policy content is
+    // informational and never depends on pricing.
     function paySalesPolicy(key) {
-      var sp = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.salesPolicies : null;
-      if (!sp || typeof sp !== 'object' || typeof sp.status !== 'string' || !sp.status) return null;
-      // Retailer commercial policy reaches a customer only beside governed
-      // prices: the price gate must be open, and the policy must cite its
-      // published source on an allowlisted host.
+      var v = customerPolicy(key);
+      if (!v) return null;
       var p = getPricingConfig();
       if (!p || p.enabled !== true || p.displayEnabled !== true) return null;
-      var v = sp[key];
-      if (!v || typeof v !== 'object') return null;
-      if (typeof financingSourceAllowed !== 'function' || !financingSourceAllowed(v.sourceUrl)) return null;
       return v;
+    }
+    // "Published free warehouse pickup means no delivery charge" is a
+    // FINANCIAL consequence (the payment table states it and the estimate
+    // stops excluding delivery). Approving the informational fulfillment
+    // guidance does not authorize it: it needs its own approval record,
+    // fulfillment.pickupChargeFact, which ships as a draft. Both payment
+    // sites read this one gate; nothing else infers a zero charge.
+    function pickupNoChargeFact() {
+      var fp = paySalesPolicy('fulfillment');
+      if (!fp || fp.pickupNoCharge !== true) return false;
+      var f = fp.pickupChargeFact;
+      if (!f || typeof f !== 'object' || f.status !== 'approved') return false;
+      var a = f.approval;
+      return !!(a && typeof a === 'object' && ['approvedBy', 'approvedAt', 'reference'].every(function(k) {
+        return typeof a[k] === 'string' && a[k].trim();
+      }));
     }
     // The table, in four labelled groups. Every value has the same size and
     // weight: a monthly figure is never larger, bolder or isolated ahead of
@@ -16383,6 +16492,301 @@
     }
 
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
+
+    // ═══ CONSULTATION GUIDE: governed customer policies and exact-product visuals ═══
+    // Informational retailer content, independent of the price gate above
+    // (paySalesPolicy, inside the gate, layers the price requirement on top).
+    // Retailer customer policies (store-config customerPolicies: comfort
+    // exchange, getting the purchase home, after-purchase help, Mexico
+    // delivery). One governed record per section; the build validator
+    // (tools/validation.py validate_customer_policies) and this runtime gate
+    // apply the same rule. A section is returned ONLY when it is approved
+    // with a genuine approval record, its Spanish copy is native-reviewed,
+    // its evidence is within maxAgeDays, and its source is an https URL on
+    // the block's own allowlist. Absent, malformed, draft, Spanish-pending,
+    // stale or off-host means null: nothing renders and nothing is assumed.
+    // Shipped data carries every section as a draft (CI operating-state lock).
+    function customerPolicyHostAllowed(url, hosts) {
+      if (typeof url !== 'string' || !url || !Array.isArray(hosts) || !hosts.length) return false;
+      try {
+        var u = new URL(url);
+        if (u.protocol !== 'https:' || !u.hostname || u.username || u.password || u.port) return false;
+        var h = u.hostname.toLowerCase();
+        return hosts.some(function(x) { return typeof x === 'string' && h === x.toLowerCase(); });
+      } catch (e) { return false; }
+    }
+    function customerPolicyFresh(verifiedAt, maxAgeDays) {
+      if (typeof verifiedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(verifiedAt)) return false;
+      if (typeof maxAgeDays !== 'number' || maxAgeDays !== Math.floor(maxAgeDays) || maxAgeDays < 1 || maxAgeDays > 180) return false;
+      var stamp = Date.parse(verifiedAt + 'T00:00:00Z');
+      if (!isFinite(stamp)) return false;
+      var age = Math.floor((Date.now() - stamp) / 86400000);
+      // One day of slack before the stamp absorbs time zones; never after.
+      return age >= -1 && age <= maxAgeDays;
+    }
+    // Whether an approval is GENUINE (not a fixture or placeholder signature)
+    // is the build validator's ruling, exactly as for pricing signatures: a
+    // fixture-signed block can never ship, and the loopback review harness
+    // uses one to exercise the approved path.
+    function customerPolicy(key) {
+      var cp = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.customerPolicies : null;
+      if (!cp || typeof cp !== 'object' || Array.isArray(cp)) return null;
+      var v = Object.prototype.hasOwnProperty.call(cp, key) ? cp[key] : null;
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+      if (v.status !== 'approved' || v.spanishReview !== 'approved') return null;
+      var a = v.approval;
+      if (!a || typeof a !== 'object' || ['approvedBy', 'approvedAt', 'reference'].some(function(k) {
+        return typeof a[k] !== 'string' || !a[k].trim();
+      })) return null;
+      if (!customerPolicyHostAllowed(v.sourceUrl, cp.allowedSourceHosts)) return null;
+      if (!customerPolicyFresh(v.verifiedAt, v.maxAgeDays)) return null;
+      return v;
+    }
+    // Which of the comfort promise's required item categories THIS plan
+    // includes. Category presence only: it can never prove that a particular
+    // product qualifies, so callers say "in your plan", never "eligible".
+    function comfortPromiseRequirements(cp) {
+      var cart = window._accCart || {};
+      var catalog = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)) ? ACCESSORIES : [];
+      var stepOf = function(a) { return (typeof sleepSystemStepIdForItem === 'function') ? sleepSystemStepIdForItem(a) : ''; };
+      var has = function(step) {
+        return catalog.some(function(a) { return a && cart[a.id] && stepOf(a) === step; });
+      };
+      var req = [];
+      if (cp && cp.requiresProtector === true) req.push({ key: 'protector', label: t('pay.cp.protector'), ok: has('protection') });
+      if (cp && cp.requiresPillow === true) req.push({ key: 'pillow', label: t('pay.cp.pillow'), ok: has('pillow') });
+      return req;
+    }
+    // "lacks.com/services" from https://www.lacks.com/services#service-form:
+    // the readable destination printed beside every external policy link.
+    function customerPolicyLinkText(url) {
+      try {
+        var u = new URL(url);
+        return u.hostname.replace(/^www\./, '') + (u.pathname === '/' ? '' : u.pathname.replace(/\/$/, ''));
+      } catch (e) { return ''; }
+    }
+    function customerPolicyLink(url, label, allowed) {
+      if (!customerPolicyHostAllowed(url, allowed)) return '';
+      return '<a class="cpol-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">'
+        + '<span class="cpol-link__label">' + escapeHtml(label) + '</span> '
+        + '<span class="cpol-link__dest">' + escapeHtml(customerPolicyLinkText(url)) + '</span></a>';
+    }
+    var CPOL_ICONS = {
+      delivery: '<svg class="cpol-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M3 8h16v13H3zM19 13h5l4 4v4h-9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="9" cy="23" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="23" cy="23" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+      pickup: '<svg class="cpol-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M4 13 16 6l12 7v13H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M11 26v-8h10v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
+    };
+    // Comfort promise card: a 30-to-90 timeline drawn from the configured
+    // numbers, the category checklist against the current Sleep System, the
+    // "included is not eligible" statement, the published conditions and the
+    // official policy link. It adds nothing to the plan and never reranks.
+    function hf2ComfortMarkup(cp, hosts) {
+      var tl = cp.timeline || {};
+      var min = tl.minNights, win = tl.windowDays;
+      var timeline = '';
+      if (typeof min === 'number' && typeof win === 'number' && min >= 1 && min < win) {
+        var pct = Math.round((min / win) * 1000) / 10;
+        timeline = '<div class="cpol-timeline">'
+          + '<div class="cpol-track" aria-hidden="true"><span class="cpol-track__wait" style="width:' + pct + '%"></span>'
+          + '<span class="cpol-track__window" style="left:' + pct + '%;width:' + (100 - pct) + '%"></span></div>'
+          + '<ol class="cpol-steps">'
+          + '<li class="cpol-step"><span class="cpol-step__when">' + escapeHtml(t('cpol.tl_start')) + '</span>'
+          + '<span class="cpol-step__what">' + escapeHtml(t('cpol.tl_start_d')) + '</span></li>'
+          + '<li class="cpol-step"><span class="cpol-step__when">' + escapeHtml(t('cpol.tl_nights', { n: min })) + '</span>'
+          + '<span class="cpol-step__what">' + escapeHtml(t('cpol.tl_nights_d')) + '</span></li>'
+          + '<li class="cpol-step"><span class="cpol-step__when">' + escapeHtml(t('cpol.tl_window', { n: win })) + '</span>'
+          + '<span class="cpol-step__what">' + escapeHtml(t('cpol.tl_window_d')) + '</span></li>'
+          + '</ol></div>';
+      }
+      var req = comfortPromiseRequirements(cp);
+      var list = req.length
+        ? '<p class="cpol-kicker">' + escapeHtml(t('pay.cp.check_title')) + '</p><ul class="cpol-req">'
+          + req.map(function(r) {
+            return '<li class="cpol-req__item' + (r.ok ? ' is-in' : '') + '" data-req="' + r.key + '">'
+              + '<span class="cpol-req__label">' + escapeHtml(r.label) + '</span>'
+              + '<span class="cpol-req__state">' + escapeHtml(t(r.ok ? 'cpol.in_plan' : 'cpol.not_in_plan')) + '</span></li>';
+          }).join('') + '</ul>'
+          + '<p class="cpol-note">' + escapeHtml(t('cpol.not_eligibility')) + '</p>'
+        : '';
+      return '<h2 class="cpol-title" id="hf2ComfortTitle">' + escapeHtml(L(cp.title)) + '</h2>'
+        + '<p class="cpol-intro">' + escapeHtml(L(cp.summary)) + '</p>'
+        + timeline + list
+        + '<details class="cpol-more"><summary ontouchend="event.preventDefault();this.parentNode.open=!this.parentNode.open;">' + escapeHtml(t('pay.cp.conditions')) + '</summary><ul>'
+        + (cp.conditions || []).map(function(c) { return '<li>' + escapeHtml(L(c)) + '</li>'; }).join('')
+        + '</ul></details>'
+        + '<p class="cpol-confirm">' + escapeHtml(t('cpol.specialist_confirms')) + '</p>'
+        + customerPolicyLink(cp.sourceUrl, t('cpol.full_policy'), hosts);
+    }
+    function hf2FulfilButtons(fp) {
+      var btn = function(id, label) {
+        var on = _payFulfil === id;
+        return '<button type="button" class="fin-ws-ff__btn" id="hf2Ff-' + id + '" aria-pressed="' + (on ? 'true' : 'false') + '" '
+          + 'onclick="window.setPaymentFulfil(\'' + id + '\', \'summary\')" ontouchend="event.preventDefault();window.setPaymentFulfil(\'' + id + '\', \'summary\');">'
+          + escapeHtml(L(label)) + '</button>';
+      };
+      return '<div class="cpol-pref" role="group" aria-labelledby="hf2FfTitle">'
+        + '<span class="cpol-kicker" id="hf2FfTitle">' + escapeHtml(t('cpol.pref_title')) + '</span>'
+        + '<div class="fin-ws-ff__btns">' + btn('delivery', fp.deliveryLabel) + btn('pickup', fp.pickupLabel) + '</div>'
+        + '<p class="cpol-note">' + escapeHtml(t('cpol.pref_note')) + '</p></div>';
+    }
+    function hf2HomeMarkup(fp, mx, ap, hosts) {
+      var out = '';
+      var card = function(id, label, points) {
+        return '<article class="cpol-card' + (_payFulfil === id ? ' is-preferred' : '') + '">'
+          + '<h3 class="cpol-card__title">' + CPOL_ICONS[id] + '<span>' + escapeHtml(L(label)) + '</span></h3>'
+          + '<ul class="cpol-points">' + (points || []).map(function(p) { return '<li>' + escapeHtml(L(p)) + '</li>'; }).join('') + '</ul>'
+          + '</article>';
+      };
+      if (fp) {
+        out += '<h2 class="cpol-title" id="hf2HomeTitle">' + escapeHtml(L(fp.title)) + '</h2>'
+          + '<p class="cpol-intro">' + escapeHtml(L(fp.intro)) + '</p>'
+          + '<div class="cpol-cards">' + card('delivery', fp.deliveryLabel, fp.deliveryPoints)
+          + card('pickup', fp.pickupLabel, fp.pickupPoints) + '</div>'
+          + hf2FulfilButtons(fp)
+          + '<div class="cpol-confirms"><p class="cpol-kicker">' + escapeHtml(t('cpol.confirm_title')) + '</p><ul>'
+          + (fp.specialistConfirms || []).map(function(c) { return '<li>' + escapeHtml(L(c)) + '</li>'; }).join('')
+          + '</ul></div>'
+          + customerPolicyLink(fp.sourceUrl, t('cpol.current_details'), hosts);
+      } else {
+        // No fulfillment section: the heading still names the section for
+        // the parts that follow.
+        out += '<h2 class="cpol-title" id="hf2HomeTitle">' + escapeHtml(t('cpol.next_steps')) + '</h2>';
+      }
+      if (mx) {
+        out += '<details class="cpol-more cpol-mexico"><summary ontouchend="event.preventDefault();this.parentNode.open=!this.parentNode.open;">' + escapeHtml(L(mx.title)) + '</summary>'
+          + '<p>' + escapeHtml(L(mx.body)) + '</p>'
+          + '<ul>' + (mx.points || []).map(function(p) { return '<li>' + escapeHtml(L(p)) + '</li>'; }).join('') + '</ul>'
+          + (mx.note ? '<p class="cpol-note">' + escapeHtml(L(mx.note)) + '</p>' : '')
+          + customerPolicyLink(mx.sourceUrl, t('cpol.current_details'), hosts)
+          + '</details>';
+      }
+      if (ap) {
+        out += '<div class="cpol-after"><h3 class="cpol-after__title">' + escapeHtml(L(ap.title)) + '</h3>'
+          + '<p>' + escapeHtml(L(ap.body)) + '</p><div class="cpol-links">'
+          + (ap.links || []).map(function(l) { return customerPolicyLink(l && l.url, L(l && l.label), hosts); }).join('')
+          + '</div></div>';
+      }
+      return out;
+    }
+    function renderHf2CustomerPolicies() {
+      var cfg = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.customerPolicies : null;
+      var hosts = (cfg && Array.isArray(cfg.allowedSourceHosts)) ? cfg.allowedSourceHosts : [];
+      var cp = customerPolicy('comfortPromise');
+      var fp = customerPolicy('fulfillment');
+      var mx = customerPolicy('mexicoDelivery');
+      var ap = customerPolicy('afterPurchase');
+      var cSec = document.getElementById('hf2ComfortSection');
+      var cBody = document.getElementById('hf2ComfortBody');
+      if (cSec && cBody) {
+        var cOk = !!(cp && cp.title && Array.isArray(cp.conditions));
+        cBody.innerHTML = cOk ? hf2ComfortMarkup(cp, hosts) : '';
+        cSec.hidden = !cOk;
+      }
+      var hSec = document.getElementById('hf2HomeSection');
+      var hBody = document.getElementById('hf2HomeBody');
+      if (hSec && hBody) {
+        var fOk = !!(fp && fp.title && fp.deliveryLabel && fp.pickupLabel);
+        var hOk = fOk || !!mx || !!ap;
+        hBody.innerHTML = hOk ? hf2HomeMarkup(fOk ? fp : null, mx, ap, hosts) : '';
+        hSec.hidden = !hOk;
+      }
+    }
+    // Concise in-store rows for the take-home preview. Shown "in store"
+    // (present:false): they are NOT part of any email - carrying them would
+    // need the server builders, the closed payload key set and the send
+    // identity. The preference, when one was voiced, is named as a
+    // preference, never as a booking.
+    function customerPolicyTakeHomeRows() {
+      var rows = [];
+      var cp = customerPolicy('comfortPromise');
+      if (cp && cp.title && cp.takeHome) {
+        rows.push({ present: false, title: escapeHtml(L(cp.title)), detail: escapeHtml(L(cp.takeHome)) });
+      }
+      var fp = customerPolicy('fulfillment');
+      if (fp && fp.title && fp.takeHome) {
+        var pref = (_payFulfil === 'pickup' || _payFulfil === 'delivery') && fp[_payFulfil + 'Label']
+          ? ' ' + t('cpol.pref_line', { choice: L(fp[_payFulfil + 'Label']) }) : '';
+        rows.push({ present: false, title: escapeHtml(L(fp.title)), detail: escapeHtml(L(fp.takeHome) + pref) });
+      }
+      return rows;
+    }
+
+    // Exact-product visuals for the drawer (store-config productVisuals).
+    // The build validator rules on permission genuineness, source host and
+    // file presence; this gate re-checks what the page can: approved with a
+    // permission record, the EXACT product (id and name - never a family or
+    // sub-brand match), a kebab-case gallery .jpg, reserved dimensions,
+    // bilingual alt and caption, and a photo never labelled generic.
+    var PRODUCT_VISUAL_FILE = /^images\/mattresses\/gallery\/[a-z0-9]+(?:-[a-z0-9]+)*\.jpg$/;
+    function productVisualsFor(m) {
+      var list = (typeof STORE_CONFIG === 'object' && STORE_CONFIG && Array.isArray(STORE_CONFIG.productVisuals))
+        ? STORE_CONFIG.productVisuals : [];
+      if (!m || typeof m.id !== 'string') return [];
+      var pair = function(v) { return v && typeof v === 'object' && typeof v.en === 'string' && v.en.trim() && typeof v.es === 'string' && v.es.trim(); };
+      var dim = function(v) { return typeof v === 'number' && v === Math.floor(v) && v >= 200 && v <= 4000; };
+      return list.filter(function(v) {
+        if (!v || typeof v !== 'object' || v.status !== 'approved') return false;
+        var p = v.permission;
+        if (!p || typeof p !== 'object' || ['approvedBy', 'approvedAt', 'reference'].some(function(k) { return typeof p[k] !== 'string' || !p[k].trim(); })) return false;
+        if (v.productId !== m.id || v.productName !== m.name) return false;
+        if (['view', 'detail', 'illustration'].indexOf(v.kind) === -1 || ['exact', 'generic'].indexOf(v.scope) === -1) return false;
+        if (v.kind !== 'illustration' && v.scope !== 'exact') return false;
+        // Listing identity and display scope (the build validator matches the
+        // listing against the retailer's evidence; the page re-checks shape).
+        var generic = v.kind === 'illustration' && v.scope === 'generic';
+        if (generic) {
+          if (v.source != null || v.sizeScope != null) return false;
+        } else {
+          var so = v.source;
+          if (!so || typeof so !== 'object' || ['sku', 'listingTitle', 'size'].some(function(k) {
+            return typeof so[k] !== 'string' || !so[k].trim();
+          })) return false;
+          if (['twin', 'twin_xl', 'full', 'queen', 'king', 'cal_king'].indexOf(so.size) === -1) return false;
+          if (v.sizeScope !== 'pictured-size' && v.sizeScope !== 'all-sizes') return false;
+          if (v.sizeScope === 'all-sizes' && v.kind !== 'view') return false;
+        }
+        return typeof v.file === 'string' && PRODUCT_VISUAL_FILE.test(v.file) && dim(v.width) && dim(v.height)
+          && pair(v.alt) && pair(v.caption);
+      }).slice(0, 3);
+    }
+    function productVisualLabel(v) {
+      if (v.kind === 'view') return t('gal.view');
+      if (v.kind === 'detail') return t('gal.detail');
+      return t(v.scope === 'generic' ? 'gal.generic' : 'gal.exact');
+    }
+    // What the picture is of: the listing size and SKU photographed, and -
+    // for anything shown at the pictured size only - that other sizes may
+    // differ. A generic illustration names no listing.
+    function productVisualScopeLine(v) {
+      if (!v.source) return '';
+      var size = (typeof sizeLabelFor === 'function' ? sizeLabelFor(v.source.size) : '') || v.source.size;
+      return '<span class="drawer-visual__scope">' + escapeHtml(t('gal.pictured', { size: size, sku: v.source.sku }))
+        + (v.sizeScope === 'pictured-size' ? ' ' + escapeHtml(t('gal.size_only')) : '') + '</span>';
+    }
+    function renderDrawerVisuals(m) {
+      var sec = document.getElementById('drawerVisuals');
+      if (!sec) return;
+      var items = productVisualsFor(m);
+      if (!items.length) { sec.innerHTML = ''; sec.hidden = true; return; }
+      sec.innerHTML = '<div class="drawer-section-label" id="drawerVisualsLabel">' + escapeHtml(t('gal.heading')) + '</div>'
+        + '<div class="drawer-visuals__grid">' + items.map(function(v) {
+          return '<figure class="drawer-visual" data-visual-kind="' + v.kind + '" data-visual-scope="' + v.scope + '">'
+            + '<img src="' + escapeHtml(v.file) + '" alt="' + escapeHtml(L(v.alt)) + '" width="' + v.width + '" height="' + v.height + '"'
+            + ' loading="lazy" decoding="async" onerror="window.dfVisualFailed(this)">'
+            + '<figcaption><span class="drawer-visual__chip">' + escapeHtml(productVisualLabel(v)) + '</span> '
+            + '<span class="drawer-visual__caption">' + escapeHtml(L(v.caption)) + '</span>'
+            + productVisualScopeLine(v) + '</figcaption></figure>';
+        }).join('') + '</div>';
+      sec.hidden = false;
+    }
+    // A visual that cannot load leaves no broken-image icon and no caption
+    // describing a picture that is not there; the section goes when empty.
+    window.dfVisualFailed = function(img) {
+      var fig = img && img.closest ? img.closest('figure') : null;
+      if (fig && fig.parentNode) fig.parentNode.removeChild(fig);
+      var sec = document.getElementById('drawerVisuals');
+      if (sec && !sec.querySelector('figure')) { sec.innerHTML = ''; sec.hidden = true; }
+    };
+    // ═══ END CONSULTATION GUIDE ═══
 
     // ─── Purchase studio — rendering and controls ───
     // The Consultation Summary's ONE purchase presentation (production
@@ -18456,27 +18860,43 @@
     }
 
     // How the purchase gets home: a retailer-configured choice, shown only
-    // when the store publishes it. Choosing pickup changes ONE fact (the
-    // delivery charge, when pickup is published as free); tax and the
-    // complete cost stay "To confirm". Ephemeral, wiped with the session.
+    // when the store publishes it. Choosing pickup changes ONE fact - the
+    // delivery charge - and only when the separately governed payment fact
+    // (pickupNoChargeFact: fulfillment.pickupChargeFact approved) holds; tax
+    // and the complete cost stay "To confirm". Without that fact the pickup
+    // note is neutral, so "free" never sits beside a "To confirm" charge.
+    // Ephemeral, wiped with the session.
     function finWsFulfilControl() {
       var fp = (typeof paySalesPolicy === 'function') ? paySalesPolicy('fulfillment') : null;
       if (!fp || !fp.pickupLabel || !fp.deliveryLabel) return '';
       var btn = function(id, label) {
         var on = _payFulfil === id;
         return '<button type="button" class="fin-ws-ff__btn" id="finWsFf-' + id + '" aria-pressed="' + (on ? 'true' : 'false') + '" '
-          + 'onclick="window.setPaymentFulfil(\'' + id + '\')" ontouchend="event.preventDefault();window.setPaymentFulfil(\'' + id + '\');">'
+          + 'onclick="window.setPaymentFulfil(\'' + id + '\', \'workspace\')" ontouchend="event.preventDefault();window.setPaymentFulfil(\'' + id + '\', \'workspace\');">'
           + finEsc(L(label)) + '</button>';
       };
       return '<div class="fin-ws-ff" role="group" aria-labelledby="finWsFfTitle">'
         + '<span class="fin-ws-kicker" id="finWsFfTitle">' + finEsc(t('pay.ff.title')) + '</span>'
         + '<div class="fin-ws-ff__btns">' + btn('pickup', fp.pickupLabel) + btn('delivery', fp.deliveryLabel) + '</div>'
-        + (_payFulfil && fp[_payFulfil + 'Note'] ? '<p class="fin-ws-ff__note">' + finEsc(L(fp[_payFulfil + 'Note'])) + '</p>' : '')
+        + (_payFulfil === 'pickup' && !pickupNoChargeFact()
+            ? '<p class="fin-ws-ff__note">' + finEsc(t('pay.ff.pickup_unconfirmed')) + '</p>'
+            : (_payFulfil && fp[_payFulfil + 'Note'] ? '<p class="fin-ws-ff__note">' + finEsc(L(fp[_payFulfil + 'Note'])) + '</p>' : ''))
         + '</div>';
     }
-    window.setPaymentFulfil = function(id) {
+    // One preference shared by the workspace and the Consultation Summary
+    // (a consultation preference only: nothing is booked, scheduled or
+    // charged). Both surfaces repaint. The pressing surface is passed
+    // explicitly ('summary' | 'workspace'): a touch activation and Safari's
+    // click never focus a button, so document.activeElement cannot say where
+    // the customer was, and the repaint would otherwise drop focus (and the
+    // VoiceOver cursor) to the body. Focus returns to the same control.
+    window.setPaymentFulfil = function(id, source) {
       _payFulfil = (_payFulfil === id || (id !== 'pickup' && id !== 'delivery')) ? '' : id;
       finWsRerender('finWsFf-' + id);
+      if (typeof renderHf2CustomerPolicies === 'function') renderHf2CustomerPolicies();
+      var prefix = source === 'summary' ? 'hf2Ff-' : (source === 'workspace' ? 'finWsFf-' : '');
+      var again = prefix ? document.getElementById(prefix + id) : null;
+      if (again) again.focus();
     };
     // The retailer's published comfort promise, as a transparent checklist
     // against THIS plan: which required items the plan includes. It never
@@ -18485,15 +18905,7 @@
     function finWsComfortPromise(p) {
       var cp = (typeof paySalesPolicy === 'function') ? paySalesPolicy('comfortPromise') : null;
       if (!cp || !cp.title || !Array.isArray(cp.conditions)) return '';
-      var cart = window._accCart || {};
-      var catalog = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)) ? ACCESSORIES : [];
-      var stepOf = function(a) { return (typeof sleepSystemStepIdForItem === 'function') ? sleepSystemStepIdForItem(a) : ''; };
-      var has = function(step) {
-        return catalog.some(function(a) { return a && cart[a.id] && stepOf(a) === step; });
-      };
-      var req = [];
-      if (cp.requiresProtector === true) req.push({ label: t('pay.cp.protector'), ok: has('protection') });
-      if (cp.requiresPillow === true) req.push({ label: t('pay.cp.pillow'), ok: has('pillow') });
+      var req = comfortPromiseRequirements(cp);
       var html = '<section class="fin-ws-cp" aria-labelledby="finWsCpTitle">'
         + '<h4 class="fin-ws-cp__title" id="finWsCpTitle">' + finEsc(L(cp.title)) + '</h4>'
         + (cp.summary ? '<p class="fin-ws-cp__summary">' + finEsc(L(cp.summary)) + '</p>' : '');
@@ -24289,6 +24701,11 @@
       // id). Nor is the in-flight flag cleared here.
       var psRow = (typeof psTakeHomeRow === 'function') ? psTakeHomeRow() : null;
       if (psRow) packet.push(psRow);
+      // Governed policy reminders (comfort exchange, getting home): in-store
+      // rows only (present:false), never part of the send.
+      if (typeof customerPolicyTakeHomeRows === 'function') {
+        customerPolicyTakeHomeRows().forEach(function(r) { packet.push(r); });
+      }
       emailSendState.previewFingerprint = (psRow && psRow.fingerprint) || null;
       if (!emailSendState.sendId || (!emailSendState.inFlight && !emailSendState.unresolved)) {
         emailSendState.sendId = emailNewSendId();
@@ -26476,6 +26893,9 @@
         // foundation card when no answer fired.
         main.innerHTML = sectionHead +
           (step.id === 'base' ? renderSupportGuide() : '') +
+          // typeof-guarded like every optional renderer, so the sandboxed
+          // Sleep System suites (which extract named functions) stay runnable.
+          (step.id === 'base' && typeof renderBaseExplainer === 'function' ? renderBaseExplainer() : '') +
           (step.id === 'base' ? renderAdjustabilityDemo() : '') +
           (step.id === 'pillow' ? renderPillowFit(primary) : '') +
           (step.id === 'protection' ? renderProtectionGuide() : '') +
@@ -26516,6 +26936,31 @@
             return '<div class="sleep-system__notice"><span>&#10003;</span><span>' + escapeHtml(notice) + '</span></div>';
           }).join('') +
         '</div>' + financingBlock;
+    }
+
+    // Foundation or adjustable base: a closed, optional disclosure on the
+    // base step - an original two-panel diagram (decorative, aria-hidden;
+    // the dictionary text carries the meaning in both languages). Category
+    // level only: no model, no health benefit, no compatibility promise, no
+    // motion. It never changes the step's ranking or the plan.
+    function renderBaseExplainer() {
+      var flat = '<svg class="edu-base__art" viewBox="0 0 120 56" aria-hidden="true" focusable="false">'
+        + '<rect x="10" y="18" width="100" height="12" rx="3" class="edu-base__mattress"/>'
+        + '<rect x="10" y="32" width="100" height="10" rx="2" class="edu-base__base"/>'
+        + '<path d="M16 42v8M104 42v8" class="edu-base__leg"/></svg>';
+      var raised = '<svg class="edu-base__art" viewBox="0 0 120 56" aria-hidden="true" focusable="false">'
+        + '<path d="M10 14 L38 28 L84 28 L110 20 L110 30 L84 38 L38 38 L10 24 Z" class="edu-base__mattress"/>'
+        + '<path d="M38 40 L84 40 L84 46 L38 46 Z" class="edu-base__base"/>'
+        + '<path d="M44 46v6M78 46v6" class="edu-base__leg"/></svg>';
+      var panel = function(art, title, body) {
+        return '<figure class="edu-base__panel">' + art + '<figcaption><strong>' + escapeHtml(t(title)) + '</strong>'
+          + '<span>' + escapeHtml(t(body)) + '</span></figcaption></figure>';
+      };
+      return '<details class="edu-base"><summary ontouchend="event.preventDefault();this.parentNode.open=!this.parentNode.open;">' + escapeHtml(t('edu.base.summary')) + '</summary>'
+        + '<div class="edu-base__panels">'
+        + panel(flat, 'edu.base.foundation', 'edu.base.foundation_d')
+        + panel(raised, 'edu.base.adjustable', 'edu.base.adjustable_d')
+        + '</div><p class="edu-base__note">' + escapeHtml(t('edu.base.note')) + '</p></details>';
     }
 
     function renderSleepSystemPlan() {
@@ -27614,6 +28059,9 @@
       // so it repaints in the same pass. typeof-guarded like every other
       // gate consumer, so the sandboxed renderer suites stay runnable.
       if (typeof renderHf2SystemTotal === 'function') renderHf2SystemTotal();
+      // Governed retailer policies (comfort exchange, getting home): read the
+      // same cart, so they repaint in the same pass; independent of pricing.
+      if (typeof renderHf2CustomerPolicies === 'function') renderHf2CustomerPolicies();
       if (typeof renderPurchaseStudio === 'function') renderPurchaseStudio();
       renderHf2DiscountButton();
       renderHf2SendButton();
@@ -29394,9 +29842,13 @@
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
+      'drawerVisuals',
       'compareCols', 'compareSizeContext', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2SystemTotal', 'hf2BriefWho',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
+      // Governed retailer policies: the checklist reads the current
+      // cart and the home panel shows the current preference.
+      'hf2ComfortBody', 'hf2HomeBody',
       // Slice 4 (D4): every financing container built from customer state.
       // The sheet cards carry the disclosure panels and the Consider/Clear
       // controls; the handoff block carries the preference and explored rows;
@@ -29498,6 +29950,9 @@
       // toggles classes/attrs/display, so the CONTENT is cleared by name in
       // the innerHTML list below; this entry re-hides the slot.
       { id: 'hf2SystemTotal', hiddenAttr: true },
+      { id: 'hf2ComfortSection', hiddenAttr: true },
+      { id: 'drawerVisuals', hiddenAttr: true },
+      { id: 'hf2HomeSection', hiddenAttr: true },
       { id: 'discountRevealOverlay', remove: ['fade-out'], add: ['hidden'], display: 'none' },
       { id: 'revealCert', remove: ['is-visible'] },
       { id: 'resultsRevealOverlay', remove: ['is-visible', 'is-quick'], display: 'none',
@@ -30163,7 +30618,7 @@
         var reaction = (window._mattressReactions || {})[m.id];
         return {
           head: '<div class="cmp-head" role="columnheader">'
-            + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
+            + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '" onerror="this.remove()"></div>' : '')
             + '<div class="cmp-head-name">' + escapeHtml(m.name)
               // The $$$ band is a TIER indicator, not a price. Once an exact
               // purchase price renders in this same table it becomes a second,
@@ -30640,9 +31095,11 @@
       var heroEl = document.getElementById('drawerHeroImg');
       var imgSrc = m.imageUrl;
       if (imgSrc) {
-        imgEl.innerHTML = '<img src="'+imgSrc+'" alt="'+m.name+'">';
+        // Escaped attributes; a photo that fails to load removes itself so
+        // the hero shows its plain well, never a broken-image icon.
+        imgEl.innerHTML = '<img src="' + escapeHtml(imgSrc) + '" alt="' + escapeHtml(m.name) + '" onerror="this.remove()">';
         imgEl.className = 'drawer-mattress-img';
-        heroEl.innerHTML = '<img src="'+imgSrc+'" alt="'+m.name+'" style="width:100%;height:100%;object-fit:cover;display:block;">';
+        heroEl.innerHTML = '<img src="' + escapeHtml(imgSrc) + '" alt="' + escapeHtml(m.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.remove()">';
       } else {
         imgEl.textContent = 'bed';
         imgEl.className = 'drawer-mattress-img no-img';
@@ -30687,6 +31144,9 @@
           + '</div>';
       }).join('');
       if (window.dfmConstructionRender) window.dfmConstructionRender();
+      // Exact-product visuals: after the model's own differentiators and the
+      // generic construction demonstration, before price and payment.
+      if (typeof renderDrawerVisuals === 'function') renderDrawerVisuals(m);
 
       // Price (Phase 2.2 gate; off in production) then Payment Choice — both
       // after the fit content: sleep fit first, price and payment second.

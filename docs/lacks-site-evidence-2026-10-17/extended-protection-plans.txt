@@ -1,0 +1,22 @@
+URL: https://www.lacks.com/extended-protection-plans
+Page title: Protecting Your Investment | Lacks Furniture | ...
+Capture time: 2026-10-17 (afternoon, America/Chicago)
+Store context: Brownsville Galleria, no ZIP
+Method: Claude in Chrome extension, get_page_text of <main>
+Finding: page names furniture, appliances and electronics; coverage sections are Fabric, Leather, Wood. The word "mattress" does NOT appear. Do not present as mattress coverage.
+---
+PROTECTING YOUR INVESTMENT
+
+When you buy from Lacks, you’re investing in your home. You deserve to have your furniture, appliances, and electronics looking and performing like new for years to come. Learn more about how our extended protection programs can give you peace of mind.
+
+FURNITURE CARE PROTECTION
+[FCP partner description; benefits: expedited claims, care tips, craftsmen dispatched to home; plan auto-registered at purchase]
+
+TO FILE A CLAIM:
+Contact FCP at (888) 705-4001 or online at https://furniturecareprotection.com/file-a-claim/ or via email at claims@furniturecareprotection.com
+IF YOU PURCHASED AN EXTENDED WARRANTY FROM US BEFORE MARCH 27, 2024: Contact GBS at 1-888-585-9488 or online at www.gbsent.com
+
+WHAT'S COVERED?
+Fabric Coverage / Leather Coverage: stains, dye transfer, household heat marks, burns; punctures and rips (excluding seams); motor and associated components, breakage of frames, breakage of mechanism.
+Wood Protection: stains, dye transfer, heat marks & burns; cracking, bubbling, peeling of finish, lifting of veneers; mirror chipping, water or beverage marks, scratches or gouges.
+(Page text condensed by agent; no mattress clause omitted - none exists.)

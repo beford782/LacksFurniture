@@ -433,6 +433,29 @@ QUIZ = Tab(
 )
 
 
+# -- Tab: Guide ----------------------------------------------------------------
+# OPTIONAL-payload tab (always present, like Quiz/Pricing). The retailer's
+# consultation guide - customer-policy copy (comfort exchange, getting the
+# purchase home, after-purchase help, Mexico delivery) and exact-product
+# visuals - as canonical JSON in an envelope {"customerPolicies": ...,
+# "productVisuals": ...}, chunked one fragment per row and concatenated by
+# the converter (build_consultation_guide) into store-config.json
+# `customerPolicies` / `productVisuals`. Editable source:
+# incoming/lacks_consultation_guide.json. tools/validation.py
+# validate_customer_policies and validate_product_visuals govern every entry
+# (draft/approved, allowlisted source, freshness, genuine approval or
+# permission, Spanish review, exact product identity); an empty tab emits
+# no key. Placed before Pricing so Pricing stays
+# the workbook's last data tab (tests/pricing_contract_check.py).
+GUIDE = Tab(
+    name="Guide",
+    note="Optional payload. Canonical consultation-guide JSON, chunked -> store-config.json customerPolicies / productVisuals",
+    columns=(
+        col("Guide JSON", "guideJson", note="one JSON fragment per row, concatenated in order"),
+    ),
+)
+
+
 # -- Tab: Pricing --------------------------------------------------------------
 # OPTIONAL-payload tab (tab itself is always present, like Quiz). Phase 2.1's
 # DARK pricing/payment framework: product/SKU/size identity, integer-minor-unit
@@ -467,6 +490,7 @@ TABS: Tuple[Tab, ...] = (
     SALES_NOTES,
     PROMOTIONS,
     QUIZ,
+    GUIDE,
     PRICING,
 )
 

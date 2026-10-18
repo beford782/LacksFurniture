@@ -283,6 +283,22 @@ def pricing_rows():
             for i in range(0, len(payload), _PROMO_CHUNK)]
 
 
+# ---- Guide tab: consultation-guide envelope ---------------------------------
+# The retailer's consultation guide rides its own canonical-JSON tab as an
+# envelope {"customerPolicies": {...}, "productVisuals": [...]} ->
+# store-config.json `customerPolicies` and `productVisuals`. Canonical
+# editable source: incoming/lacks_consultation_guide.json ("_meta" is
+# documentation and is NOT shipped). ZERO transforms between source and
+# envelope. Same chunking as Promotions.
+def guide_rows():
+    src = _load("lacks_consultation_guide.json")
+    envelope = {"customerPolicies": src["customerPolicies"],
+                "productVisuals": src["productVisuals"]}
+    payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return [{"Guide JSON": payload[i:i + _PROMO_CHUNK]}
+            for i in range(0, len(payload), _PROMO_CHUNK)]
+
+
 # ---- write workbook ---------------------------------------------------------
 def write_sheet(wb, tab, rows):
     ws = wb.create_sheet(title=tab)
@@ -313,6 +329,7 @@ def main(argv=None):
     write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES] + consult_rows)
     write_sheet(wb, "Promotions", promotions_rows())
     write_sheet(wb, "Quiz", quiz_rows())
+    write_sheet(wb, "Guide", guide_rows())
     write_sheet(wb, "Pricing", pricing_rows())
     wb.save(args.out)
     from collections import Counter

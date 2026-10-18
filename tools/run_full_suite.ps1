@@ -193,8 +193,8 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 66 checks
-# plus the mutation sweep = 67. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 70 checks
+# plus the mutation sweep = 71. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.
@@ -273,6 +273,8 @@ $checks = @(
     @{ Name = 'payment workspace (rendered, EN/ES, both landscapes)'; Exe = $pythonExecutable; Args = @('tests/payment_workspace_check.py') },
     @{ Name = 'payment facts (rendered, governed calculation, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/payment_facts_check.py') },
     @{ Name = 'purchase flow (one application, offers, rendered studio, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/purchase_flow_check.py') },
+    @{ Name = 'customer policies (comfort exchange, getting home, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/customer_policies_check.py') },
+    @{ Name = 'product visuals and base explainer (rendered, EN/ES)'; Exe = $pythonExecutable; Args = @('tests/product_visuals_check.py') },
     @{ Name = 'trust integrity'; Exe = $nodeExecutable; Args = @('tests/trust_integrity_check.mjs') },
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
