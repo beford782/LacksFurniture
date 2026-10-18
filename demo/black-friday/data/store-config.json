@@ -553,6 +553,230 @@
     "formulas": [],
     "offers": []
   },
+  "customerPolicies": {
+    "allowedSourceHosts": [
+      "lacks.com",
+      "www.lacks.com"
+    ],
+    "comfortPromise": {
+      "status": "draft",
+      "sourceUrl": "https://www.lacks.com/return-and-store-policies",
+      "verifiedAt": "2026-10-17",
+      "maxAgeDays": 60,
+      "spanishReview": "pending",
+      "approval": null,
+      "title": {
+        "en": "90-Day Comfort Promise",
+        "es": "Promesa de Comodidad de 90 Días"
+      },
+      "summary": {
+        "en": "Lacks publishes a one-time comfort exchange for a new mattress, with conditions.",
+        "es": "Lacks publica un cambio único por comodidad para un colchón nuevo, con condiciones."
+      },
+      "timeline": {
+        "minNights": 30,
+        "windowDays": 90
+      },
+      "requiresProtector": true,
+      "requiresPillow": true,
+      "conditions": [
+        {
+          "en": "Sleep on the mattress for at least 30 nights, then request the exchange within 90 days of delivery.",
+          "es": "Duerme en el colchón al menos 30 noches y luego solicita el cambio dentro de los 90 días posteriores a la entrega."
+        },
+        {
+          "en": "One exchange, for a mattress of equal or greater value. If the new mattress costs more, you pay the difference.",
+          "es": "Un solo cambio, por un colchón de igual o mayor valor. Si el nuevo colchón cuesta más, pagas la diferencia."
+        },
+        {
+          "en": "The purchase must include a mattress protector and at least one pillow, and the mattress must have been used with that protector.",
+          "es": "La compra debe incluir un protector de colchón y al menos una almohada, y el colchón debe haberse usado con ese protector."
+        },
+        {
+          "en": "The mattress must be in good condition, free of stains, odors or damage.",
+          "es": "El colchón debe estar en buen estado, sin manchas, olores ni daños."
+        },
+        {
+          "en": "A local delivery fee applies to the exchange.",
+          "es": "El cambio está sujeto a un cargo de entrega local."
+        },
+        {
+          "en": "This is an exchange, not a refund. Pillows and protectors cannot be refunded or exchanged.",
+          "es": "Es un cambio, no un reembolso. Las almohadas y los protectores no se reembolsan ni se cambian."
+        },
+        {
+          "en": "Lacks authorizes and inspects every exchange. Items sold as clearance, as-is or final sale, and special-order merchandise, are listed as not eligible for exchange; your specialist confirms how this applies to your mattress.",
+          "es": "Lacks autoriza e inspecciona cada cambio. Los artículos vendidos en liquidación, tal como están o en venta final, y la mercancía de pedido especial, aparecen como no elegibles para cambio; tu especialista confirma cómo aplica esto a tu colchón."
+        }
+      ],
+      "takeHome": {
+        "en": "One comfort exchange after 30 nights and within 90 days of delivery, with conditions; your specialist confirms qualification.",
+        "es": "Un cambio por comodidad después de 30 noches y dentro de los 90 días posteriores a la entrega, con condiciones; tu especialista confirma si aplica."
+      }
+    },
+    "fulfillment": {
+      "status": "draft",
+      "sourceUrl": "https://www.lacks.com/services",
+      "verifiedAt": "2026-10-17",
+      "maxAgeDays": 60,
+      "spanishReview": "pending",
+      "approval": null,
+      "title": {
+        "en": "Getting your new bed home",
+        "es": "Cómo llevar tu cama nueva a casa"
+      },
+      "intro": {
+        "en": "Lacks publishes these ways to get your purchase home. Your specialist confirms what applies to your order.",
+        "es": "Lacks publica estas formas de llevar tu compra a casa. Tu especialista confirma lo que aplica a tu pedido."
+      },
+      "pickupNoCharge": true,
+      "pickupChargeFact": {
+        "status": "draft",
+        "approval": null
+      },
+      "deliveryLabel": {
+        "en": "Delivery and setup",
+        "es": "Entrega e instalación"
+      },
+      "pickupLabel": {
+        "en": "Warehouse pickup",
+        "es": "Recogida en almacén"
+      },
+      "deliveryNote": {
+        "en": "Full-service delivery with in-home setup is published; its charge is confirmed in store.",
+        "es": "Se publica la entrega completa con instalación en casa; su cargo se confirma en la tienda."
+      },
+      "pickupNote": {
+        "en": "Published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
+        "es": "Se publica como gratuita en el almacén central. Lleva el contrato de venta y una identificación con foto que coincida."
+      },
+      "deliveryPoints": [
+        {
+          "en": "Brought inside, assembled and set up in the room you choose.",
+          "es": "Se lleva adentro, se arma y se instala en la habitación que elijas."
+        },
+        {
+          "en": "Unboxed and inspected at the distribution center first.",
+          "es": "Primero se desempaca y se inspecciona en el centro de distribución."
+        },
+        {
+          "en": "Clear the room and a path to it before the crew arrives.",
+          "es": "Despeja la habitación y el camino hacia ella antes de que llegue el equipo."
+        },
+        {
+          "en": "Decorator services, such as making the bed, are not included.",
+          "es": "No incluye servicios de decoración, como tender la cama."
+        }
+      ],
+      "pickupPoints": [
+        {
+          "en": "Published at no additional cost from the Lacks central warehouse.",
+          "es": "Se publica sin costo adicional en el almacén central de Lacks."
+        },
+        {
+          "en": "Bring a copy of your sales contract and a valid photo ID. The names must match.",
+          "es": "Lleva una copia de tu contrato de venta y una identificación con foto vigente. Los nombres deben coincidir."
+        },
+        {
+          "en": "Someone else collecting needs Lacks' third-party waiver form, linked on lacks.com/services.",
+          "es": "Si otra persona recoge, necesita el formulario de autorización de terceros de Lacks, en lacks.com/services."
+        }
+      ],
+      "specialistConfirms": [
+        {
+          "en": "Delivery charge and coverage for your address",
+          "es": "El cargo de entrega y la cobertura para tu dirección"
+        },
+        {
+          "en": "Delivery date or pickup readiness",
+          "es": "La fecha de entrega o cuándo estará listo para recoger"
+        },
+        {
+          "en": "Whether removal of your old mattress is available",
+          "es": "Si se puede retirar tu colchón anterior"
+        },
+        {
+          "en": "Whether setup of your bed base is included",
+          "es": "Si se incluye la instalación de tu base de cama"
+        },
+        {
+          "en": "Warehouse location and hours",
+          "es": "La ubicación y el horario del almacén"
+        }
+      ],
+      "takeHome": {
+        "en": "Delivery with in-home setup, or free warehouse pickup with your sales contract and a matching photo ID. Charges and dates are confirmed with your specialist.",
+        "es": "Entrega con instalación en casa, o recogida gratuita en el almacén con tu contrato de venta y una identificación con foto que coincida. Los cargos y las fechas se confirman con tu especialista."
+      }
+    },
+    "afterPurchase": {
+      "status": "draft",
+      "sourceUrl": "https://www.lacks.com/faq",
+      "verifiedAt": "2026-10-17",
+      "maxAgeDays": 60,
+      "spanishReview": "pending",
+      "approval": null,
+      "title": {
+        "en": "After your purchase",
+        "es": "Después de tu compra"
+      },
+      "body": {
+        "en": "Questions after delivery or pickup? Contact your Lacks store, or use the service request on lacks.com.",
+        "es": "¿Preguntas después de la entrega o la recogida? Comunícate con tu tienda Lacks o usa la solicitud de servicio en lacks.com."
+      },
+      "links": [
+        {
+          "label": {
+            "en": "Find your store",
+            "es": "Encuentra tu tienda"
+          },
+          "url": "https://www.lacks.com/contacts"
+        },
+        {
+          "label": {
+            "en": "Service request",
+            "es": "Solicitud de servicio"
+          },
+          "url": "https://www.lacks.com/services#service-form"
+        }
+      ]
+    },
+    "mexicoDelivery": {
+      "status": "draft",
+      "sourceUrl": "https://www.lacks.com/promotions/mexico-ads",
+      "verifiedAt": "2026-10-17",
+      "maxAgeDays": 60,
+      "spanishReview": "pending",
+      "approval": null,
+      "title": {
+        "en": "Delivering to Mexico",
+        "es": "Entrega en México"
+      },
+      "body": {
+        "en": "Lacks publishes delivery to your door in Mexico through a professional import agent, for an additional charge. Coverage, cost and timing are confirmed with your specialist.",
+        "es": "Lacks publica la entrega hasta la puerta de tu hogar en México a través de un agente profesional de importación, con cargo adicional. La cobertura, el costo y los tiempos se confirman con tu especialista."
+      },
+      "points": [
+        {
+          "en": "Import of your purchase",
+          "es": "La importación de tu compra"
+        },
+        {
+          "en": "Assembly and placement in your home",
+          "es": "El armado y el acomodo en tu hogar"
+        },
+        {
+          "en": "Removal of leftover material",
+          "es": "El retiro del material sobrante"
+        }
+      ],
+      "note": {
+        "en": "Delivery is separate from credit: it does not mean an order qualifies for any financing.",
+        "es": "La entrega es independiente del crédito: no significa que un pedido califique para algún financiamiento."
+      }
+    }
+  },
+  "productVisuals": [],
   "voice": {
     "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
     "headlineMain": "South Texas'",

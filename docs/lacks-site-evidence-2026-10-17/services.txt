@@ -1,0 +1,50 @@
+URL: https://www.lacks.com/services
+Page title: Furniture, Mattress & Appliance Services | Lacks Furniture | ...
+Capture time: 2026-10-17 (afternoon, America/Chicago)
+Store context: header "My Store: Brownsville Galleria" (read from page), no ZIP entered
+Method: Claude in Chrome extension, get_page_text of <main> + accessibility-tree read of link hrefs; agent's own tab; no clicks
+Language: English
+Links observed:
+  "3rd party waiver" -> https://cdn.avbportal.com/magento-media/members-furniture/b0030-lacks/3rd-party-waiverv1.pdf (opens new tab; PDF NOT opened/downloaded)
+  "Lacks Service Form Online" heading, described as "Customer Service Request Form - Online"; FAQ links to it as https://www.lacks.com/services#service-form (the form itself was not touched)
+---
+DELIVERY & MERCHANDISE PICK‑UP
+SERVICE
+
+Quality & Service with You in Mind
+
+FULL-SERVICE DELIVERY WITH IN‑HOME SET‑UP
+
+We’ll unbox your items at our distribution center, dispose of packaging materials in a safe and environmentally friendly manner, inspect and deliver your items to your home. Plus, we’ll set up your new furniture in your prepared room of choice taking every precaution to keep everyone safe.
+
+WHAT’S INCLUDED:
+Delivery Inside Your Home
+Unboxed at Distribution Center
+Inspected
+Assembled
+Set Up in Your Prepared Room of Choice
+
+Full-Service Delivery with In-Home Set-Up does not include decorator services such as hanging mirrors/artwork, making beds, setting tables, etc.
+
+What to Expect:
+
+Upon arrival, your driver will approach your front door and confirm your order. Our delivery team will inspect the room(s) where your delivery is to be set up to ensure they have a clear path and plenty of room. Once your delivery is complete, all you have left to do is enjoy your new furniture!
+
+FREE MERCHANDISE PICK‑UP
+
+If you prefer, we offer merchandise pick-up from our central warehouse at no additional cost to you.
+
+Our Central Warehouse is located at:
+1300 San Patricia Drive, Pharr, TX 78577
+Monday - Saturday
+8:00 AM - 7:00 PM by Appointment and Walk-Ins
+You may reach our Customer Pick-Up Department at: 1-800-870-6999
+What to Expect:
+
+Upon your arrival, a Lacks representative will greet you and request a copy of your sales contract and a valid photo ID. The name on the contract must match the name on the ID. If they do not, you will not be allowed to pick up the merchandise. If you need to have someone else pick up your merchandise please fill out this 3rd party waiver.
+
+You will be directed to a specified bay, where you must remain in your vehicle until you are instructed to do so by a Lacks representative.
+
+You will be allowed to exit your vehicle to inspect the loading of your merchandise.
+
+LACKS SERVICE FORM ONLINE

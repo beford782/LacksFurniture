@@ -734,15 +734,21 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     r = ValidationReport()
 
     # Review-build-only blocks (Payment Choice slice 2): the assumption
-    # scenario panel and the retailer commercial-policy copy are injected in
-    # memory by tools/serve_pricing_preview.py and must never reach shipped
-    # configuration through the workbook or the store values.
+    # scenario panel is injected in memory by tools/serve_pricing_preview.py
+    # and must never reach shipped configuration through the workbook or the
+    # store values. `salesPolicies` (the retired review-only policy copy) is
+    # replaced by the governed `customerPolicies` contract (2026-10-17) and
+    # stays refused so the ungoverned shape can never come back.
     # `illustrativeDemo` (the retired payment demo's block, 2026-10-15) stays
     # refused so the retired path can never be revived through configuration.
     for review_only in ("reviewTools", "salesPolicies", "illustrativeDemo"):
         if review_only in config:
             r.add_error(f"{review_only} is review-build only and must not appear in shipped "
                         f"store configuration")
+    # Retailer customer policies: per-section governance against the policy
+    # host ceiling (no-op when the block is absent).
+    r.merge(validate_customer_policies(
+        config, allowed_source_hosts=load_source_hosts().get("policySourceHosts")))
 
     if _blank(config.get("storeName")):
         r.add_error("storeName is empty")
@@ -5676,6 +5682,441 @@ def _good_manifest():
     return {"name": "DreamFinder - Acme", "start_url": "/DreamFinder/"}
 
 
+# -- Customer policies (comfort exchange, getting home, after purchase, Mexico) --
+# The retailer's published customer-policy copy, governed per section. A
+# section renders in the app only when it is APPROVED with a genuine approval
+# record, its Spanish copy is native-reviewed, its evidence is fresh and its
+# source sits on an allowlisted policy host - the runtime gate
+# (customerPolicy() in index.html) re-checks the same record. Shipped data
+# carries every section 'draft' with approval null (CI operating-state lock).
+CUSTOMER_POLICY_SECTIONS = ("comfortPromise", "fulfillment", "afterPurchase", "mexicoDelivery")
+CUSTOMER_POLICY_COMMON = ("status", "sourceUrl", "verifiedAt", "maxAgeDays",
+                          "spanishReview", "approval")
+CUSTOMER_POLICY_STATUSES = ("draft", "approved")
+CUSTOMER_POLICY_ES_REVIEW = ("pending", "approved")
+CUSTOMER_POLICY_APPROVAL_KEYS = frozenset({"approvedBy", "approvedAt", "reference"})
+CUSTOMER_POLICY_MAX_AGE = 180
+# Per section: (required text objects, required text-object arrays,
+#               optional text objects, optional text-object arrays, other keys)
+CUSTOMER_POLICY_SHAPES = {
+    "comfortPromise": (("title", "summary", "takeHome"), ("conditions",), (), (),
+                       ("timeline", "requiresProtector", "requiresPillow")),
+    "fulfillment": (("title", "intro", "deliveryLabel", "pickupLabel", "deliveryNote",
+                     "pickupNote", "takeHome"),
+                    ("deliveryPoints", "pickupPoints", "specialistConfirms"), (), (),
+                    ("pickupNoCharge", "pickupChargeFact")),
+    "afterPurchase": (("title", "body"), (), (), (), ("links",)),
+    "mexicoDelivery": (("title", "body"), ("points",), ("note",), (), ()),
+}
+
+
+def _policy_text_ok(v) -> bool:
+    return (isinstance(v, dict) and set(v) == {"en", "es"}
+            and all(isinstance(v[k], str) and v[k].strip() for k in ("en", "es")))
+
+
+def validate_customer_policies(config: dict, *, allowed_source_hosts=None,
+                               today=None) -> ValidationReport:
+    """Govern store-config `customerPolicies` (absent = nothing to check).
+
+    allowed_source_hosts is the build-time CEILING (tools/source_hosts.json
+    policySourceHosts); the shipped block's own allowedSourceHosts is the
+    browser's list and may not exceed it. `today` (a date) is injectable for
+    the self-test."""
+    from datetime import date as _day
+    r = ValidationReport()
+    if not isinstance(config, dict) or "customerPolicies" not in config:
+        return r
+    cp = config["customerPolicies"]
+    if not isinstance(cp, dict):
+        r.add_error("customerPolicies must be an object")
+        return r
+    today = today or _day.today()
+    ceiling = [str(h).lower() for h in (allowed_source_hosts or []) if isinstance(h, str)]
+    unknown = sorted(set(cp) - set(CUSTOMER_POLICY_SECTIONS) - {"allowedSourceHosts"})
+    if unknown:
+        r.add_error(f"customerPolicies: unknown key(s) {unknown}")
+    hosts = cp.get("allowedSourceHosts")
+    if not (isinstance(hosts, list) and hosts
+            and all(isinstance(h, str) and h.strip() and h == h.strip().lower()
+                    and "/" not in h and ":" not in h for h in hosts)):
+        r.add_error("customerPolicies.allowedSourceHosts must be a nonempty array of "
+                    "bare lowercase host names")
+        hosts = []
+    else:
+        if not ceiling:
+            r.add_error("customerPolicies: no policy source-host allowlist is configured "
+                        "(tools/source_hosts.json policySourceHosts) - failing closed")
+        for h in hosts:
+            if ceiling and h not in ceiling:
+                r.add_error(f"customerPolicies.allowedSourceHosts entry {h!r} is not in "
+                            f"tools/source_hosts.json policySourceHosts")
+
+    def url_ok(url):
+        parts = _split_safe_https(url) if isinstance(url, str) else None
+        if parts is None:
+            return False
+        h = parts.hostname.lower()
+        return h in hosts and bool(ceiling) and h in ceiling
+
+    for name in CUSTOMER_POLICY_SECTIONS:
+        if name not in cp:
+            continue
+        sec = cp[name]
+        tag = f"customerPolicies.{name}"
+        if not isinstance(sec, dict):
+            r.add_error(f"{tag} must be an object")
+            continue
+        req_t, req_a, opt_t, opt_a, other = CUSTOMER_POLICY_SHAPES[name]
+        allowed = (set(CUSTOMER_POLICY_COMMON) | set(req_t) | set(req_a)
+                   | set(opt_t) | set(opt_a) | set(other))
+        extra = sorted(set(sec) - allowed)
+        if extra:
+            r.add_error(f"{tag}: unknown key(s) {extra}")
+        missing = [k for k in CUSTOMER_POLICY_COMMON + req_t + req_a + other if k not in sec]
+        if missing:
+            r.add_error(f"{tag}: missing required key(s) {missing}")
+        status = sec.get("status")
+        if status not in CUSTOMER_POLICY_STATUSES:
+            r.add_error(f"{tag}.status must be one of {list(CUSTOMER_POLICY_STATUSES)}")
+        if not url_ok(sec.get("sourceUrl")):
+            r.add_error(f"{tag}.sourceUrl must be a safe https URL on an allowlisted "
+                        f"policy host")
+        va = sec.get("verifiedAt")
+        va_day = None
+        if isinstance(va, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", va):
+            try:
+                va_day = _day.fromisoformat(va)
+            except ValueError:
+                va_day = None
+        if va_day is None:
+            r.add_error(f"{tag}.verifiedAt must be an ISO date YYYY-MM-DD")
+        elif va_day > today:
+            r.add_error(f"{tag}.verifiedAt {va!r} is in the future")
+        mad = sec.get("maxAgeDays")
+        if (isinstance(mad, bool) or not isinstance(mad, int)
+                or not 1 <= mad <= CUSTOMER_POLICY_MAX_AGE):
+            r.add_error(f"{tag}.maxAgeDays must be a non-bool integer in "
+                        f"1..{CUSTOMER_POLICY_MAX_AGE}")
+            mad = None
+        esr = sec.get("spanishReview")
+        if esr not in CUSTOMER_POLICY_ES_REVIEW:
+            r.add_error(f"{tag}.spanishReview must be one of {list(CUSTOMER_POLICY_ES_REVIEW)}")
+        appr = sec.get("approval")
+        appr_ok = False
+        if appr is not None:
+            if not isinstance(appr, dict) or set(appr) != CUSTOMER_POLICY_APPROVAL_KEYS:
+                r.add_error(f"{tag}.approval must be null or exactly "
+                            f"{sorted(CUSTOMER_POLICY_APPROVAL_KEYS)}")
+            else:
+                vals = [appr[k] for k in sorted(CUSTOMER_POLICY_APPROVAL_KEYS)]
+                if not all(isinstance(v, str) and v.strip() for v in vals):
+                    r.add_error(f"{tag}.approval fields must be nonblank strings")
+                elif any(m in v.lower() for v in vals for m in PRICING_NON_ATTESTATION_MARKERS):
+                    r.add_error(f"{tag}.approval is not a genuine attestation (a fixture, "
+                                f"placeholder, review-build or illustrative marker)")
+                else:
+                    at = None
+                    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", appr["approvedAt"]):
+                        try:
+                            at = _day.fromisoformat(appr["approvedAt"])
+                        except ValueError:
+                            at = None
+                    if at is None:
+                        r.add_error(f"{tag}.approval.approvedAt must be an ISO date YYYY-MM-DD")
+                    elif at > today:
+                        r.add_error(f"{tag}.approval.approvedAt is in the future")
+                    else:
+                        appr_ok = True
+        if status == "draft" and appr is not None:
+            r.add_error(f"{tag}: a draft section carries no approval record (approval must "
+                        f"be null until the section is approved)")
+        if status == "approved":
+            if not appr_ok:
+                r.add_error(f"{tag}: approved without a genuine approval record")
+            if esr != "approved":
+                r.add_error(f"{tag}: approved while spanishReview is not 'approved'")
+            if va_day is not None and mad is not None and (today - va_day).days > mad:
+                r.add_error(f"{tag}: approved but verifiedAt {va!r} is older than "
+                            f"maxAgeDays={mad} - re-verify the source first")
+        for k in req_t + opt_t:
+            if k in sec and not _policy_text_ok(sec[k]):
+                r.add_error(f"{tag}.{k} must be {{en, es}} with both texts nonblank")
+        for k in req_a + opt_a:
+            if k not in sec:
+                continue
+            arr = sec[k]
+            if not (isinstance(arr, list) and arr and all(_policy_text_ok(x) for x in arr)):
+                r.add_error(f"{tag}.{k} must be a nonempty array of {{en, es}} texts")
+        if name == "comfortPromise":
+            tl = sec.get("timeline")
+            ok = (isinstance(tl, dict) and set(tl) == {"minNights", "windowDays"}
+                  and all(isinstance(tl[x], int) and not isinstance(tl[x], bool)
+                          for x in ("minNights", "windowDays"))
+                  and 1 <= tl["minNights"] < tl["windowDays"] <= 365)
+            if not ok:
+                r.add_error(f"{tag}.timeline must be {{minNights, windowDays}} integers with "
+                            f"1 <= minNights < windowDays <= 365")
+            for b in ("requiresProtector", "requiresPillow"):
+                if b in sec and not isinstance(sec[b], bool):
+                    r.add_error(f"{tag}.{b} must be a boolean")
+        if (name == "fulfillment" and "pickupNoCharge" in sec
+                and not isinstance(sec["pickupNoCharge"], bool)):
+            r.add_error(f"{tag}.pickupNoCharge must be a boolean")
+        if name == "fulfillment" and "pickupChargeFact" in sec:
+            # The FINANCIAL use of published free pickup (a payment-table
+            # fact) is governed separately from the informational guidance.
+            pf = sec["pickupChargeFact"]
+            ptag = f"{tag}.pickupChargeFact"
+            if not isinstance(pf, dict) or set(pf) != {"status", "approval"}:
+                r.add_error(f"{ptag} must be exactly {{status, approval}}")
+            else:
+                pa = pf["approval"]
+                pa_ok = (isinstance(pa, dict) and set(pa) == CUSTOMER_POLICY_APPROVAL_KEYS
+                         and all(isinstance(pa[k], str) and pa[k].strip() for k in pa)
+                         and not any(m in pa[k].lower() for k in pa
+                                     for m in PRICING_NON_ATTESTATION_MARKERS))
+                if pf["status"] not in CUSTOMER_POLICY_STATUSES:
+                    r.add_error(f"{ptag}.status must be one of {list(CUSTOMER_POLICY_STATUSES)}")
+                elif pf["status"] == "draft" and pa is not None:
+                    r.add_error(f"{ptag}: a draft carries no approval record")
+                elif pf["status"] == "approved":
+                    if not pa_ok:
+                        r.add_error(f"{ptag}: approved without its own genuine approval record "
+                                    f"(the guidance approval does not cover a payment fact)")
+                    if status != "approved":
+                        r.add_error(f"{ptag}: approved while the fulfillment guidance is not")
+                    if (pa_ok and isinstance(appr, dict)
+                            and str(pa.get("reference", "")).strip().lower()
+                            == str(appr.get("reference", "")).strip().lower()):
+                        r.add_error(f"{ptag}: its approval reuses the guidance approval reference - "
+                                    f"the payment fact needs its own approval")
+                    if sec.get("pickupNoCharge") is not True:
+                        r.add_error(f"{ptag}: approved but pickupNoCharge is not published as true")
+        if name == "afterPurchase":
+            links = sec.get("links")
+            if not (isinstance(links, list) and links and all(
+                    isinstance(l, dict) and set(l) == {"label", "url"}
+                    and _policy_text_ok(l.get("label")) and url_ok(l.get("url"))
+                    for l in links)):
+                r.add_error(f"{tag}.links must be a nonempty array of {{label: {{en, es}}, "
+                            f"url}} with safe https URLs on allowlisted policy hosts")
+    return r
+
+
+# -- Product visuals (exact-product secondary photos / labelled illustrations) --
+# Optional drawer imagery, governed per entry. A photo must be of the EXACT
+# catalog product (id AND name match - a family resemblance or a shared
+# sub-brand is not enough) and is always scope 'exact'; an illustration
+# declares whether it depicts this model ('exact') or construction in
+# general ('generic', labelled as such in the app). An entry renders only
+# when approved with a genuine permission record (reuse permission for the
+# image - public availability is not permission). The runtime gate
+# (productVisualsFor() in index.html) re-checks the same record.
+PRODUCT_VISUAL_KEYS = frozenset({"productId", "productName", "kind", "scope", "file", "width",
+                                 "height", "alt", "caption", "sourceUrl", "verifiedAt",
+                                 "status", "permission", "source", "sizeScope"})
+# Identity beyond id + name (2026-10-17 cleanup): an id and a display name do
+# not establish generation or size. A photo or exact illustration records the
+# LISTING it came from - its SKU, its exact listing title (which carries the
+# generation, e.g. "II"/"III") and the size listed - and that record must
+# match the retailer's listing evidence for the product. sizeScope says what
+# the image is shown as: 'pictured-size' (only the size photographed; always
+# required for a detail photo or an exact illustration, since construction
+# can vary by size) or 'all-sizes' (a whole-bed view only).
+PRODUCT_VISUAL_SOURCE_KEYS = frozenset({"sku", "listingTitle", "size"})
+PRODUCT_VISUAL_SIZE_SCOPES = ("pictured-size", "all-sizes")
+PRODUCT_VISUAL_SIZES = ("twin", "twin_xl", "full", "queen", "king", "cal_king")
+
+
+def listing_size_from_title(title):
+    """The size a listing title names ('... Queen Mattress' -> 'queen'), or
+    None when it names none or more than one. Longest names first so 'Twin
+    XL' / 'Cal King' are not read as 'Twin' / 'King'."""
+    t = " " + re.sub(r"[^a-z]+", " ", str(title or "").lower()) + " "
+    hits = []
+    # A modifier this table does not model (Full XL, Split King, Olympic
+    # Queen...) makes the title ambiguous: refuse rather than guess.
+    if re.search(r"\b(full xl|split|olympic|short|rv|three quarter|3 4)\b", t):
+        return None
+    for key, words in (("cal_king", ("cal king", "california king")),
+                       ("twin_xl", ("twin xl", "twin extra long", "txl")),
+                       ("king", ("king",)), ("queen", ("queen",)), ("full", ("full",)),
+                       ("twin", ("twin",))):
+        for w in words:
+            if " " + w + " " in t:
+                hits.append(key)
+                t = t.replace(" " + w + " ", " ")
+                break
+    return hits[0] if len(hits) == 1 else None
+
+
+def listing_evidence_from(doc):
+    """{productId: {"sku", "title", "size"}} from a listing-evidence document
+    shaped {"mattresses": [{"id", "sku", "siteName", "size"?}]}; the size is
+    the explicit field or the one the title names."""
+    out = {}
+    for m in (doc or {}).get("mattresses") or []:
+        if isinstance(m, dict) and isinstance(m.get("id"), str):
+            out[m["id"]] = {"sku": str(m.get("sku") or ""), "title": str(m.get("siteName") or ""),
+                            "size": m.get("size") or listing_size_from_title(m.get("siteName"))}
+    return out
+PRODUCT_VISUAL_KINDS = ("view", "detail", "illustration")
+PRODUCT_VISUAL_SCOPES = ("exact", "generic")
+PRODUCT_VISUAL_FILE_RE = re.compile(r"images/mattresses/gallery/[a-z0-9]+(?:-[a-z0-9]+)*\.jpg")
+PRODUCT_VISUAL_MAX_PER_PRODUCT = 3
+
+
+def validate_product_visuals(config: dict, *, mattresses=None, source_images=None,
+                             allowed_source_hosts=None, today=None,
+                             listings=None) -> ValidationReport:
+    """Govern store-config `productVisuals` (absent = nothing to check).
+
+    mattresses: {id: name} for the catalog this bundle ships. source_images:
+    the onboarding image root; an APPROVED entry's file must exist there
+    (relative to it, without the leading 'images/') so the converter can
+    normalize it. allowed_source_hosts: tools/source_hosts.json
+    policySourceHosts (first-party pages only)."""
+    from datetime import date as _day
+    r = ValidationReport()
+    if not isinstance(config, dict) or "productVisuals" not in config:
+        return r
+    pv = config["productVisuals"]
+    if not isinstance(pv, list):
+        r.add_error("productVisuals must be an array")
+        return r
+    today = today or _day.today()
+    hosts = [str(h).lower() for h in (allowed_source_hosts or []) if isinstance(h, str)]
+    catalog = mattresses or {}
+    per_product = {}
+    seen_files = set()
+    for i, e in enumerate(pv):
+        tag = f"productVisuals[{i}]"
+        if not isinstance(e, dict):
+            r.add_error(f"{tag} must be an object")
+            continue
+        if set(e) != PRODUCT_VISUAL_KEYS:
+            r.add_error(f"{tag}: keys must be exactly {sorted(PRODUCT_VISUAL_KEYS)} "
+                        f"(missing {sorted(PRODUCT_VISUAL_KEYS - set(e))}, "
+                        f"unknown {sorted(set(e) - PRODUCT_VISUAL_KEYS)})")
+            continue
+        pid, pname = e["productId"], e["productName"]
+        if not isinstance(pid, str) or pid not in catalog:
+            r.add_error(f"{tag}.productId {pid!r} is not a mattress in this catalog")
+        elif pname != catalog[pid]:
+            r.add_error(f"{tag}.productName {pname!r} does not exactly match the catalog name "
+                        f"{catalog[pid]!r} for {pid} - an image must be of the exact product")
+        kind, scope = e["kind"], e["scope"]
+        if kind not in PRODUCT_VISUAL_KINDS:
+            r.add_error(f"{tag}.kind must be one of {list(PRODUCT_VISUAL_KINDS)}")
+        if scope not in PRODUCT_VISUAL_SCOPES:
+            r.add_error(f"{tag}.scope must be one of {list(PRODUCT_VISUAL_SCOPES)}")
+        if kind in ("view", "detail") and scope != "exact":
+            r.add_error(f"{tag}: a photo (kind {kind!r}) is always of the exact product - "
+                        f"scope must be 'exact'")
+        f = e["file"]
+        if not (isinstance(f, str) and PRODUCT_VISUAL_FILE_RE.fullmatch(f)):
+            r.add_error(f"{tag}.file must be a lowercase kebab-case .jpg under "
+                        f"images/mattresses/gallery/")
+        elif f in seen_files:
+            r.add_error(f"{tag}.file {f!r} is listed twice")
+        else:
+            seen_files.add(f)
+        for dim in ("width", "height"):
+            v = e[dim]
+            if isinstance(v, bool) or not isinstance(v, int) or not 200 <= v <= 4000:
+                r.add_error(f"{tag}.{dim} must be an integer in 200..4000 (reserves the layout box)")
+        for t in ("alt", "caption"):
+            if not _policy_text_ok(e[t]):
+                r.add_error(f"{tag}.{t} must be {{en, es}} with both texts nonblank")
+        # Listing identity and display scope.
+        generic = kind == "illustration" and scope == "generic"
+        so, ss = e["source"], e["sizeScope"]
+        if generic:
+            if so is not None or ss is not None:
+                r.add_error(f"{tag}: a generic illustration depicts no listing - source and "
+                            f"sizeScope must be null")
+        else:
+            if not (isinstance(so, dict) and set(so) == PRODUCT_VISUAL_SOURCE_KEYS
+                    and all(isinstance(so[k], str) and so[k].strip() for k in so)):
+                r.add_error(f"{tag}.source must be {{sku, listingTitle, size}} (the listing the "
+                            f"image shows) - an id and name do not establish generation or size")
+                so = None
+            elif so["size"] not in PRODUCT_VISUAL_SIZES:
+                r.add_error(f"{tag}.source.size must be one of {list(PRODUCT_VISUAL_SIZES)}")
+            if ss not in PRODUCT_VISUAL_SIZE_SCOPES:
+                r.add_error(f"{tag}.sizeScope must be one of {list(PRODUCT_VISUAL_SIZE_SCOPES)}")
+            elif ss == "all-sizes" and kind != "view":
+                r.add_error(f"{tag}: a {kind} image is shown for the pictured size only "
+                            f"(sizeScope 'pictured-size') - construction and details can vary by size")
+            if isinstance(so, dict) and listings is not None and isinstance(pid, str):
+                rec = listings.get(pid)
+                if rec is None:
+                    r.add_error(f"{tag}: no listing evidence for {pid} - its identity cannot be checked")
+                else:
+                    if so["listingTitle"] != rec["title"]:
+                        r.add_error(f"{tag}.source.listingTitle does not match the recorded listing "
+                                    f"{rec['title']!r} (a different generation or listing)")
+                    if not rec.get("size") or so["size"] != rec["size"]:
+                        r.add_error(f"{tag}.source.size {so['size']!r}: no SKU mapping is recorded "
+                                    f"for {pid} at that size (recorded: {rec.get('size')!r})")
+                    elif so["sku"] != rec["sku"]:
+                        r.add_error(f"{tag}.source.sku {so['sku']!r} does not match the recorded "
+                                    f"{rec['size']} SKU {rec['sku']!r} for {pid}")
+            elif e["status"] == "approved" and listings is None:
+                r.add_error(f"{tag}: approved entry needs listing evidence (--listing-evidence) "
+                            f"to verify its product, generation and size")
+        src = e["sourceUrl"]
+        if generic and src is None:
+            pass  # an original generic diagram may cite no page
+        else:
+            parts = _split_safe_https(src) if isinstance(src, str) else None
+            if parts is None or parts.hostname.lower() not in hosts:
+                r.add_error(f"{tag}.sourceUrl must be a safe https URL on an allowlisted "
+                            f"first-party host (tools/source_hosts.json policySourceHosts)")
+        va = e["verifiedAt"]
+        va_ok = isinstance(va, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", va)
+        if va_ok:
+            try:
+                va_ok = _day.fromisoformat(va) <= today
+            except ValueError:
+                va_ok = False
+        if not va_ok:
+            r.add_error(f"{tag}.verifiedAt must be a past-or-today ISO date YYYY-MM-DD")
+        status, perm = e["status"], e["permission"]
+        if status not in ("draft", "approved"):
+            r.add_error(f"{tag}.status must be 'draft' or 'approved'")
+        if perm is not None:
+            if not isinstance(perm, dict) or set(perm) != CUSTOMER_POLICY_APPROVAL_KEYS:
+                r.add_error(f"{tag}.permission must be null or exactly "
+                            f"{sorted(CUSTOMER_POLICY_APPROVAL_KEYS)}")
+                perm = "bad"
+            elif not all(isinstance(perm[k], str) and perm[k].strip() for k in perm):
+                r.add_error(f"{tag}.permission fields must be nonblank strings")
+                perm = "bad"
+            elif any(m in perm[k].lower() for k in perm for m in PRICING_NON_ATTESTATION_MARKERS):
+                r.add_error(f"{tag}.permission is not a genuine attestation (a fixture, "
+                            f"placeholder, review-build or illustrative marker)")
+                perm = "bad"
+        if status == "draft" and perm is not None:
+            r.add_error(f"{tag}: a draft entry carries no permission record")
+        if status == "approved":
+            if not isinstance(perm, dict):
+                r.add_error(f"{tag}: approved without a genuine permission record")
+            if isinstance(f, str) and PRODUCT_VISUAL_FILE_RE.fullmatch(f):
+                if not source_images:
+                    r.add_error(f"{tag}: approved entry needs --source-images to verify its file")
+                elif not os.path.isfile(os.path.join(source_images, f[len("images/"):])):
+                    r.add_error(f"{tag}: approved file {f!r} is missing from the source images")
+            if isinstance(pid, str):
+                per_product[pid] = per_product.get(pid, 0) + 1
+    for pid, n in sorted(per_product.items()):
+        if n > PRODUCT_VISUAL_MAX_PER_PRODUCT:
+            r.add_error(f"productVisuals: {pid} has {n} approved entries (at most "
+                        f"{PRODUCT_VISUAL_MAX_PER_PRODUCT} - a few purposeful views, not a grid)")
+    return r
+
+
 def _self_test() -> int:
     passed = failed = 0
 
@@ -9833,6 +10274,271 @@ def _self_test() -> int:
                "does not exactly match", allow_illustrative=True))
     check("illustrative malformed item -> error, no crash",
           _err(_pb(_ill(items=[42])), "must be an object", allow_illustrative=True))
+
+    # ---- customer policies (comfort exchange, getting home, after purchase) ----
+    import copy as _cpcopy
+    from datetime import date as _cpday
+    _CP_SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                           "incoming", "lacks_consultation_guide.json")
+    try:
+        with open(_CP_SRC, encoding="utf-8") as _f:
+            _cp_good = json.load(_f)["customerPolicies"]
+    except (OSError, ValueError, KeyError):
+        # A retailer fork without this deployment's guide: a minimal generic
+        # draft block exercises the same rules.
+        _t = {"en": "Text", "es": "Texto"}
+        _common = {"status": "draft", "sourceUrl": "https://www.lacks.com/policy",
+                   "verifiedAt": "2026-10-17", "maxAgeDays": 60, "spanishReview": "pending",
+                   "approval": None}
+        _cp_good = {
+            "allowedSourceHosts": ["lacks.com", "www.lacks.com"],
+            "comfortPromise": dict(_common, title=_t, summary=_t, takeHome=_t, conditions=[_t],
+                                   timeline={"minNights": 30, "windowDays": 90},
+                                   requiresProtector=True, requiresPillow=True),
+            "fulfillment": dict(_common, title=_t, intro=_t, deliveryLabel=_t, pickupLabel=_t,
+                                deliveryNote=_t, pickupNote=_t, takeHome=_t, deliveryPoints=[_t],
+                                pickupPoints=[_t], specialistConfirms=[_t], pickupNoCharge=True,
+                                pickupChargeFact={"status": "draft", "approval": None}),
+            "afterPurchase": dict(_common, title=_t, body=_t,
+                                  links=[{"label": _t, "url": "https://www.lacks.com/contacts"}]),
+            "mexicoDelivery": dict(_common, title=_t, body=_t, points=[_t], note=_t),
+        }
+    _CPH = ["lacks.com", "www.lacks.com"]
+    _CPDAY = _cpday(2026, 10, 20)
+
+    def _cpv(block, hosts=_CPH, today=_CPDAY):
+        return validate_customer_policies({"customerPolicies": block},
+                                          allowed_source_hosts=hosts, today=today)
+
+    def _cperr(block, needle, **kw):
+        rr = _cpv(block, **kw)
+        return (not rr.ok) and any(needle in e for e in rr.errors)
+
+    def _approve(block, sec):
+        b = _cpcopy.deepcopy(block)
+        b[sec]["status"] = "approved"
+        b[sec]["spanishReview"] = "approved"
+        b[sec]["approval"] = {"approvedBy": "A. Owner", "approvedAt": "2026-10-18",
+                              "reference": "Lacks policy sign-off 2026-10-18"}
+        return b
+
+    check("customerPolicies: absent -> ok (nothing to check)",
+          validate_customer_policies({}, allowed_source_hosts=_CPH).ok)
+    check("customerPolicies: the shipped draft source validates",
+          _cpv(_cp_good).ok)
+    check("customerPolicies: every shipped section is draft with approval null",
+          all(_cp_good[s]["status"] == "draft" and _cp_good[s]["approval"] is None
+              for s in CUSTOMER_POLICY_SECTIONS))
+    for _s_ in CUSTOMER_POLICY_SECTIONS:
+        check(f"customerPolicies: {_s_} approved with a genuine record validates",
+              _cpv(_approve(_cp_good, _s_)).ok)
+    check("customerPolicies: not an object -> error",
+          _cperr([], "must be an object"))
+    check("customerPolicies: unknown top-level key -> error",
+          _cperr(dict(_cp_good, extra={}), "unknown key"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["fulfillment"]["deliveryDate"] = "x"
+    check("customerPolicies: unknown section key -> error", _cperr(_b, "unknown key"))
+    check("customerPolicies: no policy host ceiling -> fail closed",
+          _cperr(_cp_good, "failing closed", hosts=[]))
+    check("customerPolicies: browser host beyond the ceiling -> error",
+          _cperr(dict(_cp_good, allowedSourceHosts=["lacks.com", "evil.example"]),
+                 "not in tools/source_hosts.json"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["comfortPromise"]["sourceUrl"] = "http://www.lacks.com/x"
+    check("customerPolicies: http source -> error", _cperr(_b, "sourceUrl"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["fulfillment"]["sourceUrl"] = "https://cdn.avbportal.com/x.pdf"
+    check("customerPolicies: off-allowlist source -> error", _cperr(_b, "sourceUrl"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["afterPurchase"]["links"][0]["url"] = "https://example.com/"
+    check("customerPolicies: off-allowlist link -> error", _cperr(_b, "links"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["comfortPromise"]["title"] = {"en": "Promise", "es": ""}
+    check("customerPolicies: one-language text -> error", _cperr(_b, "both texts"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["fulfillment"]["deliveryPoints"] = []
+    check("customerPolicies: empty points array -> error", _cperr(_b, "nonempty array"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["comfortPromise"]["timeline"] = {"minNights": 90, "windowDays": 30}
+    check("customerPolicies: timeline minNights >= windowDays -> error", _cperr(_b, "timeline"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["comfortPromise"]["timeline"] = {"minNights": True, "windowDays": 90}
+    check("customerPolicies: boolean timeline value -> error", _cperr(_b, "timeline"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["comfortPromise"]["requiresPillow"] = "yes"
+    check("customerPolicies: non-boolean requirement -> error", _cperr(_b, "must be a boolean"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["mexicoDelivery"]["status"] = "live"
+    check("customerPolicies: unknown status -> error", _cperr(_b, "status must be one of"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["mexicoDelivery"]["maxAgeDays"] = 400
+    check("customerPolicies: maxAgeDays out of range -> error", _cperr(_b, "maxAgeDays"))
+    _b = _cpcopy.deepcopy(_cp_good); _b["mexicoDelivery"]["verifiedAt"] = "Oct 17"
+    check("customerPolicies: malformed verifiedAt -> error", _cperr(_b, "verifiedAt"))
+    _b = _cpcopy.deepcopy(_cp_good)
+    _b["comfortPromise"]["approval"] = {"approvedBy": "A. Owner", "approvedAt": "2026-10-18",
+                                        "reference": "x"}
+    check("customerPolicies: a draft carrying an approval record -> error",
+          _cperr(_b, "draft section carries no approval"))
+    _b = _approve(_cp_good, "comfortPromise"); _b["comfortPromise"]["approval"] = None
+    check("customerPolicies: approved without approval -> error",
+          _cperr(_b, "without a genuine approval"))
+    _b = _approve(_cp_good, "comfortPromise")
+    _b["comfortPromise"]["approval"]["approvedBy"] = "FIXTURE - placeholder approver"
+    check("customerPolicies: fixture approval signature -> error",
+          _cperr(_b, "not a genuine attestation"))
+    _b = _approve(_cp_good, "comfortPromise"); _b["comfortPromise"]["approval"]["approvedAt"] = "2027-01-01"
+    check("customerPolicies: future approval date -> error", _cperr(_b, "in the future"))
+    _b = _approve(_cp_good, "fulfillment"); _b["fulfillment"]["spanishReview"] = "pending"
+    check("customerPolicies: approved with Spanish review pending -> error",
+          _cperr(_b, "spanishReview is not 'approved'"))
+    check("customerPolicies: approved but stale evidence -> error",
+          _cperr(_approve(_cp_good, "fulfillment"), "older than maxAgeDays",
+                 today=_cpday(2027, 3, 1)))
+    check("customerPolicies: a stale DRAFT is not an error (it renders nothing)",
+          _cpv(_cp_good, today=_cpday(2027, 3, 1)).ok)
+    _b = _cpcopy.deepcopy(_cp_good); del _b["fulfillment"]["specialistConfirms"]
+    check("customerPolicies: missing required key -> error", _cperr(_b, "missing required"))
+    # ---- product visuals (exact-product drawer imagery) ----------------------
+    import tempfile as _pvtmp
+    _PVCAT = {"g2": "The Saint Pierre", "g3": "The Palermo"}
+    _pvdir = _pvtmp.mkdtemp()
+    os.makedirs(os.path.join(_pvdir, "mattresses", "gallery"), exist_ok=True)
+    open(os.path.join(_pvdir, "mattresses", "gallery", "g2-angle.jpg"), "wb").write(b"x")
+    _pv_good = {"productId": "g2", "productName": "The Saint Pierre", "kind": "view",
+                "scope": "exact", "file": "images/mattresses/gallery/g2-angle.jpg",
+                "width": 1000, "height": 667,
+                "alt": {"en": "The Saint Pierre, three-quarter view",
+                        "es": "The Saint Pierre, vista de tres cuartos"},
+                "caption": {"en": "The taller euro top seen from the side.",
+                            "es": "El euro top más alto visto de lado."},
+                "sourceUrl": "https://www.lacks.com/catalog/product/x",
+                "verifiedAt": "2026-10-17", "status": "draft", "permission": None,
+                "source": {"sku": "2031583", "size": "queen",
+                           "listingTitle": "Chattam & Wells The Saint Pierre 16.5\" Plush Euro-Top Queen Mattress"},
+                "sizeScope": "all-sizes"}
+    _PVLIST = listing_evidence_from({"mattresses": [
+        {"id": "g2", "sku": "2031583",
+         "siteName": "Chattam & Wells The Saint Pierre 16.5\" Plush Euro-Top Queen Mattress"}]})
+    _pv_perm = {"approvedBy": "A. Owner", "approvedAt": "2026-10-18",
+                "reference": "Lacks image-use permission 2026-10-18"}
+
+    def _pvv(entries, src=_pvdir, listings=_PVLIST):
+        return validate_product_visuals({"productVisuals": entries}, mattresses=_PVCAT,
+                                        source_images=src, allowed_source_hosts=_CPH,
+                                        today=_CPDAY, listings=listings)
+
+    def _pverr(entries, needle, **kw):
+        rr = _pvv(entries, **kw)
+        return (not rr.ok) and any(needle in e for e in rr.errors)
+
+    def _pvm(**kw):
+        e = _cpcopy.deepcopy(_pv_good)
+        e.update(kw)
+        return e
+
+    check("productVisuals: absent -> ok", validate_product_visuals({}).ok)
+    check("productVisuals: empty array -> ok", _pvv([]).ok)
+    check("productVisuals: a draft exact view validates", _pvv([_pv_good]).ok)
+    check("productVisuals: an approved exact view with permission and file validates",
+          _pvv([_pvm(status="approved", permission=_pv_perm)]).ok)
+    check("productVisuals: not an array -> error",
+          not validate_product_visuals({"productVisuals": {}}).ok)
+    check("productVisuals: unknown product id -> error", _pverr([_pvm(productId="g99")], "not a mattress"))
+    check("productVisuals: name mismatch (similar family) -> error",
+          _pverr([_pvm(productName="The Saint Pierre II")], "exactly match"))
+    check("productVisuals: a photo labelled generic -> error",
+          _pverr([_pvm(scope="generic")], "scope must be 'exact'"))
+    check("productVisuals: a generic original illustration may cite no page",
+          _pvv([_pvm(kind="illustration", scope="generic", sourceUrl=None, source=None,
+                     sizeScope=None)]).ok)
+    check("listing size: read from the title, longest name first",
+          listing_size_from_title("X Twin XL Mattress") == "twin_xl"
+          and listing_size_from_title("X Cal King Mattress") == "cal_king"
+          and listing_size_from_title("X Queen Mattress") == "queen"
+          and listing_size_from_title("X Mattress") is None
+          and listing_size_from_title("X Queen King Set") is None
+          and listing_size_from_title("X Twin Extra Long Mattress") == "twin_xl"
+          and listing_size_from_title("X Full XL Mattress") is None
+          and listing_size_from_title("X Split King Mattress") is None)
+    check("productVisuals: an exact image without a source listing -> error",
+          _pverr([_pvm(source=None)], "do not establish generation or size"))
+    check("productVisuals: a generic illustration that claims a listing -> error",
+          _pverr([_pvm(kind="illustration", scope="generic", sourceUrl=None, sizeScope=None)],
+                 "depicts no listing"))
+    check("productVisuals: a listing title of another generation -> error",
+          _pverr([_pvm(source=dict(_pv_good["source"], listingTitle="Chattam & Wells The Saint Pierre II 16.5\" Plush Euro-Top Queen Mattress"))],
+                 "different generation"))
+    check("productVisuals: a SKU that is not the recorded listing's -> error",
+          _pverr([_pvm(source=dict(_pv_good["source"], sku="2031584"))], "does not match the recorded"))
+    check("productVisuals: a size with no recorded SKU mapping -> error",
+          _pverr([_pvm(source=dict(_pv_good["source"], size="king"))], "no SKU mapping"))
+    check("productVisuals: a detail photo shown for all sizes -> error",
+          _pverr([_pvm(kind="detail")], "pictured size only"))
+    check("productVisuals: a detail photo for the pictured size validates",
+          _pvv([_pvm(kind="detail", sizeScope="pictured-size")]).ok)
+    check("productVisuals: an unknown sizeScope -> error", _pverr([_pvm(sizeScope="queen")], "sizeScope must be"))
+    check("productVisuals: no listing evidence for the product -> error",
+          _pverr([_pvm()], "no listing evidence", listings={}))
+    check("productVisuals: an approved entry without any listing evidence -> error",
+          _pverr([_pvm(status="approved", permission=_pv_perm)], "needs listing evidence", listings=None))
+    check("productVisuals: a photo without a source page -> error",
+          _pverr([_pvm(sourceUrl=None)], "sourceUrl"))
+    check("productVisuals: an image-CDN source -> error",
+          _pverr([_pvm(sourceUrl="https://linqcdn.avbportal.com/images/x.jpg")], "sourceUrl"))
+    check("productVisuals: non-kebab or non-jpg file -> error",
+          _pverr([_pvm(file="images/mattresses/gallery/G2 Angle.png")], "kebab-case"))
+    check("productVisuals: file outside the gallery folder -> error",
+          _pverr([_pvm(file="images/mattresses/the saint pierre.jpg")], "kebab-case"))
+    check("productVisuals: duplicate file -> error", _pverr([_pv_good, _pv_good], "listed twice"))
+    check("productVisuals: missing dimensions -> error", _pverr([_pvm(width=0)], "width"))
+    check("productVisuals: one-language caption -> error",
+          _pverr([_pvm(caption={"en": "x", "es": ""})], "both texts"))
+    check("productVisuals: unknown key -> error", _pverr([dict(_pv_good, coolingClaim=True)], "keys must be"))
+    check("productVisuals: approved without permission -> error",
+          _pverr([_pvm(status="approved")], "without a genuine permission"))
+    check("productVisuals: fixture permission -> error",
+          _pverr([_pvm(status="approved", permission=dict(_pv_perm, approvedBy="FIXTURE - not real"))],
+                 "not a genuine attestation"))
+    check("productVisuals: draft with a permission record -> error",
+          _pverr([_pvm(permission=_pv_perm)], "draft entry carries no permission"))
+    check("productVisuals: approved file missing from the source images -> error",
+          _pverr([_pvm(status="approved", permission=_pv_perm,
+                       file="images/mattresses/gallery/g2-missing.jpg")], "missing from the source"))
+    check("productVisuals: more than three approved entries for one product -> error",
+          _pverr([_pvm(status="approved", permission=_pv_perm, kind="illustration",
+                       file=f"images/mattresses/gallery/g2-{n}.jpg") for n in range(4)]
+                 + [], "at most", src=None) or _pverr(
+              [_pvm(status="approved", permission=_pv_perm,
+                    file="images/mattresses/gallery/g2-angle.jpg")] + [
+               _pvm(status="approved", permission=_pv_perm, kind="illustration",
+                    file=f"images/mattresses/gallery/g2-x{n}.jpg") for n in range(3)], "at most"))
+
+    _pf = _approve(_cp_good, "fulfillment")
+    check("pickupChargeFact: an approved fulfillment section keeps the payment fact a draft (valid)",
+          _cpv(_pf).ok and _pf["fulfillment"]["pickupChargeFact"]["status"] == "draft")
+    _pf2 = _cpcopy.deepcopy(_pf)
+    _pf2["fulfillment"]["pickupChargeFact"] = {"status": "approved", "approval": None}
+    check("pickupChargeFact: approved without its own approval record -> error",
+          _cperr(_pf2, "approved without its own genuine approval"))
+    _pf3 = _cpcopy.deepcopy(_cp_good)
+    _pf3["fulfillment"]["pickupChargeFact"] = {"status": "approved", "approval": dict(
+        _pf["fulfillment"]["approval"])}
+    check("pickupChargeFact: approved while the guidance itself is a draft -> error",
+          _cperr(_pf3, "while the fulfillment guidance is not"))
+    _pf4 = _cpcopy.deepcopy(_pf)
+    _pf4["fulfillment"]["pickupChargeFact"] = {"status": "approved", "approval": dict(
+        _pf["fulfillment"]["approval"])}
+    _pf4["fulfillment"]["pickupChargeFact"]["approval"]["reference"] = "Lacks payment-fact sign-off 2026-10-18"
+    check("pickupChargeFact: separately approved inside approved guidance validates", _cpv(_pf4).ok)
+    _pf7 = _cpcopy.deepcopy(_pf4)
+    _pf7["fulfillment"]["pickupChargeFact"]["approval"] = dict(_pf7["fulfillment"]["approval"])
+    check("pickupChargeFact: an approval that reuses the guidance reference -> error",
+          _cperr(_pf7, "reuses the guidance approval reference"))
+    _pf4["fulfillment"]["pickupNoCharge"] = False
+    check("pickupChargeFact: approved but pickup not published as free -> error",
+          _cperr(_pf4, "pickupNoCharge is not published as true"))
+    _pf5 = _cpcopy.deepcopy(_cp_good)
+    _pf5["fulfillment"]["pickupChargeFact"] = {"status": "draft", "approval": dict(
+        _pf["fulfillment"]["approval"])}
+    check("pickupChargeFact: a draft carrying an approval -> error", _cperr(_pf5, "a draft carries no approval"))
+    _pf6 = _cpcopy.deepcopy(_cp_good)
+    del _pf6["fulfillment"]["pickupChargeFact"]
+    check("pickupChargeFact: missing -> error (the financial use is always explicitly governed)",
+          _cperr(_pf6, "missing required"))
+    check("salesPolicies stays refused (review-only key retired)",
+          any("salesPolicies is review-build only" in e
+              for e in validate_store_config(dict(_good_config(), salesPolicies={})).errors))
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1

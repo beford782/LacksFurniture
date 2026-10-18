@@ -434,6 +434,44 @@ def main():
               fx2["rows"]["tax"] == "To confirm" and fx2["rows"]["due"] == "To confirm" and fx2["rows"]["total"] == "To confirm")
         check("...the monthly figure does not change (pickup is not financed money)", fx2["rows"]["monthly"] == fx["rows"]["monthly"])
         check("...and the estimate label now excludes only sales tax", "excludes sales tax, which" in ex2, ex2)
+        # Separation (2026-10-17 cleanup): the fulfillment GUIDANCE stays
+        # approved and the pickup preference stays set, but with the payment
+        # fact itself a draft the charge returns to To confirm and the
+        # estimate excludes delivery again - and the Summary panel and the
+        # one purchase quote are unaffected.
+        q0 = page.evaluate("() => JSON.stringify(buildConsultationQuote('handoff', priceSizeAnswer()))")
+        page.evaluate("() => { window.__keepFact = STORE_CONFIG.customerPolicies.fulfillment.pickupChargeFact; STORE_CONFIG.customerPolicies.fulfillment.pickupChargeFact = { status: 'draft', approval: null }; renderFinancingSheet(); renderHf2(); }")
+        page.wait_for_timeout(200)
+        fx3 = page.evaluate(FACTS, PLAN)
+        ex3 = page.evaluate("() => document.querySelector('.fin-fx[data-fx-plan=\"synchrony-9-99-72\"] .fin-fx__excludes').textContent")
+        sc_draft = page.evaluate("() => { const sc = paymentScenarioFor('handoff', {}); return [sc.complete, sc.pickup]; }")
+        note_draft = page.evaluate("() => { renderFinancingSheet(); const n = document.querySelector('.fin-ws-ff__note'); return n ? n.textContent : null; }")
+        sep = page.evaluate("""(q0) => ({ guidance: customerPolicy('fulfillment') !== null, fact: pickupNoChargeFact(), pref: _payFulfil,
+          panel: !document.getElementById('hf2HomeSection').hidden,
+          quoteSame: JSON.stringify(buildConsultationQuote('handoff', priceSizeAnswer())) === q0 })""", q0)
+        page.evaluate("() => { STORE_CONFIG.customerPolicies.fulfillment.pickupChargeFact = window.__keepFact; delete window.__keepFact; renderFinancingSheet(); renderHf2(); }")
+        page.wait_for_timeout(200)
+        check("guidance approved + pickup chosen, payment fact NOT approved: the delivery row stays To confirm",
+              sep["guidance"] is True and sep["fact"] is False and sep["pref"] == "pickup"
+              and fx3["rows"]["fulfillment"] == "To confirm", str(sep) + " " + str(fx3["rows"].get("fulfillment")))
+        check("...the assumption scenario (the other payment site) does not treat delivery as zero either",
+              sc_draft == [True, False], str(sc_draft))
+        check("...and the workspace pickup note does not say free (neutral 'confirmed in store')",
+              note_draft is None or ("free" not in note_draft.lower() and "confirmed in store" in note_draft), str(note_draft))
+        check("...the estimate excludes delivery again (not 'only sales tax')",
+              "excludes sales tax and delivery or setup" in ex3, ex3)
+        check("...the delivery/pickup guidance still renders on the Summary, and the purchase quote is unchanged",
+              sep["panel"] is True and sep["quoteSame"] is True, str(sep))
+        r_noappr = page.evaluate("""(plan) => { const keep = STORE_CONFIG.customerPolicies.fulfillment.pickupChargeFact;
+          STORE_CONFIG.customerPolicies.fulfillment.pickupChargeFact = { status: 'approved', approval: null };
+          renderFinancingSheet(); const fact = pickupNoChargeFact();
+          STORE_CONFIG.customerPolicies.fulfillment.pickupChargeFact = keep; return fact; }""", PLAN)
+        page.evaluate("() => renderFinancingSheet()")
+        page.wait_for_timeout(150)
+        check("...a payment fact marked approved WITHOUT its approval record is still not honoured",
+              r_noappr is False, str(r_noappr))
+        check("...and with the payment fact restored, pickup is again stated as no charge",
+              page.evaluate(FACTS, PLAN)["rows"]["fulfillment"] == "No charge (warehouse pickup)")
         check("the choice is pressed for assistive technology",
               page.get_attribute("#finWsFf-pickup", "aria-pressed") == "true"
               and page.get_attribute("#finWsFf-delivery", "aria-pressed") == "false")
@@ -539,14 +577,14 @@ def main():
         page.evaluate("() => window.togglePaymentItems()")
         page.wait_for_timeout(250)
         n0 = page.evaluate("() => document.querySelectorAll('.fin-ws-ff, .fin-ws-cp').length")
-        page.evaluate("() => { STORE_CONFIG.salesPolicies.status = ''; renderFinancingSheet(); }")
+        page.evaluate("() => { STORE_CONFIG.customerPolicies.comfortPromise.status = 'draft'; STORE_CONFIG.customerPolicies.fulfillment.status = 'draft'; renderFinancingSheet(); }")
         n1 = page.evaluate("() => document.querySelectorAll('.fin-ws-ff, .fin-ws-cp').length")
-        page.evaluate("() => { STORE_CONFIG.salesPolicies.status = 'review'; STORE_CONFIG.salesPolicies.comfortPromise.sourceUrl = 'https://example.com/policy'; renderFinancingSheet(); }")
+        page.evaluate("() => { STORE_CONFIG.customerPolicies.comfortPromise.status = 'approved'; STORE_CONFIG.customerPolicies.comfortPromise.sourceUrl = 'https://example.com/policy'; renderFinancingSheet(); }")
         n2 = page.evaluate("() => document.querySelectorAll('.fin-ws-cp').length")
-        page.evaluate("() => { STORE_CONFIG.salesPolicies.comfortPromise.sourceUrl = 'https://www.lacks.com/return-and-store-policies'; STORE_CONFIG.pricing.displayEnabled = false; renderFinancingSheet(); }")
+        page.evaluate("() => { STORE_CONFIG.customerPolicies.fulfillment.status = 'approved'; STORE_CONFIG.customerPolicies.comfortPromise.sourceUrl = 'https://www.lacks.com/return-and-store-policies'; STORE_CONFIG.pricing.displayEnabled = false; renderFinancingSheet(); }")
         n3 = page.evaluate("() => document.querySelectorAll('.fin-ws-ff, .fin-ws-cp').length")
-        check("retailer policy content renders with a status, an allowlisted source and open pricing", n0 == 2, str(n0))
-        check("...and is withheld without a status", n1 == 0, str(n1))
+        check("retailer policy content renders when approved, allowlisted and beside open pricing", n0 == 2, str(n0))
+        check("...and is withheld while its sections are drafts", n1 == 0, str(n1))
         check("...withheld when its source is off the allowlist", n2 == 0, str(n2))
         check("...and withheld when pricing display is off", n3 == 0, str(n3))
         ctx.close()

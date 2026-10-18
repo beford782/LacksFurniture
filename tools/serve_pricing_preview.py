@@ -550,54 +550,38 @@ def build_website(start, snapshot=None, mapping=None):
     return products, mattress_skus, accessory_skus, coverage
 
 
-def review_sales_policies():
-    """Retailer sales policies as PUBLISHED on lacks.com and captured in a
-    browser on 2026-10-03 (Codex capture, re-read in session; see
-    docs/payment-choice-missing-inputs-2026-10-03.md). Review builds only:
-    shipped data carries no `salesPolicies` and the app renders nothing
-    without it. Wording is a faithful summary pending Lacks approval of
-    EN/ES copy; nothing here is a guarantee the kiosk makes."""
-    return {
-        "status": "review-only-pending-retailer-approval",
-        "comfortPromise": {
-            "sourceUrl": "https://www.lacks.com/return-and-store-policies",
-            "observedAt": "2026-10-03T20:46:31.131Z",
-            "requiresProtector": True, "requiresPillow": True,
-            # Labelled with the recorded capture date (observedAt) only: the
-            # page's own publication date is not recorded and nothing here is
-            # verified (status above).
-            "title": {"en": "90-Day Comfort Promise (from lacks.com, as captured Oct 3, 2026)",
-                      "es": "Promesa de Comodidad de 90 D\u00edas (de lacks.com, seg\u00fan la captura del 3 de oct. de 2026)"},
-            "summary": {"en": "Lacks publishes a one-time comfort exchange for a new mattress, with conditions.",
-                        "es": "Lacks publica un cambio \u00fanico por comodidad para un colch\u00f3n nuevo, con condiciones."},
-            "conditions": [
-                {"en": "Sleep on the mattress for at least 30 nights; request the exchange within 90 days of delivery.",
-                 "es": "Duerme en el colch\u00f3n al menos 30 noches; solicita el cambio dentro de los 90 d\u00edas posteriores a la entrega."},
-                {"en": "One exchange, for a mattress of equal or greater value; you pay any difference.",
-                 "es": "Un solo cambio, por un colch\u00f3n de igual o mayor valor; pagas la diferencia."},
-                {"en": "The purchase must include a mattress protector and at least one pillow, and the mattress must have been used with that protector.",
-                 "es": "La compra debe incluir un protector de colch\u00f3n y al menos una almohada, y el colch\u00f3n debe haberse usado con ese protector."},
-                {"en": "The mattress must be in good condition, free of stains, odors or damage. A local delivery fee applies to the exchange.",
-                 "es": "El colch\u00f3n debe estar en buen estado, sin manchas, olores ni da\u00f1os. Se cobra un cargo de entrega local por el cambio."},
-                {"en": "No refunds under this program. Pillows and protectors cannot be returned or exchanged.",
-                 "es": "Este programa no ofrece reembolsos. Las almohadas y los protectores no se pueden devolver ni cambiar."},
-            ],
-        },
-        "fulfillment": {
-            "sourceUrl": "https://www.lacks.com/services",
-            "observedAt": "2026-10-03T20:46:29.800Z",
-            "pickupNoCharge": True,
-            "pickupLabel": {"en": "Warehouse pickup", "es": "Recogida en almac\u00e9n"},
-            "deliveryLabel": {"en": "Delivery and setup", "es": "Entrega e instalaci\u00f3n"},
-            # Same rule: the capture date (observedAt) leads, the captured
-            # wording follows unchanged.
-            "pickupNote": {"en": "As captured from lacks.com on Oct 3, 2026: published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
-                           "es": "Seg\u00fan la captura de lacks.com del 3 de oct. de 2026: publicada como gratuita en el almac\u00e9n central. Lleva el contrato de venta y una identificaci\u00f3n con foto que coincida."},
-            "deliveryNote": {"en": "As captured from lacks.com on Oct 3, 2026: full-service delivery with in-home setup is published; its charge is confirmed in store.",
-                             "es": "Seg\u00fan la captura de lacks.com del 3 de oct. de 2026: se publica la entrega completa con instalaci\u00f3n en casa; su cargo se confirma en la tienda."},
-        },
-    }
-
+def review_customer_policies(prod_config, approve_charge_fact=False):
+    """The retailer's governed customer-policy copy (store-config
+    `customerPolicies`, canonical incoming/lacks_consultation_guide.json),
+    APPROVED IN MEMORY for the loopback harness only so the approved path can
+    be exercised. Shipped data carries every section as a draft with approval
+    null. The approval record is a FIXTURE signature, which
+    tools/validation.py refuses at build time (non-attestation marker), and
+    verifiedAt is restamped to today so the runtime freshness gate admits it.
+    This is test data, never a Lacks approval. The separately governed
+    payment fact (fulfillment.pickupChargeFact: published free pickup means no
+    delivery charge) stays a draft unless approve_charge_fact - only the
+    payment-facts drill states (payments, review) set it."""
+    from datetime import date
+    block = copy.deepcopy((prod_config or {}).get("customerPolicies") or {})
+    today = date.today().isoformat()
+    for name in ("comfortPromise", "fulfillment", "afterPurchase", "mexicoDelivery"):
+        sec = block.get(name)
+        if not isinstance(sec, dict):
+            continue
+        sec["status"] = "approved"
+        sec["spanishReview"] = "approved"
+        sec["verifiedAt"] = today
+        sec["approval"] = {"approvedBy": "FIXTURE - loopback harness only, not an approval",
+                           "approvedAt": today,
+                           "reference": "FIXTURE - not a real Lacks approval"}
+    ful = block.get("fulfillment")
+    if approve_charge_fact and isinstance(ful, dict) and isinstance(ful.get("pickupChargeFact"), dict):
+        ful["pickupChargeFact"] = {"status": "approved",
+                                   "approval": {"approvedBy": "FIXTURE - loopback harness only, not an approval",
+                                                "approvedAt": today,
+                                                "reference": "FIXTURE - payment fact, not a real Lacks approval"}}
+    return block
 
 FORMULA_INPUTS = {"published-fixed-factor": ["principalMinor", "publishedPaymentFactor"],
                   "published-equal-division": ["principalMinor", "termMonths"]}
@@ -946,8 +930,13 @@ def build_injected(state: str, start: datetime):
     config = copy.deepcopy(prod)
     config["financing"] = fin
     config["pricing"] = served
+    if state in PAYMENT_STATES + PURCHASE_STATES:
+        # Governed customer policies, approved in memory with FIXTURE
+        # signatures (refused at build time). Shipped data keeps every
+        # section a draft, so production renders none of it.
+        config["customerPolicies"] = review_customer_policies(
+            prod, approve_charge_fact=state in PAYMENT_STATES)
     if state in PAYMENT_STATES:
-        config["salesPolicies"] = review_sales_policies()
         # Review-only tools: the assumption scenario panel. Never shipped
         # (tests/smoke_check.py locks shipped data against it).
         config["reviewTools"] = {"scenarioPanel": True}

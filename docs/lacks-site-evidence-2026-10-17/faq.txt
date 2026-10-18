@@ -1,0 +1,219 @@
+URL: https://www.lacks.com/faq
+Capture time: 2026-10-17 (afternoon, America/Chicago) - live re-check by Agent A
+Store context: Brownsville Galleria, no ZIP
+Method: Claude in Chrome extension get_page_text of <main>; link hrefs via accessibility tree.
+Result: answer text identical to the existing capture financing-evidence-2026-10-17/faq-page.txt (same day, Codex browser). Body below is that capture.
+Links observed: pickup "click here" -> https://www.lacks.com/contacts ; repairs "request service here" (both A&E and furniture) -> https://www.lacks.com/services#service-form ; protection plans "click here" -> https://www.lacks.com/extended-protection-plans ; footer "Furniture Repair Service" -> https://www.lacks.com/furniture-repair-service ; Contact Us -> https://www.lacks.com/contact-us-form ; Locations -> https://www.lacks.com/contacts
+---
+Skip to main content
+Enable accessibility for low vision
+Open the accessibility menu
+
+For screen reader problems with this website, please call844-695-22578 4 4 6 9 5 2 2 5 7Standard carrier rates apply to texts.
+
+English
+Español
+THE BEST FURNITURE & MATTRESS DEALS SINCE 1935 | VISIT ONE OF OUR SEVERAL LOCATIONS TODAY!
+
+My Store
+
+Brownsville Galleria
+
+Add ZIP Code
+
+Search
+In Stock
+Clearance
+Financing
+FREQUENTLY ASKED QUESTIONS
+
+You have questions? We have answers! We’ve done our best to fill our FAQ with as much information to help answer our most commonly asked questions.
+
+LACKS STORES & SERVICES
+Which Lacks location is closest to me?
+Do you offer custom orders?
+I need help decorating my home, can Lacks help?
+How can I find out about the latest Lacks news, sales, & promotions?
+FINANCING AND CREDIT ACCOUNTS
+What are my financing options?
+How do I make payments to my Lacks In-House Credit account?
+What happens if I have a Lacks credit account and I can’t pay because I lost my job or can’t work due to health related issue?
+DELIVERY & MERCHANDISE PICK‑UP
+Do you deliver in my area?
+Where can I pick up my new merchandise?
+EXCHANGES & RETURNS
+What if I’m unhappy with my purchase?
+Can all items be exchanged?
+PRICING
+I fell in love with a ‘Clearance’ item, should I wait for the next big sale to buy?
+FURNITURE CARE
+How can I protect my investment?
+Who do I contact if I need repairs made to items purchase at Lacks?
+How do I know if my furniture is genuine leather or faux‑leather?
+How should I care for my genuine-leather upholstered item?
+How should I care for my faux-leather upholstered item?
+CAREERS
+I'd love to work for Lacks, how do I apply?
+AYUDA EN ESPAÑOL
+¿Se Habla Español?
+¿Se ofrece crédito a clientes de México?
+¿Pueden entregar en Mexico?
+Which Lacks location is closest to me?
+
+Our nine showrooms span South Texas, from Laredo to Brownsville. To find your preferred Lacks location, click here.
+
+Do you offer custom orders?
+
+At Lacks, we'll do everything we can to make your dream home come to life. If you find something you like in our stores, but the color isn’t quite right or the fabric isn’t what you had in mind, let us know! We offer customization on hundreds of items so you can get exactly the look you want. Ask any of our Sales Consultants whether the item you've selected can be customized.
+
+I need help decorating my home, can Lacks help?
+
+We all need help sometimes. Our Lacks Sales Consultants are ready to offer you our free decorator service so you can make your vision a reality. From assisting with the coordination of colors and textures to assessing your style, our Sales Consultants are here to help you create a space that expresses who you are.
+
+How can I find out about the latest Lacks news, sales, & promotions?
+
+Get social with us! Sign up here for our e-newsletter and receive all our insider info delivered to straight to your inbox. Make sure to follow us on Facebook and Instagram for design inspiration and community events.
+
+What are my financing options?
+
+At Lacks, we understand furnishing your home can be a big expense, which is why we offer the power of choice! After qualifying, you can choose from multiple credit options to suit your preference. Between Synchrony, TD Bank, Concora Credit, Lacks In-House Credit, lease-to-own and build-my-credit programs, there are tons of ways to get approved.
+
+Click here to learn more about our financing options.
+
+How do I make payments to my Lacks In-House Credit account?
+
+As an added convenience to our financing options, we make it easy for you to make payments on your Lacks purchase. You can choose any of these options:
+
+Pay by phone. Call our Central Credit Department at 1-800-734-5044 or 956-702-6726 Monday through Saturday from 9:00 AM to 9:00 PM and Sunday from 12:00 PM to 7:00 PM
+Pay at any Lacks Furniture Store. Click here for locations and hours
+Pay Online. Click here to process your one-time payment
+Enroll in Auto-Pay. It’s easy to enroll, click here and register for reoccurring automatic payment
+
+Please be aware that all payments received after 6:00 PM CT will be processed on the following business day.
+
+What happens if I have a Lacks In-House credit account and I can’t pay because I lost my job or can’t work due to a health-related issue?
+
+As a family-owned business, Lacks understands there are unexpected changes in everyday life. We strongly encourage the purchase of Life & Disability Insurance to help protect you and your credit should a life-changing event occur during the duration of your installment contract. If you declined this insurance at the point of purchase, and you are faced with a hardship that prevents you from making scheduled payments, please call our Central Credit Department at 1-800-734-5044, Monday through Saturday, 9:00 AM to 9:00 PM and Sunday, 12:00 PM to 7:00 PM, so that we may discuss possible options to help you avoid defaulting on your contract.
+
+Do you deliver in my area?
+
+We Deliver to most parts of South Texas. For the most updated information about the delivery areas we serve, contact your local Lacks Furniture Store and let us know where you'd like us to deliver your purchase.
+
+Where can I pick up my new merchandise?
+
+If our In-Home Delivery is not right for you, you may pick up your new purchase from our warehouse or your local store at no additional cost. Our Central Warehouse is located at 1300 San Patricia Street, in Pharr, Texas. You can reach them at 1-800-870-6999 if you have any questions or concerns regarding your pickup. If you prefer to pick up your merchandise at your local store, simply select the 'Pickup at Store' as your delivery method at check out and choose the most convenient location. You will then be given a date to choose from on which your merchandise will be ready. To learn more about our locations, their hours of operation, and contact information, click here.
+
+What If I’m Unhappy With My Purchase?
+
+We want you to love every piece you bring home from Lacks. If you’re not completely satisfied, you may exchange or return eligible items under the following guidelines:
+
+Upholstery, casegoods, and accessories may be returned or exchanged within 5 days of purchase, as long as they are in showroom condition—free of stains, odors, or damage.
+Delivery fees are non-refundable, and standard delivery charges will apply to redelivered or exchanged items.
+Returns made after 5 days are subject to a 25% restocking fee, deducted from your refund amount.
+No returns or exchanges are accepted after 30 days from the purchase date.
+All exchanges and returns must be authorized by Lacks and inspected prior to approval.
+
+Please note: Refunds will be issued to the original payment method. Cash transactions are refunded by check within 7–14 business days, less applicable fees.
+
+Can All Items Be Exchanged Or Returned?
+
+Not all items qualify for exchange or return. The following are final sale and non-returnable:
+
+Clearance, special-order, as-is, or final sale items.
+Appliances (see manufacturer’s warranty or extended service policy).
+Pillows, sheets, bedspreads, comforters, and bedding accessories.
+Mattresses, which are not covered under our 90-Day Comfort Promise or the manufacturer’s factory warranty.
+I fell in love with a ‘Clearance’ item, should I wait for the next big sale to buy?
+
+Clearance items are limited in quantity and offer excellent value. These items have deep discounts as they are priced to clear out and make room for new merchandise on our showroom floors. Items on Clearance are a great choice for furnishing your home, but you must act quickly as they may not be available at a later time. We do not reorder clearance merchandise and once the current stock runs out, it’s gone for good.
+
+How can I protect my investment?
+
+When you purchase from Lacks, you should feel confident your items will be free of manufacturers' defects. All furniture is covered by a minimum one-year warranty against defects or malfunction. Because we know you want to keep your Lacks Furniture looking and functioning like new as long as possible, we offer extended protection plans should your items suffer accidental damage or breakage of frames or mechanism. Lacks also offers our own extended protection plan to cover repairs on our appliances and electronics. To learn more about our protection plans, click here.
+
+Who do I contact if I need repairs made to items purchase at Lacks?
+
+Whether you purchased the item last year or last decade, Lacks has highly skilled technicians who are trained to service all items purchased at our stores both inside and outside the manufacturer’s warranty period. We encourage the purchase of Extended Protection Plans, such as FCP, at the point of sale to eliminate the cost of servicing items out the manufacturer’s warranty period. If you chose to decline extended warranties, it will still be our pleasure to service or repair your items, for a small fee.
+
+If you have purchased our Furniture Care Protection extended warranty (on or after March 27, 2024), you must contact a representative directly within 30 days of the date you discovered the damage.
+Claims can be filed via:
+https://furniturecareprotection.com/file-a-claim/
+(888) 705-4001
+claims@furniturecareprotection.com
+If you have purchased our GBS Protect-All extended warranty (before March 27, 2024), you must contact a representative directly within 30 days of the date you discovered the damage. You may reach a representative at 1-888-585-9488 or online at www.gbsent.com.
+If you would like to schedule service on your appliance or electronic, contact our A&E Service Department at 956-702-2236, Monday through Friday, from 8:00 AM to 6:00 PM. You may also request service here.
+If you would like to schedule service on furniture and you chose to decline GBS extended protection, contact our Furniture Service Department at 956-702-6747. You may also request service here.
+How do I know if my furniture is genuine leather or faux‑leather?
+
+We understand how important upholstery material can be when making your decision to purchase furniture. We do our best to provide you with the most accurate information so that you can make the choice that is right for you and your lifestyle. Knowing a few basic key differences between genuine leather and faux-leather or vinyl can help you make the decision when considering new furniture. To learn about the distinctions between leather and faux-leather, click here.
+
+How should I care for my genuine-leather upholstered item?
+
+While it is very durable, genuine leather must be properly cared for to avoid staining and cracking. Extend the life of your leather product by cleaning it regularly. Use a clean, dry cloth as part of a basic cleaning routine as well as vacuuming between the crevices where build-up can occur. Using a leather conditioner once every 6-12 months will keep leather soft and help prevent cracks from developing. Be sure to read the instructions before applying any product to your leather items. Avoid any products not intended for leather as they may harm the protective coat or the leather itself. Do not use harsh chemicals or household cleaners. Alcohol-based and silicone-based formulas, such as those found in popular automotive cleaners, should not be used on genuine leather. To keep your leather furniture looking beautiful, never place in direct sunlight, as prolonged exposure to the sun may cause the leather to fade or crack. Note that this is intended as a general guide—always follow care instructions provided by the manufacturer. Click here for more helpful leather upholstery information.
+
+How should I care for my faux-leather upholstered item?
+
+Faux-leather refers to any leather-like upholstery fabric that is not made of animal rawhide or skin. This includes vinyl, polyurethane (PU), and bonded-leather. To extend the life of your faux-leather upholstered items, be sure to clean regularly with a dry microfiber cloth. To remove stains, wipe the surface with a non-abrasive cloth, using a mix of mild liquid detergent and soap. Ensure you have wiped away all the soap suds and water with a dry cloth. Avoid harsh chemicals, alcohol-based products, or household cleaners as they may break down the coating of the fabric. Note that this is intended as a general guide—always follow care instructions provided by the manufacturer. For more faux-leather info, click here.
+
+I'd love to work for Lacks, how do I apply?
+
+Lacks Furniture is always looking for valuable additions to our team! Current job openings are posted to our ‘Careers’ page. To apply, download and print our Employment Application, and submit the completed form along with your resumé to your local Lacks Store or to our Human Resources department via email: HR@lacksvalley.com
+
+¿Se Habla Español?
+
+Ponemos todo nuestro empeño por hacerlo sentir en familia, es por ello que todas nuestras tiendas cuentan con Gerentes, Asesores de Venta y Personal de Servicio al Cliente bilingües. Si usted se siente más cómodo hablando en español, simplemente háganoslo saber. Con gusto le atenderá uno de nuestros expertos colaboradores, quien le hará sentir en casa.
+
+¿Se ofrece crédito a clientes de México?
+
+Hacemos más fácil su compra de muebles al poner a su disposición nuestro sistema de crédito con hasta 24 meses. El interés máximo del contrato de 24% APR (mismo que puede variar). $999 financiados durante 24 meses con 24% APR tendrán 24 pagos mensuales de $52.82. Gracias a que Lacks maneja financiamiento propio, abrir una cuenta es muy sencillo, simplemente visite cualquiera de nuestras tiendas. Si lo prefiere, usted puede hacer la solicitud en línea aquí. Solo necesita mostrar dos identificaciones oficiales, 3 referencias personales y verificación de ingresos. Tipos de identificación válidos:
+
+Visa Laser
+Credencial para votar con fotografía
+Licencia de conducir
+Pasaporte mexicano
+Matrícula consular
+¿Pueden entregar en Mexico?
+
+Si, entregamos su compra hasta la puerta de su hogar a través de un agente profesional de importación. El servicio incluye:
+
+Importación de sus muebles
+Armado de muebles
+Acomodo de artículos
+Retiro de material sobrante
+UNLOCK $25 OFF
+
+On your next furniture purchase of $499 or more!
+
+Shop
+Furniture
+Mattresses
+In Stock
+Special Orders
+Clearance
+Current Ads
+Shop by Brands
+Our Company
+Store Locations
+Contact Us
+Book Appointment
+About Us
+Services
+Careers
+Ideas Blog
+More Info
+Furniture Repair Service
+Financing
+Make a Payment
+Leather Care
+Protection Plans
+FAQ
+Beneficios Que Lacks Te Ofrece
+Exchanges & Returns
+Connect With Us
+LACKS © 2026
+Terms & Conditions
+Privacy Policy
+Accessibility
+ADA Accessibility Menu
+
+While every effort is made to ensure that the information on this website is correct and current, we are not responsible for errors and/or omissions. There may be occurrences when information on our website or in our catalog may contain typographical errors, inaccuracies or omissions that may pertain to product pricing and availability. We reserve the right to correct and/or update any content on this website without notice (including after you have submitted your order).

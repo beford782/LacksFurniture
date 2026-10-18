@@ -68,7 +68,9 @@ STORE_INFO_LISTS = {"languages", "allowedHosts"}
 STORE_CONFIG_KEY_ORDER = [
     "storeName", "storeKey", "languages", "logo", "colors", "gasUrl",
     "publicAssetRoot", "allowedHosts", "brands", "rsaList", "text", "text_es",
-    "discount", "promotions", "financing", "pricing", "voice", "voice_es",
+    "discount", "promotions", "financing", "pricing", "customerPolicies",
+    "productVisuals",
+    "voice", "voice_es",
     "salesNotes", "salesNotes_es",
 ]
 
@@ -326,6 +328,15 @@ def build_store_config(wb):
     if pricing is not None:
         cfg["pricing"] = pricing
 
+    # Optional consultation guide (its own Guide tab): customer policies and
+    # exact-product visuals. Same present-vs-absent rule: a PRESENT value is
+    # carried whatever its shape so validate_customer_policies /
+    # validate_product_visuals get to rule on it; absent emits nothing.
+    guide = build_consultation_guide(wb) or {}
+    for key in GUIDE_ENVELOPE_KEYS:
+        if key in guide:
+            cfg[key] = guide[key]
+
     # Reorder top-level keys to the committed order (readability only).
     return {k: cfg[k] for k in STORE_CONFIG_KEY_ORDER if k in cfg}
 
@@ -396,6 +407,32 @@ def build_pricing(wb):
         raise SystemExit("ERROR: Pricing tab payload must be an envelope "
                          "{\"pricing\": {...}} and nothing else")
     return parsed["pricing"]
+
+
+GUIDE_ENVELOPE_KEYS = ("customerPolicies", "productVisuals")
+
+
+def build_consultation_guide(wb):
+    """Reassemble the retailer consultation guide from the optional Guide
+    tab: chunked fragments in column 'Guide JSON', concatenated in row order,
+    parsed as an envelope carrying one or both of {"customerPolicies": ...,
+    "productVisuals": ...}. Returns the envelope dict, or None when the tab is
+    absent or empty. Any other top-level shape fails loudly, exactly as
+    build_pricing does, so a payload can never be silently reclassified."""
+    if "Guide" not in wb.sheetnames:
+        return None
+    _, rows = read_tab(wb, "Guide")
+    payload = "".join(_s(r.get("Guide JSON")) for r in rows).strip()
+    if not payload:
+        return None
+    try:
+        parsed = json.loads(payload)
+    except ValueError as exc:
+        raise SystemExit(f"ERROR: Guide tab payload is not valid JSON: {exc}")
+    if not (isinstance(parsed, dict) and parsed and set(parsed) <= set(GUIDE_ENVELOPE_KEYS)):
+        raise SystemExit("ERROR: Guide tab payload must be an envelope "
+                         "{\"customerPolicies\": ..., \"productVisuals\": ...} and nothing else")
+    return parsed
 
 
 def build_quiz(wb):
@@ -749,6 +786,47 @@ def _self_test() -> int:
         except SystemExit:
             check(f"build_pricing: {bad_label} -> SystemExit", True)
 
+    # Guide tab reassembly (build_consultation_guide): in-memory workbooks.
+    print("convert_store_data.py self-test (Guide tab reassembly):")
+
+    def _wb_with_guide(rows):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Guide"
+        ws.append(["Guide JSON"])
+        for r in rows:
+            ws.append([r])
+        return wb
+
+    check("build_consultation_guide: workbook without Guide tab -> None",
+          build_consultation_guide(openpyxl.Workbook()) is None)
+    check("build_consultation_guide: header-only Guide tab -> None",
+          build_consultation_guide(_wb_with_guide([])) is None)
+    guide_obj = {"customerPolicies": {"allowedSourceHosts": ["example.com"]},
+                 "productVisuals": []}
+    gpayload = json.dumps(guide_obj, separators=(",", ":"))
+    gmid = len(gpayload) // 2
+    check("build_consultation_guide: chunked envelope reassembles to the object",
+          build_consultation_guide(_wb_with_guide([gpayload[:gmid], gpayload[gmid:]]))
+          == guide_obj)
+    check("build_consultation_guide: either key alone is a valid envelope",
+          build_consultation_guide(_wb_with_guide(['{"productVisuals": []}']))
+          == {"productVisuals": []})
+    check("build_consultation_guide: a PRESENT falsy value is carried, not dropped",
+          build_consultation_guide(_wb_with_guide(['{"customerPolicies": false}']))
+          == {"customerPolicies": False})
+    for bad_label, bad_payload in (
+            ("non-envelope payload", '{"policies": 1}'),
+            ("envelope + unknown key", '{"customerPolicies": {}, "extra": 1}'),
+            ("empty envelope", '{}'),
+            ("bare array", '[1, 2]'),
+            ("invalid JSON", "{broken")):
+        try:
+            build_consultation_guide(_wb_with_guide([bad_payload]))
+            check(f"build_consultation_guide: {bad_label} -> SystemExit", False)
+        except SystemExit:
+            check(f"build_consultation_guide: {bad_label} -> SystemExit", True)
+
     # Quiz tab reassembly (build_quiz): in-memory workbooks, no files.
     print("convert_store_data.py self-test (Quiz tab reassembly):")
 
@@ -851,6 +929,11 @@ def main(argv=None) -> int:
                         help="Folder with mattresses/ and accessories/ subdirs of raw "
                              "images; when set, normalize them to JPG into "
                              "<output-dir>/images/. Omit to skip image normalization.")
+    parser.add_argument("--listing-evidence", default=None,
+                        help="Retailer listing-evidence JSON ({\"mattresses\": [{id, sku, "
+                             "siteName, size?}]}) used to verify each productVisuals "
+                             "entry's listing identity (SKU, generation, size). Required "
+                             "once any entry is approved.")
     parser.add_argument("--skip-image-normalization", action="store_true",
                         help="Do not normalize images even if --source-images is given.")
     parser.add_argument("--image-quality", type=int, default=88,
@@ -980,6 +1063,19 @@ def main(argv=None) -> int:
                 if _norm:
                     _quiz_features.add(_norm)
         report.merge(validation.validate_quiz(quiz, catalog_features=_quiz_features))
+        # Exact-product drawer imagery (consultation guide): identity against
+        # this catalog, permission, file presence in the source images.
+        _listings = None
+        if args.listing_evidence:
+            with open(args.listing_evidence, encoding="utf-8") as _lf:
+                _listings = validation.listing_evidence_from(json.load(_lf))
+        report.merge(validation.validate_product_visuals(
+            config,
+            mattresses={_s(r.get("id")).strip(): _s(r.get("name")).strip()
+                        for r in m_rows if _s(r.get("id")).strip()},
+            source_images=args.source_images,
+            allowed_source_hosts=source_hosts.get("policySourceHosts"),
+            listings=_listings))
         print(report.summary())
         blocking = report.blocking(warnings_as_errors=args.warnings_as_errors)
         if args.validate_only:
@@ -1048,6 +1144,19 @@ def main(argv=None) -> int:
             if b.get("logo")
         ]
         copy_brand_logos(args.source_images, args.output_dir, brand_logo_files)
+        # Approved exact-product visuals go through the same normalization
+        # (JPEG, long-edge cap); drafts are never written.
+        gallery = [v for v in (config.get("productVisuals") or [])
+                   if isinstance(v, dict) and v.get("status") == "approved"]
+        if gallery:
+            from PIL import Image
+            os.makedirs(os.path.join(args.output_dir, "images", "mattresses", "gallery"),
+                        exist_ok=True)
+            for v in gallery:
+                rel = v["file"][len("images/"):]
+                _normalize_one(Image, os.path.join(args.source_images, rel),
+                               os.path.join(args.output_dir, v["file"]), args.image_quality)
+            print(f"  normalized {len(gallery)} product visual(s) -> images/mattresses/gallery")
         generated_icons = generate_app_icons(args.source_images, args.output_dir, icon_source)
         if generated_icons:
             manifest["icons"] = MANIFEST_ICONS

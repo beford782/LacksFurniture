@@ -615,6 +615,21 @@ jobs:
       - name: purchase flow (one application, offers, rendered studio, EN/ES)
         run: python tests/purchase_flow_check.py
 
+      # Governed retailer customer policies (2026-10-17): shipped drafts render
+      # nothing; approved fixture copy renders with pricing dark; the runtime
+      # gate per condition; the comfort checklist follows the cart and never
+      # claims eligibility or adds an item; the fulfillment preference books
+      # nothing, never enters the quote or send identity, and is wiped;
+      # EN/ES parity; the recorded email carries no policy copy.
+      - name: customer policies (comfort exchange, getting home, EN/ES)
+        run: python tests/customer_policies_check.py
+
+      # Exact-product drawer visuals (empty in shipped data): exact id+name
+      # gate, labelling, broken-image fallback, escaped hero attributes, the
+      # wipe; and the foundation-or-adjustable-base explainer.
+      - name: product visuals and base explainer (rendered, EN/ES)
+        run: python tests/product_visuals_check.py
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of
@@ -844,6 +859,27 @@ jobs:
                   and pricing.get("products") == []
                   and pricing.get("formulas") == []
                   and pricing.get("offers") == [],
+              # Governed customer policies (2026-10-17): the copy ships, but
+              # every section stays a DRAFT with no approval record, so the
+              # app renders none of it. Approving a section (Lacks approval
+              # plus native-Spanish review recorded on it) is the activation
+              # change and lifts this line deliberately.
+              "customerPolicies ships with every section a draft and approval null":
+                  isinstance(cfg.get("customerPolicies"), dict)
+                  and all(isinstance(cfg["customerPolicies"].get(s), dict)
+                          and cfg["customerPolicies"][s].get("status") == "draft"
+                          and cfg["customerPolicies"][s].get("approval") is None
+                          for s in ("comfortPromise", "fulfillment",
+                                    "afterPurchase", "mexicoDelivery")),
+              # Exact-product drawer visuals ship EMPTY: no Lacks image-use
+              # permission is recorded. Adding an entry is a deliberate lift.
+              "productVisuals ships empty":
+                  cfg.get("productVisuals") == [],
+              # The financial use of published free pickup is governed apart
+              # from the guidance and ships disabled.
+              "customerPolicies.fulfillment.pickupChargeFact ships a draft":
+                  ((cfg.get("customerPolicies") or {}).get("fulfillment") or {})
+                  .get("pickupChargeFact") == {"status": "draft", "approval": None},
           }
           bad = [k for k, ok in checks.items() if not ok]
           for k, ok in checks.items():
