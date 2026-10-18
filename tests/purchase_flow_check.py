@@ -1812,7 +1812,10 @@ with sync_playwright() as p:
           and pg.input_value("#emailInput") == "stale@example.com"
           and pg.evaluate("formatPriceAmount(purchaseSummaryFor(currentLang).merchandiseMinor, 'USD')") in pg.evaluate("document.getElementById('emailPreview').textContent"))
     sid2 = pg.evaluate("emailSendState.sendId")
-    pg.click("#emailSendBtn")
+    # Short timeout: if the stale guard is broken the stale send already went
+    # out and the capture view is gone, so fail fast rather than spend the
+    # 30s default (the mutation sweep's per-observer limit; PR #139 CI).
+    pg.click("#emailSendBtn", timeout=5000)
     pg.wait_for_timeout(1200)
     r2 = MAIN.by_send(sid2)
     check("the re-previewed figures then send once, carrying the new fingerprint",

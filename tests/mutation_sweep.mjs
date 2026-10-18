@@ -131,8 +131,8 @@ const PAY_VALIDATOR = ["tools/validation.py --self-test"];
 const PAY_FACTS = ["tests/payment_facts_check.py"];
 // One operable application (owner direction 2026-10-15; the payment demo is
 // retired): the rendered purchase flow over the harness's `purchase` state -
-// the studio, offers, the take-home and the recorded email quote. About 90s,
-// inside the per-observer timeout.
+// the studio, offers, the take-home and the recorded email quote. About
+// 190s locally (more on CI), inside the 300s per-observer timeout.
 const PURCHASE = ["tests/purchase_flow_check.py"];
 // Its focused send-identity mode (sections 4b and 4c: the language-neutral
 // purchase identity and the session send-attempt registry, asserted on the
@@ -3711,9 +3711,15 @@ const MUTATIONS = [
   ["Code.gs: a 'sending' / 'unconfirmed' ledger state is answered as a delivered duplicate",
     "      if (prior.state === SEND_STATE_SENT || prior.state === SEND_STATE_ROW_PENDING",
     "      if (true || prior.state === SEND_STATE_SENT || prior.state === SEND_STATE_ROW_PENDING", EMAIL_PRIORITIES, "Code.gs"],
-  ["email: re-opening or re-rendering the take-home screen makes a new sendId (a lost-answer send can repeat)",
-    "      if (!emailSendState.sendId || (!emailSendState.inFlight && !emailSendState.unresolved)) {",
-    "      if (true) {", DELIVERY],
+  // Retired 2026-10-17 (PR #139 CI): "re-opening or re-rendering the
+  // take-home screen makes a new sendId". Since b992a70 the send-time attempt
+  // registry decides the id - unchanged content reuses its recorded sendId
+  // whatever the preview minted - so forcing a fresh preview id changes no
+  // send and the entry could only survive (an equivalent mutant). The property
+  // it guarded (a lost-answer send cannot repeat) is pinned at the registry:
+  // the reuse branch ("if (_attempt) { emailSendState.sendId =
+  // _attempt.sendId"), the usedIds guard and the wipe of the registry, each
+  // with its own entry above and below.
   // --- Scope-limited failures (owner direction 2026-10-16) -------------------
   ["pricing gate: 'price unavailable' shows while the pricing block is not wholly approved",
     "      var unpriced = pricingPresentationApproved(p)\n",
@@ -4106,7 +4112,11 @@ function runSuites(suites, errored) {
                         .replace("_check.mjs", "").replace(".py", "");
     try {
       execFileSync(py ? "python" : "node", argv,
-                   { cwd: sandbox, stdio: "pipe", timeout: 180000 });
+                   // 300s: the whole rendered purchase flow runs ~190s
+                   // locally and longer on a CI runner; at 180s it timed out
+                   // inside the sweep (PR #139 CI, entry "figures that changed
+                   // after the preview are sent anyway") while passing alone.
+                   { cwd: sandbox, stdio: "pipe", timeout: 300000 });
     } catch (err) {
       if (errored && err && (err.code === "ETIMEDOUT" || err.signal)) {
         errored.push(name + (err.code === "ETIMEDOUT" ? " (timed out)" : " (" + err.signal + ")"));
