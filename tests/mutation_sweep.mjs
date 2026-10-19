@@ -3898,6 +3898,15 @@ const MUTATIONS = [
   ["pickup payment fact: the workspace says pickup is free while the payment fact is unapproved",
     "        + (_payFulfil === 'pickup' && !pickupNoChargeFact()",
     "        + (false", PAY_FACTS],
+  ["results top pick: a photo that fails to load shows a broken-image icon",
+    "'<img class=\"noct-toppick-photo\" src=\"' + escapeHtml(m.imageUrl) + '\" alt=\"' + escapeHtml(m.name) + '\" onerror=\"window.dfCardPhotoFailed(this)\">'",
+    "'<img class=\"noct-toppick-photo\" src=\"' + escapeHtml(m.imageUrl) + '\" alt=\"' + escapeHtml(m.name) + '\">'", PRODUCT_VISUALS],
+  ["results supporting card: a photo that fails to load shows a broken-image icon",
+    "'<img class=\"noct-support-photo\" src=\"' + escapeHtml(m.imageUrl) + '\" alt=\"' + escapeHtml(m.name) + '\" onerror=\"window.dfCardPhotoFailed(this)\">'",
+    "'<img class=\"noct-support-photo\" src=\"' + escapeHtml(m.imageUrl) + '\" alt=\"' + escapeHtml(m.name) + '\">'", PRODUCT_VISUALS],
+  ["results cards: a failing photo is removed outright and the card's photo frame collapses",
+    "      img.parentNode.replaceChild(well, img);",
+    "      img.parentNode.removeChild(img);", PRODUCT_VISUALS],
 ];
 
 // ---------------------------------------------------------------------------
