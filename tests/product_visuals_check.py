@@ -240,6 +240,30 @@ with sync_playwright() as p:
         pg.keyboard.press("Escape")
         pg.evaluate("(id) => { const m = window._drawerData[id].m; m.imageUrl = m._keep; delete m._keep; window._compareSelected = []; }", m0["id"])
 
+        # Results cards: the <img> is the sized 16:9 frame, so a failing photo
+        # becomes the same empty well a model with no photo renders, at the
+        # same size - no broken-image icon, no collapsed card.
+        WELLS = """() => Array.from(document.querySelectorAll('.noct-toppick-photo, .noct-support-photo'))
+          .filter(e => e.offsetParent !== null).map(e => ({ tag: e.tagName, cls: e.className,
+            h: Math.round(e.getBoundingClientRect().height), w: Math.round(e.getBoundingClientRect().width) }))"""
+        pg.evaluate("async () => { window.showResults(); await new Promise(r => setTimeout(r, 900)); }")
+        before = pg.evaluate(WELLS)
+        check("results cards render real photos before the failure", bool(before) and all(x["tag"] == "IMG" for x in before), str(before))
+        pg.evaluate("""async () => { [].concat(MATTRESSES.gold, MATTRESSES.silver, MATTRESSES.bronze).forEach(m => { m._keep = m.imageUrl; m.imageUrl = 'images/mattresses/does-not-exist-' + m.id + '.jpg'; });
+          Object.values(window._drawerData || {}).forEach(d => { if (d.m && d.m._keep === undefined) { d.m._keep = d.m.imageUrl; d.m.imageUrl = 'images/mattresses/does-not-exist.jpg'; } });
+          window.showResults(); await new Promise(r => setTimeout(r, 1200)); }""")
+        after = pg.evaluate(WELLS)
+        check("results cards: every failing photo becomes an empty well (no <img>, no broken-image icon)",
+              bool(after) and all(x["tag"] == "DIV" for x in after), str(after))
+        check("results cards: the wells keep their class and the photo frame's size (card does not collapse)",
+              len(after) == len(before) and all(a["cls"] == b["cls"].replace(" df-img--banner", "") and abs(a["h"] - b["h"]) <= 1 and abs(a["w"] - b["w"]) <= 1
+                                                for a, b in zip(after, before)), f"{before} -> {after}")
+        check("results cards: names still render beside the empty wells",
+              pg.evaluate("() => document.querySelectorAll('.noct-toppick-name').length > 0"))
+        pg.evaluate("""async () => { [].concat(MATTRESSES.gold, MATTRESSES.silver, MATTRESSES.bronze).forEach(m => { if (m._keep !== undefined) { m.imageUrl = m._keep; delete m._keep; } });
+          Object.values(window._drawerData || {}).forEach(d => { if (d.m && d.m._keep !== undefined) { d.m.imageUrl = d.m._keep; delete d.m._keep; } });
+          window.showResults(); await new Promise(r => setTimeout(r, 600)); }""")
+
         print("5. Session wipe")
         open_with([entry(m0)])
         pg.keyboard.press("Escape")

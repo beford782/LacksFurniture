@@ -22851,6 +22851,17 @@
       dfTagBannerImage(e.target);
     }, true);
 
+    // A Results-card photo that fails to load becomes the same empty
+    // white-mat well the card renders for a model with no photo: the <img>
+    // IS the sized 16:9 frame, so removing it (the drawer/compare fallback)
+    // would collapse the card. No broken-image icon; presentation only.
+    window.dfCardPhotoFailed = function(img) {
+      if (!img || !img.parentNode) return;
+      var well = document.createElement('div');
+      well.className = img.className.replace(/\s*df-img--banner/, '');
+      img.parentNode.replaceChild(well, img);
+    };
+
     function firmnessFeel(score) {
       var es = currentLang === 'es';
       if (score <= 3) return es ? 'Suave' : 'Plush';
@@ -23283,7 +23294,7 @@
       var promotion = getMattressPromotion(m);
 
       var img = m.imageUrl
-        ? '<img class="noct-toppick-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
+        ? '<img class="noct-toppick-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '" onerror="window.dfCardPhotoFailed(this)">'
         : '<div class="noct-toppick-photo"></div>';
 
       var reasonHtml = reason
@@ -23386,7 +23397,7 @@
           : '';
 
         var img = m.imageUrl
-          ? '<img class="noct-support-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
+          ? '<img class="noct-support-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '" onerror="window.dfCardPhotoFailed(this)">'
           : '<div class="noct-support-photo"></div>';
 
         var reasonHtml = reason
