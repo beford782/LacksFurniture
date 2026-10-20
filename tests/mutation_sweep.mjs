@@ -3907,6 +3907,15 @@ const MUTATIONS = [
   ["results cards: a failing photo is removed outright and the card's photo frame collapses",
     "      img.parentNode.replaceChild(well, img);",
     "      img.parentNode.removeChild(img);", PRODUCT_VISUALS],
+  ["results footer: the compare tray no longer reserves its height, so on a phone it covers Review Sleep Plan",
+    "        results.classList.toggle('df-tray-shown', trayShown);",
+    "        results.classList.toggle('df-tray-shown', false);", TRAY],
+  ["results footer: the reserved space ignores the tray's measured height (fixed 16px)",
+    "      padding-bottom: calc(var(--df-tray-clearance, 0px) + 16px);",
+    "      padding-bottom: 16px;", TRAY],
+  ["results footer: the clearance is not re-measured when the tray re-wraps",
+    "        new ResizeObserver(function() { window._updatePicksBadge(); }).observe(tray);",
+    "        void 0;", TRAY],
 ];
 
 // ---------------------------------------------------------------------------
