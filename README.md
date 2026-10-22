@@ -97,7 +97,7 @@ and CI proves it.
    checks as the local mirror. List them, with the current count, using
    `pwsh -File tools/run_full_suite.ps1 -ListOnly`. The last of them is the
    mutation sweep, which CI always runs, as parallel shards
-   (`node tools/run_mutation_sweep_shards.mjs --shards 3`). The mirror runs it
+   (`node tools/run_mutation_sweep_shards.mjs --shards 4`). The mirror runs it
    with two shards unless `-SkipMutationSweep` is given; day to day, skip it
    locally and run only the entries a change touches
    (`node tests/mutation_sweep.mjs --from N --to M`).
