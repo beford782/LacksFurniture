@@ -240,8 +240,11 @@ const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
 // The rendered layout check (Chromium) - the observer of geometry.
 const LAYOUT = ["tests/sleep_plan_layout_check.py"];
 // DR-01: the rendered compare-tray clearance check (Chromium) - the observer
-// of the tray / pill / action-row geometry on every Results path.
-const TRAY = ["tests/compare_tray_clearance_check.py"];
+// of the tray / pill / action-row geometry on every Results path. Its
+// --fail-fast mode stops at the first failed assertion (a passing baseline
+// still runs every scenario) and exits 3 on a run that reached no verdict.
+// The full file runs in CI without the flag.
+const TRAY = ["tests/compare_tray_clearance_check.py --fail-fast"];
 // A4.3 observers: the reduction suite owns the counts, the absence, the
 // Summary retirement and the conditional-answer invariant; the
 // quiz-presentation suite owns navigation and progress; the consultation
@@ -4119,8 +4122,10 @@ if (shardArg !== -1) {
 // timeout, or a signal) rather than exiting with a verdict. A killed observer
 // proves nothing about the mutation, so an entry whose only "red" observers
 // were killed is reported as ERRORED, never as caught (2026-09-30: the sweep
-// used to count a timeout as a catch). The baseline passes no list: there,
-// any failure at all is red.
+// used to count a timeout as a catch). Exit 3 is an observer's own report that
+// it reached no verdict (a setup error or crash, not an assertion), and is
+// treated the same way. The baseline passes no list: there, any failure at all
+// is red.
 function runSuites(suites, errored) {
   const red = [];
   for (const s of suites) {
@@ -4136,8 +4141,8 @@ function runSuites(suites, errored) {
                    // after the preview are sent anyway") while passing alone.
                    { cwd: sandbox, stdio: "pipe", timeout: 300000 });
     } catch (err) {
-      if (errored && err && (err.code === "ETIMEDOUT" || err.signal)) {
-        errored.push(name + (err.code === "ETIMEDOUT" ? " (timed out)" : " (" + err.signal + ")"));
+      if (errored && err && (err.code === "ETIMEDOUT" || err.signal || err.status === 3)) {
+        errored.push(name + (err.code === "ETIMEDOUT" ? " (timed out)" : err.signal ? " (" + err.signal + ")" : " (no verdict)"));
       } else {
         red.push(name);
       }
@@ -4192,6 +4197,6 @@ for (const [label, find, replace, suites, targetFile] of RUN) {
 
 console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${erroredCount} errored, ${notApplied} did not apply${SELECTION}`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");
-if (erroredCount) console.log("An ERRORED entry's observer was killed (timeout or signal) before giving a verdict: it is neither caught nor survived.");
+if (erroredCount) console.log("An ERRORED entry's observer was killed (timeout or signal) or reported no verdict (exit 3) before giving one: it is neither caught nor survived.");
 if (notApplied) console.log("A mutation that DID NOT APPLY is a stale manifest entry — its target moved or was renamed.");
 process.exit(survivors === 0 && notApplied === 0 && erroredCount === 0 ? 0 : 1);

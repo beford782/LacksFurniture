@@ -40,7 +40,7 @@ port; the app is driven through its public functions and real touch taps.
 No repository file is written. Requires playwright + Chromium (see
 tools/requirements-suite.txt).
 
-Run: python tests/compare_tray_clearance_check.py [--root DIR] [--report FILE]
+Run: python tests/compare_tray_clearance_check.py [--root DIR] [--report FILE] [--fail-fast]
 """
 
 import argparse
@@ -64,6 +64,17 @@ READY = ("() => typeof appStartReady === 'function' && appStartReady() === true"
 
 passed = failed = 0
 report = {"contexts": {}}
+# --fail-fast (the mutation sweep's mode): stop at the first failed assertion.
+# A passing run still executes every scenario, so the unmutated baseline keeps
+# full coverage. Exit 1 means an assertion failed; exit 3 means the run ended
+# without a verdict (setup error, crash, browser timeout), which the sweep
+# reports as ERRORED rather than as a caught mutation.
+fail_fast = False
+NO_VERDICT = 3
+
+
+class FirstFailure(Exception):
+    pass
 
 
 def check(name, cond, detail=""):
@@ -74,6 +85,8 @@ def check(name, cond, detail=""):
     else:
         failed += 1
         print(f"  [FAIL] {name}" + (f" - {detail}" if detail else ""))
+        if fail_fast:
+            raise FirstFailure(name)
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -526,12 +539,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=REPO)
     ap.add_argument("--report")
+    ap.add_argument("--fail-fast", action="store_true")
     args = ap.parse_args()
+    global fail_fast
+    fail_fast = args.fail_fast
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         print("playwright not installed: python -m pip install -r tools/requirements-suite.txt && python -m playwright install chromium")
-        return 1
+        return NO_VERDICT if fail_fast else 1
     server, port = start_server(os.path.abspath(args.root))
     base = f"http://127.0.0.1:{port}/"
     print(f"compare tray clearance check - serving {os.path.abspath(args.root)} at {base}")
@@ -546,6 +562,16 @@ def main():
                     run_footer_context(browser, base, lang, name, w, h, mobile)
                 run_resize_context(browser, base, lang)
             browser.close()
+    except FirstFailure as e:
+        print(f"\ncompare tray clearance (--fail-fast): stopped at the first failed assertion: {e}")
+        return 1
+    except Exception:
+        if not fail_fast:
+            raise
+        import traceback
+        traceback.print_exc()
+        print(f"\ncompare tray clearance (--fail-fast): no verdict - the run ended on an error after {passed} passed assertions")
+        return NO_VERDICT
     finally:
         server.shutdown()
     report["passed"], report["failed"] = passed, failed

@@ -29,6 +29,10 @@
 //     --shard i/K shards that cover every entry exactly once, sums their
 //     summaries, and fails on a survivor or on a shard that runs fewer entries
 //     than its share. (--shard i/K itself is executed in F.)
+//  H. an observer that exits 3 (no verdict: a setup error or crash - the
+//     compare-tray check's --fail-fast contract) leaves its entry ERRORED,
+//     never caught, and fails the run (directly and through the shard
+//     runner); an exit 1 beside it is still a catch.
 //
 // Every sweep invocation here runs a COPY of tests/mutation_sweep.mjs from a
 // temp directory, pointed at a temp copy of the tree through
@@ -357,6 +361,42 @@ for (const bad of ["0", "17", "abc"]) {
   const r = runShards(rangedPath, ["--shards", bad], "bad" + bad);
   check(r.status === 2 && r.out.includes("--shards needs an integer between 1 and 16") && r.mutated === "",
         `[--shards ${bad}] refused with exit 2 before any shard runs`, r.out.slice(-200));
+}
+
+// ---------------------------------------------------------------------------
+// H. exit 3 is "no verdict" (2026-10-21): the compare-tray check's --fail-fast
+// mode exits 1 on a failed assertion and 3 when the run ended on an error, so a
+// mutation that merely crashes its observer is never counted as caught.
+section("H. an observer's exit 3 is ERRORED, not caught");
+{
+  writeFileSync(join(tempRoot, "tests", "probe_no_verdict_observer.mjs"),
+    'import { readFileSync, appendFileSync } from "node:fs";\n' +
+    'const mutated = readFileSync("index.html", "utf8").includes("<!-- range probe 2 -->");\n' +
+    'appendFileSync(process.env.MUTATION_RANGE_LOG, "2:" + (mutated ? "mutated" : "baseline") + "\\n");\n' +
+    "process.exit(mutated ? 3 : 0);\n");
+  const entries =
+    `  ["range probe 1", ${JSON.stringify(PROBE_FIND)}, ${JSON.stringify(PROBE_FIND + "<!-- range probe 1 -->")}, ["tests/probe_range_observer_1.mjs"]],\n` +
+    `  ["range probe 2 crashes its observer", ${JSON.stringify(PROBE_FIND)}, ${JSON.stringify(PROBE_FIND + "<!-- range probe 2 -->")}, ["tests/probe_no_verdict_observer.mjs"]],\n`;
+  const noVerdictSrc = replaceOnce(sweep, /^const MUTATIONS = \[\r?\n[\s\S]*?\r?\n\];/m,
+    "const MUTATIONS = [\n" + entries + "];", "whole manifest");
+  const log = join(work, "no-verdict.log");
+  const r = runSweep(writeSweepCopy("sweep_no_verdict.mjs", noVerdictSrc), [], { MUTATION_RANGE_LOG: log });
+  const ran = existsSync(log) ? readFileSync(log, "utf8") : "";
+  check(/2:mutated/.test(ran), "the no-verdict observer really ran on its mutation", ran.replace(/\n/g, " "));
+  check(r.status === 1 && r.out.includes("Mutation sweep: 1/2 caught, 0 survived, 1 errored, 0 did not apply"),
+        "an exit-3 observer leaves its entry ERRORED and fails the run; the exit-1 entry beside it is caught", r.out.slice(-300));
+  check(r.out.includes("[ERRORED: probe_no_verdict_observer.mjs (no verdict)] range probe 2 crashes its observer"),
+        "...and the errored entry is named with its reason", r.out.slice(-300));
+  // Through the shard runner CI uses: the errored entry fails the whole run.
+  const sharded = runShards(join(work, "sweep_no_verdict.mjs"), ["--shards", "4"], "no-verdict");
+  check(sharded.status === 1 && /Mutation sweep \(2 shards\): 1\/2 caught, 0 survived, 1 errored, 0 did not apply, 0 unaccounted/.test(sharded.out)
+        && /::error:: shard 2\/2 exited 1/.test(sharded.out),
+        "the shard runner fails the run on a shard's errored entry and counts it", sharded.out.slice(-300));
+  // Control: without the exit-3 rule the same crash is counted as a catch.
+  const lax = replaceOnce(noVerdictSrc, / \|\| err\.status === 3\)/, ")", "exit-3 rule");
+  const r2 = runSweep(writeSweepCopy("sweep_no_verdict_lax.mjs", lax), [], { MUTATION_RANGE_LOG: join(work, "no-verdict-lax.log") });
+  check(r2.status === 0 && r2.out.includes("Mutation sweep: 2/2 caught, 0 survived, 0 errored"),
+        "control: dropping the exit-3 rule counts the crash as caught (the rule is what this section measures)", r2.out.slice(-300));
 }
 
 console.log(`\nMutation manifest check: ${passed} passed, ${failed} failed`);
