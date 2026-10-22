@@ -40,7 +40,7 @@ port; the app is driven through its public functions and real touch taps.
 No repository file is written. Requires playwright + Chromium (see
 tools/requirements-suite.txt).
 
-Run: python tests/compare_tray_clearance_check.py [--root DIR] [--report FILE]
+Run: python tests/compare_tray_clearance_check.py [--root DIR] [--report FILE] [--fail-fast]
 """
 
 import argparse
@@ -64,6 +64,17 @@ READY = ("() => typeof appStartReady === 'function' && appStartReady() === true"
 
 passed = failed = 0
 report = {"contexts": {}}
+# --fail-fast (the mutation sweep's mode): stop at the first failed assertion.
+# A passing run still executes every scenario, so the unmutated baseline keeps
+# full coverage. Exit 1 means an assertion failed; exit 3 means the run ended
+# without a verdict (setup error, crash, browser timeout), which the sweep
+# reports as ERRORED rather than as a caught mutation.
+fail_fast = False
+NO_VERDICT = 3
+
+
+class FirstFailure(Exception):
+    pass
 
 
 def check(name, cond, detail=""):
@@ -74,6 +85,8 @@ def check(name, cond, detail=""):
     else:
         failed += 1
         print(f"  [FAIL] {name}" + (f" - {detail}" if detail else ""))
+        if fail_fast:
+            raise FirstFailure(name)
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -368,16 +381,173 @@ def run_context(browser, base, lang, oname, w, h):
     ctx.close()
 
 
+# Footer reachability (phone fix, 2026-10-19): at the page end with the tray
+# showing, Build Your Sleep System and Review Sleep Plan must sit >= MARGIN
+# above the tray's resting top edge and receive a tap at every sample point.
+# The phone tray wraps to 131-166px; before the fix it covered Review Sleep
+# Plan at 390/430px even at full scroll.
+FOOTER_VIEWPORTS = [("phone390", 390, 844, True), ("phone430", 430, 932, True),
+                    ("P", 834, 1108, False), ("L", 1194, 748, False), ("desk", 1180, 820, False)]
+FOOTER_JS = r"""
+(M) => {
+  const vh = innerHeight, tray = document.getElementById('compareTray');
+  const shown = !!(tray && tray.style.display === 'block' && tray.offsetHeight > 0);
+  const trayTop = shown ? vh - tray.offsetHeight : vh;
+  return ['buildSystemBtn', 'reviewWithCustomerBtn'].map(id => {
+    const el = document.getElementById(id), r = el.getBoundingClientRect();
+    let hits = 0, misses = [];
+    for (const fx of [0.1, 0.5, 0.9]) for (const fy of [0.15, 0.5, 0.85]) {
+      const h = document.elementFromPoint(r.left + r.width * fx, r.top + r.height * fy);
+      if (h && (h === el || el.contains(h))) hits++; else misses.push(h ? (h.id || h.className.toString().slice(0, 24)) : 'none');
+    }
+    return { id, hits, misses: misses.slice(0, 3), gap: Math.round(trayTop - r.bottom), ok: hits === 9 && r.bottom <= trayTop - M };
+  });
+}
+"""
+
+
+def run_footer_context(browser, base, lang, name, w, h, mobile):
+    key = f"footer-{lang}-{name}"
+    print(f"\n== {key} {w}x{h}")
+    ctx = browser.new_context(viewport={"width": w, "height": h}, has_touch=True, is_mobile=mobile,
+                              locale="es-US" if lang == "es" else "en-US")
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)[:200]))
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_function(READY, timeout=20000)
+    if lang == "es":
+        page.evaluate("async () => { await switchLanguage('es'); }")
+        page.wait_for_timeout(300)
+    page.evaluate("(A) => { for (const k of Object.keys(A)) answers[k] = A[k]; showProfileScreen(); window.showResults(); }", ANSWERS)
+    page.wait_for_function("() => document.querySelector('.screen.active').id === 'resultsScreen' && !window._resultsRevealInFlight", timeout=15000)
+    page.wait_for_timeout(400)
+    ids = page.evaluate("() => [...document.querySelectorAll('#resultsScreen [data-id].noct-toppick, #resultsScreen [data-id].noct-support-card')].map(c => c.getAttribute('data-id'))")
+    best, second = ids[0], ids[1]
+
+    def tap(sel):
+        loc = page.locator(sel).first
+        loc.scroll_into_view_if_needed()
+        try:
+            loc.tap(timeout=4000)
+        except Exception:
+            # An intercepted tap is the defect: record it, then click so the
+            # remaining checks still run.
+            check(f"{key} a real tap reaches {sel}", False, "intercepted by an overlay")
+            loc.evaluate("el => el.click()")
+        page.wait_for_timeout(500)
+
+    def at_end():
+        page.evaluate("() => window.scrollTo(0, document.documentElement.scrollHeight)")
+        page.wait_for_timeout(450)
+        return page.evaluate(FOOTER_JS, MARGIN)
+
+    def sel():
+        return page.evaluate("() => (window._compareSelected || []).slice()")
+
+    def clear():
+        page.evaluate("() => { if (window._compareSelected.length) document.getElementById('compareTrayClear').click(); }")
+        page.wait_for_timeout(300)
+
+    for n, picks in ((2, [best, second]), (1, [best])):
+        clear()
+        for mid in picks:
+            tap(f"#resultsScreen .compare-btn[data-id='{mid}']")
+        for r in at_end():
+            check(f"{key} tray={n}: {r['id']} is clear of the tray at the page end (gap {r['gap']}px >= {MARGIN}, {r['hits']}/9 taps land)",
+                  r["ok"], json.dumps(r))
+    # Two selected: open the comparison, close it, continue to the Sleep Plan and back.
+    clear()
+    for mid in (best, second):
+        tap(f"#resultsScreen .compare-btn[data-id='{mid}']")
+    tap("#compareTrayGo")
+    opened = page.evaluate("() => { const m = document.getElementById('compareModal'); return !!m && m.offsetWidth > 0 && getComputedStyle(m).display !== 'none'; }")
+    check(f"{key} the comparison opens from the tray", opened)
+    tap("#compareModalClose")
+    check(f"{key} closing the comparison keeps both selections", sel() == [best, second], str(sel()))
+    at_end()
+    tap("#reviewWithCustomerBtn")
+    scr = page.evaluate("() => document.querySelector('.screen.active').id")
+    check(f"{key} a real tap on Review Sleep Plan opens the Sleep Plan with two selected", scr == "sleepPlanScreen", scr)
+    check(f"{key} continuing to the Sleep Plan keeps both selections", sel() == [best, second], str(sel()))
+    tap("#sleepPlanBack")
+    back = page.evaluate("""() => ({ screen: document.querySelector('.screen.active').id,
+      tray: document.getElementById('compareTray').style.display, slots: document.querySelectorAll('#compareTraySlots .compare-tray-slot').length,
+      cls: document.getElementById('resultsScreen').classList.contains('df-tray-shown') })""")
+    check(f"{key} back to matches restores the tray, both slots and the footer clearance",
+          back == {"screen": "resultsScreen", "tray": "block", "slots": 2, "cls": True}, json.dumps(back))
+    f = at_end()
+    check(f"{key} after the round trip both footer CTAs are still clear", all(r["ok"] for r in f), json.dumps(f))
+    # One selected: a real tap on Build Your Sleep System.
+    tap(f"#resultsScreen .compare-btn[data-id='{second}']")
+    check(f"{key} un-comparing one leaves one selected", sel() == [best], str(sel()))
+    at_end()
+    tap("#buildSystemBtn")
+    scr = page.evaluate("() => document.querySelector('.screen.active').id")
+    check(f"{key} a real tap on Build Your Sleep System opens it with one selected", scr == "accessoriesScreen", scr)
+    check(f"{key} building the Sleep System keeps the selection", sel() == [best], str(sel()))
+    # Clearing the tray drops the reserved space.
+    page.evaluate("() => window.showScreen('resultsScreen')")
+    page.wait_for_timeout(300)
+    clear()
+    gone = page.evaluate("() => !document.getElementById('resultsScreen').classList.contains('df-tray-shown')"
+                         " && getComputedStyle(document.querySelector('#resultsScreen .noct-results-footer')).paddingBottom === '0px'")
+    check(f"{key} with the tray cleared the footer reserves no space", gone)
+    check(f"{key} no page errors", not errors, "; ".join(errors[:2]))
+    ctx.close()
+
+
+def run_resize_context(browser, base, lang):
+    # The tray re-wraps when the viewport changes (rotation, split view) with no
+    # tray re-render: 73px at tablet width, ~166px on a phone. The footer's
+    # reserved space must follow the tray's new height.
+    key = f"footer-resize-{lang}"
+    print(f"\n== {key} 834x1108 -> 390x844")
+    ctx = browser.new_context(viewport={"width": 834, "height": 1108}, has_touch=True)
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)[:200]))
+    page.goto(base, wait_until="networkidle")
+    page.wait_for_function(READY, timeout=20000)
+    if lang == "es":
+        page.evaluate("async () => { await switchLanguage('es'); }")
+        page.wait_for_timeout(300)
+    page.evaluate("(A) => { for (const k of Object.keys(A)) answers[k] = A[k]; showProfileScreen(); window.showResults(); }", ANSWERS)
+    page.wait_for_function("() => document.querySelector('.screen.active').id === 'resultsScreen' && !window._resultsRevealInFlight", timeout=15000)
+    page.wait_for_timeout(400)
+    ids = page.evaluate("() => [...document.querySelectorAll('#resultsScreen [data-id].noct-toppick, #resultsScreen [data-id].noct-support-card')].map(c => c.getAttribute('data-id'))")
+    for mid in ids[:2]:
+        page.evaluate("(id) => window.toggleCompare(id)", mid) if page.evaluate("() => typeof window.toggleCompare === 'function'") \
+            else page.locator(f"#resultsScreen .compare-btn[data-id='{mid}']").first.click()
+        page.wait_for_timeout(300)
+    before = page.evaluate("() => document.getElementById('compareTray').offsetHeight")
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.wait_for_timeout(700)
+    after = page.evaluate("""() => ({ tray: document.getElementById('compareTray').offsetHeight,
+      reserved: getComputedStyle(document.getElementById('resultsScreen')).getPropertyValue('--df-tray-clearance').trim() })""")
+    check(f"{key} the tray re-wraps taller on the narrower viewport ({before}px -> {after['tray']}px)", after["tray"] > before, json.dumps(after))
+    check(f"{key} the footer's reserved height follows the re-wrapped tray", after["reserved"] == f"{after['tray']}px", json.dumps(after))
+    page.evaluate("() => window.scrollTo(0, document.documentElement.scrollHeight)")
+    page.wait_for_timeout(450)
+    f = page.evaluate(FOOTER_JS, MARGIN)
+    check(f"{key} after the resize both footer CTAs are clear of the tray", all(r["ok"] for r in f), json.dumps(f))
+    check(f"{key} no page errors", not errors, "; ".join(errors[:2]))
+    ctx.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=REPO)
     ap.add_argument("--report")
+    ap.add_argument("--fail-fast", action="store_true")
     args = ap.parse_args()
+    global fail_fast
+    fail_fast = args.fail_fast
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         print("playwright not installed: python -m pip install -r tools/requirements-suite.txt && python -m playwright install chromium")
-        return 1
+        return NO_VERDICT if fail_fast else 1
     server, port = start_server(os.path.abspath(args.root))
     base = f"http://127.0.0.1:{port}/"
     print(f"compare tray clearance check - serving {os.path.abspath(args.root)} at {base}")
@@ -387,7 +557,21 @@ def main():
             for lang in ("en", "es"):
                 for oname, w, h in VIEWPORTS:
                     run_context(browser, base, lang, oname, w, h)
+            for lang in ("en", "es"):
+                for name, w, h, mobile in FOOTER_VIEWPORTS:
+                    run_footer_context(browser, base, lang, name, w, h, mobile)
+                run_resize_context(browser, base, lang)
             browser.close()
+    except FirstFailure as e:
+        print(f"\ncompare tray clearance (--fail-fast): stopped at the first failed assertion: {e}")
+        return 1
+    except Exception:
+        if not fail_fast:
+            raise
+        import traceback
+        traceback.print_exc()
+        print(f"\ncompare tray clearance (--fail-fast): no verdict - the run ended on an error after {passed} passed assertions")
+        return NO_VERDICT
     finally:
         server.shutdown()
     report["passed"], report["failed"] = passed, failed

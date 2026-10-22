@@ -2705,6 +2705,14 @@
       padding-top: 32px;
       border-top: 0.5px solid var(--color-border);
     }
+    /* While the compare tray is shown, the page ends a tray-height (+16px
+       fingertip margin) below the footer, so at full scroll Build Your Sleep
+       System and Review Sleep Plan sit above the tray instead of under it.
+       The phone tray wraps to 131-166px; the clearance is its measured
+       height, set by _updatePicksBadge() with the class. */
+    #resultsScreen.df-tray-shown .noct-results-footer {
+      padding-bottom: calc(var(--df-tray-clearance, 0px) + 16px);
+    }
     .noct-results-footer-actions {
       display: flex;
       flex-wrap: wrap;
@@ -27608,7 +27616,30 @@
           else btn.style.removeProperty('--df-tray-clearance');
         }
       }
+      // The Results footer reserves the same measured height (see the
+      // .df-tray-shown rule), so its last actions can scroll clear of the tray.
+      var results = document.getElementById('resultsScreen');
+      if (results && results.classList) {
+        results.classList.toggle('df-tray-shown', trayShown);
+        if (results.style && results.style.setProperty) {
+          if (trayShown) results.style.setProperty('--df-tray-clearance', tray.offsetHeight + 'px');
+          else results.style.removeProperty('--df-tray-clearance');
+        }
+      }
     };
+    // The tray's height changes when its chips re-wrap (rotation, resize), not
+    // only when it renders; re-measure so the pill and the footer follow it.
+    // The tray markup follows this script, so attach once the DOM is parsed.
+    (function() {
+      function watchTray() {
+        var tray = document.getElementById('compareTray');
+        if (tray && typeof ResizeObserver === 'function') {
+          new ResizeObserver(function() { window._updatePicksBadge(); }).observe(tray);
+        }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchTray);
+      else watchTray();
+    })();
 
     // C5 (cohesion pass-1 ruling C5, 2026-08-30): the pill's noun agrees with
     // its count — "1 Selection", "2 Selections" — instead of a live number
